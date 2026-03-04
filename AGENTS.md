@@ -1,3 +1,72 @@
+# Bibbidi — WebDriver BiDi Protocol for Elixir
+
+## Project Overview
+
+Low-level Elixir implementation of the W3C WebDriver BiDi Protocol.
+Building-block library — no opinionated supervision tree.
+
+## Architecture
+
+- **`Bibbidi.Transport`** — Behaviour for swappable WebSocket transports
+- **`Bibbidi.Transport.MintWS`** — Default transport using `mint_web_socket`
+- **`Bibbidi.Browser`** — GenServer: owns browser OS process via `Port.open`, kills process tree in `terminate/2`. Users supervise this themselves.
+- **`Bibbidi.Connection`** — GenServer: WebSocket + command ID correlation + event dispatch. Users supervise this themselves.
+- **`Bibbidi.Protocol`** — Pure JSON encode/decode (no process state)
+- **`Bibbidi.Session`** — Functional module for session lifecycle (takes conn pid)
+- **`Bibbidi.Commands.*`** — Command builder modules (one per BiDi module)
+- **`Bibbidi.Types.*`** — Type structs (future, from CDDL codegen)
+- **`Bibbidi.Events.*`** — Event types (future, from CDDL codegen)
+
+## File Layout
+
+```
+lib/bibbidi/browser.ex         — Browser lifecycle GenServer
+lib/bibbidi/connection.ex      — Core GenServer
+lib/bibbidi/protocol.ex        — Pure JSON encode/decode
+lib/bibbidi/transport.ex       — Behaviour
+lib/bibbidi/transport/mint_ws.ex — Mint.WebSocket impl
+lib/bibbidi/session.ex         — Session lifecycle
+lib/bibbidi/commands/*.ex      — Command builders
+lib/bibbidi/types/*.ex         — Type structs (generated)
+lib/bibbidi/events/*.ex        — Event types (generated)
+lib/mix/tasks/*.ex             — Mix tasks
+priv/cddl/                    — Downloaded CDDL spec files
+test/support/                  — Test helpers (IntegrationCase, MockTransport)
+test/bibbidi/                  — Unit tests
+test/integration/              — Integration tests (tagged :integration)
+```
+
+## Coding Conventions
+
+- Command builder functions live in `Bibbidi.Commands.<Module>` and take `(conn, required_args..., opts \\ [])`.
+- Optional BiDi params use Elixir keyword opts with `snake_case` keys, mapped to `camelCase` JSON keys.
+- All command functions return `{:ok, map()} | {:error, term()}`.
+- Event subscribers receive `{:bibbidi_event, method, params}` messages.
+- No auto-supervision — users add `Bibbidi.Connection` to their own sup trees.
+
+## Testing
+
+- `mix test` — Unit tests only (integration excluded by default)
+- `mix test --include integration` — Runs integration tests (needs Firefox)
+- Set `BBD_BROWSER_URL` to skip browser launch and connect to an existing instance
+- Set `BBD_DEBUG=1` to run headed (visible browser window)
+- Integration tests are tagged `@moduletag :integration`
+
+## Adding a New Protocol Module
+
+1. Create `lib/bibbidi/commands/<module>.ex` with command builder functions
+2. Each function calls `Bibbidi.Connection.send_command/3` with the BiDi method name
+3. Add unit tests in `test/bibbidi/commands/<module>_test.exs` using `Bibbidi.MockTransport`
+4. Add integration tests in `test/integration/<module>_test.exs` tagged `:integration`
+5. Reference the CDDL spec in `priv/cddl/remote.cddl` (what client sends) and `priv/cddl/local.cddl` (what client receives)
+
+## CDDL Spec
+
+Run `mix bibbidi.download_spec` to download/update the CDDL files from the W3C spec.
+The `remote.cddl` defines message formats the client sends; `local.cddl` defines what the client receives.
+
+---
+
 <!-- usage-rules-start -->
 <!-- usage_rules-start -->
 ## usage_rules usage
