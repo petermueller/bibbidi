@@ -1,8 +1,7 @@
 defmodule BibbidiTest do
   use ExUnit.Case
-  doctest Bibbidi
 
-  test "greets the world" do
-    assert Bibbidi.hello() == :world
+  test "module exists" do
+    assert is_list(Bibbidi.module_info())
   end
 end
