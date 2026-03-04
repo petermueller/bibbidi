@@ -156,12 +156,12 @@ Bibbidi.Commands.BrowsingContext.get_tree(MyApp.Browser)
 
 ## Available Command Modules
 
-| Module | Commands |
-|--------|----------|
+| Module                             | Commands                                                                                                                                  |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `Bibbidi.Commands.BrowsingContext` | navigate, getTree, create, close, captureScreenshot, print, reload, setViewport, handleUserPrompt, activate, traverseHistory, locateNodes |
-| `Bibbidi.Commands.Script` | evaluate, callFunction, getRealms, disown, addPreloadScript, removePreloadScript |
-| `Bibbidi.Commands.Session` | new, end, status, subscribe, unsubscribe |
-| `Bibbidi.Session` | Higher-level session lifecycle (new, end_session, status, subscribe, unsubscribe) |
+| `Bibbidi.Commands.Script`          | evaluate, callFunction, getRealms, disown, addPreloadScript, removePreloadScript                                                          |
+| `Bibbidi.Commands.Session`         | new, end, status, subscribe, unsubscribe                                                                                                  |
+| `Bibbidi.Session`                  | Higher-level session lifecycle (new, end_session, status, subscribe, unsubscribe)                                                         |
 
 ## Architecture
 
@@ -169,7 +169,3 @@ Bibbidi.Commands.BrowsingContext.get_tree(MyApp.Browser)
 - **`Bibbidi.Protocol`** — Pure JSON encode/decode, no process state.
 - **`Bibbidi.Transport`** — Behaviour for swappable WebSocket transports.
 - **`Bibbidi.Transport.MintWS`** — Default transport using [mint_web_socket](https://hex.pm/packages/mint_web_socket).
-
-## License
-
-MIT
