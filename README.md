@@ -167,6 +167,14 @@ Bibbidi.Commands.BrowsingContext.get_tree(MyApp.Browser)
 | `Bibbidi.Commands.Session`         | new, end, status, subscribe, unsubscribe                                                                                                  |
 | `Bibbidi.Session`                  | Higher-level session lifecycle (new, end_session, status, subscribe, unsubscribe)                                                         |
 
+## Livebook
+
+Try the [Interactive Browser](examples/interactive_browser.livemd) Livebook for a
+GUI that lets you navigate, click, screenshot, run JavaScript, and view console
+logs — all from your Browser!.
+
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fpetermueller%2Fbibbidi%2Fblob%2Fmain%2Fexamples%2Finteractive_browser.livemd)
+
 ## Architecture
 
 - **`Bibbidi.Connection`** — GenServer owning the WebSocket. Correlates command IDs to callers, dispatches events to subscribers.
