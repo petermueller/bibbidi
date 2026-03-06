@@ -28,7 +28,7 @@ defmodule Bibbidi.MixProject do
       logo: "assets/icon.png",
       assets: %{"assets" => "assets"},
       source_ref: "v#{@version}",
-      extras: ["README.md", "examples/interactive_browser.livemd"],
+      extras: ["README.md", "CHANGELOG.md", "examples/interactive_browser.livemd"],
       groups_for_modules: [
         Core: [
           Bibbidi,
