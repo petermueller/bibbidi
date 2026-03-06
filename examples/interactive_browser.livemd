@@ -111,6 +111,7 @@ defmodule UI do
     js_output = state.js_result && Kino.Markdown.new(state.js_result)
 
     # Tools
+    rescan_btn = button("Rescan Page") |> control(&handle_rescan/2)
     screenshot_btn = button("Screenshot") |> control(&handle_screenshot/2)
     stop_btn = button("Stop Browser") |> control(&handle_stop/2)
 
@@ -131,7 +132,7 @@ defmodule UI do
       Kino.Layout.grid([click_form, viewport_form], columns: 2),
       js_form,
       js_output,
-      Kino.Layout.grid([screenshot_btn, stop_btn], columns: 2),
+      Kino.Layout.grid([rescan_btn, screenshot_btn, stop_btn], columns: 3),
       elements_table
     ]
     |> Enum.reject(&is_nil/1)
@@ -147,6 +148,7 @@ defmodule UI do
     {:ok, %{"contexts" => [%{"context" => context} | _]}} = BrowsingContext.get_tree(conn)
 
     BrowsingContext.set_viewport(conn, context, %{width: 1280, height: 800})
+    install_observers(conn)
     log_listener = start_log_listener(conn, state.log_frame)
 
     %{state |
@@ -273,6 +275,10 @@ defmodule UI do
     end
   end
 
+  defp handle_rescan(_, state) do
+    refresh_page(state, "Page rescanned")
+  end
+
   defp handle_screenshot(_, state) do
     case BrowsingContext.capture_screenshot(state.conn, state.context) do
       {:ok, %{"data" => base64_data}} ->
@@ -337,14 +343,51 @@ defmodule UI do
   defp format_js_result(%{"type" => "undefined"}), do: "undefined"
   defp format_js_result(%{"type" => type} = r), do: "#{type}: #{inspect(Map.get(r, "value", ""))}"
 
+  # -- Observers ---------------------------------------------------------------
+
+  defp install_observers(conn) do
+    Script.add_preload_script(conn, """
+    () => {
+      document.addEventListener('click', (e) => {
+        const tag = e.target.tagName.toLowerCase();
+        const text = (e.target.textContent || '').trim().substring(0, 40);
+        console.log('[click] <' + tag + '> ' + text);
+      }, true);
+
+      const attach = () => {
+        new MutationObserver((mutations) => {
+          const added = mutations.reduce((n, m) => n + m.addedNodes.length, 0);
+          const removed = mutations.reduce((n, m) => n + m.removedNodes.length, 0);
+          if (added || removed) console.log('[dom] +' + added + ' -' + removed + ' nodes');
+        }).observe(document.documentElement, { childList: true, subtree: true });
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attach);
+      } else {
+        attach();
+      }
+    }
+    """)
+  end
+
   # -- Console log listener ----------------------------------------------------
 
+  @log_events [
+    "log.entryAdded",
+    "browsingContext.navigationStarted",
+    "browsingContext.load",
+    "browsingContext.domContentLoaded",
+    "browsingContext.fragmentNavigated",
+    "browsingContext.userPromptOpened",
+    "browsingContext.userPromptClosed"
+  ]
+
   defp start_log_listener(conn, log_frame) do
-    events = ["log.entryAdded", "browsingContext.navigationStarted", "browsingContext.load"]
-    Bibbidi.Session.subscribe(conn, events)
+    Bibbidi.Session.subscribe(conn, @log_events)
 
     spawn(fn ->
-      for event <- events, do: Bibbidi.Connection.subscribe(conn, event)
+      for event <- @log_events, do: Bibbidi.Connection.subscribe(conn, event)
       log_loop(log_frame)
     end)
   end
@@ -355,18 +398,30 @@ defmodule UI do
         level = params["level"] || "info"
         text = params["text"] || ""
         Kino.Frame.append(frame, Kino.Markdown.new("`[#{level}]` #{text}"))
-        log_loop(frame)
 
       {:bibbidi_event, "browsingContext.navigationStarted", params} ->
-        url = params["url"] || ""
-        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` started: #{url}"))
-        log_loop(frame)
+        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` started: #{params["url"]}"))
+
+      {:bibbidi_event, "browsingContext.domContentLoaded", params} ->
+        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` DOM ready: #{params["url"]}"))
 
       {:bibbidi_event, "browsingContext.load", params} ->
-        url = params["url"] || ""
-        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` loaded: #{url}"))
-        log_loop(frame)
+        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` loaded: #{params["url"]}"))
+
+      {:bibbidi_event, "browsingContext.fragmentNavigated", params} ->
+        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` fragment: #{params["url"]}"))
+
+      {:bibbidi_event, "browsingContext.userPromptOpened", params} ->
+        type = params["type"] || "dialog"
+        msg = params["message"] || ""
+        Kino.Frame.append(frame, Kino.Markdown.new("`[prompt]` #{type} opened: #{msg}"))
+
+      {:bibbidi_event, "browsingContext.userPromptClosed", params} ->
+        accepted = if params["accepted"], do: "accepted", else: "dismissed"
+        Kino.Frame.append(frame, Kino.Markdown.new("`[prompt]` #{accepted}"))
     end
+
+    log_loop(frame)
   end
 end
 ```
