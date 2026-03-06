@@ -17,6 +17,7 @@ defmodule Bibbidi.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       docs: docs(),
+      package: package(),
       usage_rules: usage_rules()
     ]
   end
@@ -51,6 +52,15 @@ defmodule Bibbidi.MixProject do
     ]
   end
 
+  defp package do
+    [
+      files:
+        ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* usage-rules.md),
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url, "WebDriver BiDi Spec" => "https://w3c.github.io/webdriver-bidi/"}
+    ]
+  end
+
   defp usage_rules do
     # Example for those using claude.
     [
@@ -80,7 +90,7 @@ defmodule Bibbidi.MixProject do
     [
       {:mint_web_socket, "~> 1.0"},
       {:nimble_parsec, "~> 1.0", only: [:dev, :test]},
-      {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
+      {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},
       {:usage_rules, "~> 1.0", only: [:dev]},
       {:bandit, "~> 1.0", only: :test},
       {:plug, "~> 1.14", only: :test}
