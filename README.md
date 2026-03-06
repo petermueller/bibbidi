@@ -1,5 +1,7 @@
 # Bibbidi
 
+<img src="assets/icon.png" alt="Bibbidi icon" width="120" align="right" />
+
 Low-level Elixir implementation of the [W3C WebDriver BiDi Protocol](https://w3c.github.io/webdriver-bidi/).
 
 Bibbidi is a **building-block library** — it gives you WebSocket connectivity,
