@@ -2,6 +2,8 @@
 
 <img src="assets/icon.png" alt="Bibbidi icon" width="120" align="right" />
 
+**B**EAM **I**nterface to **B**rowsers with **BiDi** — a nod to the Fairy Godmother's spell in Disney's *Cinderella*.
+
 Low-level Elixir implementation of the [W3C WebDriver BiDi Protocol](https://w3c.github.io/webdriver-bidi/).
 
 Bibbidi is a **building-block library** — it gives you WebSocket connectivity,
