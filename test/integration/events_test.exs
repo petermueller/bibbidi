@@ -1,0 +1,60 @@
+defmodule Bibbidi.Integration.EventsTest do
+  use Bibbidi.IntegrationCase
+
+  test "subscribe and receive log event", %{conn: conn, context: context} do
+    {:ok, _} = Session.subscribe(conn, ["log.entryAdded"])
+    :ok = Connection.subscribe(conn, "log.entryAdded")
+
+    {:ok, _} =
+      Script.evaluate(conn, ~s[console.log("hello from test")], %{context: context})
+
+    assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
+    assert params["type"] == "console"
+    assert is_binary(params["text"])
+  end
+
+  test "unsubscribe stops delivery", %{conn: conn, context: context} do
+    {:ok, _} = Session.subscribe(conn, ["log.entryAdded"])
+    :ok = Connection.subscribe(conn, "log.entryAdded")
+
+    # Verify events arrive first
+    {:ok, _} =
+      Script.evaluate(conn, ~s[console.log("before unsub")], %{context: context})
+
+    assert_receive {:bibbidi_event, "log.entryAdded", _}, 5_000
+
+    # Unsubscribe both server and client side
+    {:ok, _} = Session.unsubscribe(conn, ["log.entryAdded"])
+    :ok = Connection.unsubscribe(conn, "log.entryAdded")
+
+    {:ok, _} =
+      Script.evaluate(conn, ~s[console.log("after unsub")], %{context: context})
+
+    refute_receive {:bibbidi_event, "log.entryAdded", _}, 1_000
+  end
+
+  test "navigation events", %{conn: conn, context: context} do
+    {:ok, _} = Session.subscribe(conn, ["browsingContext.load"])
+    :ok = Connection.subscribe(conn, "browsingContext.load")
+
+    {:ok, _} =
+      BrowsingContext.navigate(conn, context, "data:text/html,<h1>Nav Event</h1>",
+        wait: "complete"
+      )
+
+    assert_receive {:bibbidi_event, "browsingContext.load", params}, 5_000
+    assert params["context"] == context
+  end
+
+  test "multiple event types", %{conn: conn, context: context, base_url: base_url} do
+    {:ok, _} = Session.subscribe(conn, ["log.entryAdded", "browsingContext.load"])
+    :ok = Connection.subscribe(conn, "log.entryAdded")
+    :ok = Connection.subscribe(conn, "browsingContext.load")
+
+    {:ok, _} =
+      BrowsingContext.navigate(conn, context, "#{base_url}/console-log", wait: "complete")
+
+    assert_receive {:bibbidi_event, "browsingContext.load", _}, 5_000
+    assert_receive {:bibbidi_event, "log.entryAdded", _}, 5_000
+  end
+end

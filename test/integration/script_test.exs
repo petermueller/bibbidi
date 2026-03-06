@@ -1,14 +1,6 @@
 defmodule Bibbidi.Integration.ScriptTest do
   use Bibbidi.IntegrationCase
 
-  alias Bibbidi.Commands.Script
-
-  setup %{conn: conn} do
-    {:ok, tree} = BrowsingContext.get_tree(conn)
-    context = hd(tree["contexts"])["context"]
-    %{context: context}
-  end
-
   test "evaluate a simple expression", %{conn: conn, context: context} do
     {:ok, result} = Script.evaluate(conn, "1 + 1", %{context: context})
     assert result["result"]["type"] == "number"

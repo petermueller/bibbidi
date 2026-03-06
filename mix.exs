@@ -82,7 +82,8 @@ defmodule Bibbidi.MixProject do
       {:nimble_parsec, "~> 1.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
       {:usage_rules, "~> 1.0", only: [:dev]},
-      {:bypass, "~> 2.1", only: :test}
+      {:bandit, "~> 1.0", only: :test},
+      {:plug, "~> 1.14", only: :test}
     ]
   end
 end

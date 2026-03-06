@@ -15,20 +15,14 @@ defmodule Bibbidi.Integration.BrowsingContextTest do
     {:ok, _} = BrowsingContext.close(conn, context)
   end
 
-  test "navigate to a page", %{conn: conn} do
-    {:ok, tree} = BrowsingContext.get_tree(conn)
-    context = hd(tree["contexts"])["context"]
-
+  test "navigate to a page", %{conn: conn, context: context} do
     {:ok, result} =
       BrowsingContext.navigate(conn, context, "data:text/html,<h1>Hello</h1>", wait: "complete")
 
     assert is_binary(result["navigation"])
   end
 
-  test "capture screenshot", %{conn: conn} do
-    {:ok, tree} = BrowsingContext.get_tree(conn)
-    context = hd(tree["contexts"])["context"]
-
+  test "capture screenshot", %{conn: conn, context: context} do
     {:ok, _} =
       BrowsingContext.navigate(conn, context, "data:text/html,<h1>Screenshot</h1>",
         wait: "complete"
