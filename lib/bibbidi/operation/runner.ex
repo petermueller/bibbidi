@@ -2,6 +2,26 @@ defmodule Bibbidi.Operation.Runner do
   @moduledoc """
   Recursive interpreter that walks an `Expandable` tree, sends leaf commands
   through `Connection`, and accumulates everything into an `%Operation{}`.
+
+  ## Telemetry Events
+
+  The runner emits the following `:telemetry` events:
+
+    * `[:bibbidi, :operation, :start]` — when an operation begins
+      - Measurements: `%{system_time: integer()}`
+      - Metadata: `%{operation: Operation.t(), conn: pid()}`
+
+    * `[:bibbidi, :operation, :step]` — when each individual command completes
+      - Measurements: `%{duration: integer()}` (in milliseconds)
+      - Metadata: `%{operation: Operation.t(), step: step(), conn: pid()}`
+
+    * `[:bibbidi, :operation, :stop]` — when an operation completes successfully
+      - Measurements: `%{duration: integer()}` (in milliseconds)
+      - Metadata: `%{operation: Operation.t(), result: term(), conn: pid()}`
+
+    * `[:bibbidi, :operation, :exception]` — on failure
+      - Measurements: `%{duration: integer()}` (in milliseconds)
+      - Metadata: `%{operation: Operation.t(), reason: term(), conn: pid()}`
   """
 
   alias Bibbidi.{Connection, Encodable, Expandable, Operation}
@@ -24,6 +44,12 @@ defmodule Bibbidi.Operation.Runner do
       started_at: System.monotonic_time(:millisecond)
     }
 
+    :telemetry.execute(
+      [:bibbidi, :operation, :start],
+      %{system_time: System.system_time(:millisecond)},
+      %{operation: op, conn: conn}
+    )
+
     event_names = Keyword.get(opts, :capture_events, [])
     if event_names != [], do: setup_event_capture(conn, event_names)
 
@@ -31,10 +57,24 @@ defmodule Bibbidi.Operation.Runner do
       case run(conn, Expandable.expand(command), op, opts) do
         {:ok, result, op} ->
           op = finalize(op, :completed)
+
+          :telemetry.execute(
+            [:bibbidi, :operation, :stop],
+            %{duration: op.ended_at - op.started_at},
+            %{operation: op, result: result, conn: conn}
+          )
+
           {:ok, result, op}
 
         {:error, reason, op} ->
           op = finalize(op, :failed, reason)
+
+          :telemetry.execute(
+            [:bibbidi, :operation, :exception],
+            %{duration: op.ended_at - op.started_at},
+            %{operation: op, reason: reason, conn: conn}
+          )
+
           {:error, reason, op}
       end
     after
@@ -97,11 +137,25 @@ defmodule Bibbidi.Operation.Runner do
       {:ok, result} ->
         step = %{command: cmd, response: result, sent_at: sent_at, received_at: now()}
         op = %{op | steps: op.steps ++ [step]}
+
+        :telemetry.execute(
+          [:bibbidi, :operation, :step],
+          %{duration: step.received_at - step.sent_at},
+          %{operation: op, step: step, conn: conn}
+        )
+
         {:ok, result, op}
 
       {:error, reason} ->
         step = %{command: cmd, response: {:error, reason}, sent_at: sent_at, received_at: now()}
         op = %{op | steps: op.steps ++ [step]}
+
+        :telemetry.execute(
+          [:bibbidi, :operation, :step],
+          %{duration: step.received_at - step.sent_at},
+          %{operation: op, step: step, conn: conn}
+        )
+
         {:error, reason, op}
     end
   end

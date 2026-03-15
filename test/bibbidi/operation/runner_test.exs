@@ -175,4 +175,68 @@ defmodule Bibbidi.Operation.RunnerTest do
       assert String.starts_with?(op1.id, "op_")
     end
   end
+
+  describe "telemetry" do
+    test "emits start, step, and stop events on success", %{conn: conn} do
+      ref = make_ref()
+      test_pid = self()
+
+      handler = fn event, measurements, metadata, _ ->
+        send(test_pid, {ref, event, measurements, metadata})
+      end
+
+      events = [
+        [:bibbidi, :operation, :start],
+        [:bibbidi, :operation, :step],
+        [:bibbidi, :operation, :stop]
+      ]
+
+      :telemetry.attach_many("test-#{inspect(ref)}", events, handler, nil)
+
+      cmd = %BrowsingContext.Activate{context: "ctx-1"}
+      task = Task.async(fn -> Runner.execute(conn, cmd) end)
+      mock_reply(conn, %{})
+      {:ok, _, _op} = Task.await(task)
+
+      assert_receive {^ref, [:bibbidi, :operation, :start], %{system_time: _}, %{operation: _}}
+      assert_receive {^ref, [:bibbidi, :operation, :step], %{duration: _}, %{step: _, operation: _}}
+      assert_receive {^ref, [:bibbidi, :operation, :stop], %{duration: _}, %{result: _, operation: _}}
+
+      :telemetry.detach("test-#{inspect(ref)}")
+    end
+
+    test "emits exception event on failure", %{conn: conn} do
+      ref = make_ref()
+      test_pid = self()
+
+      handler = fn event, measurements, metadata, _ ->
+        send(test_pid, {ref, event, measurements, metadata})
+      end
+
+      :telemetry.attach_many(
+        "test-err-#{inspect(ref)}",
+        [[:bibbidi, :operation, :exception]],
+        handler,
+        nil
+      )
+
+      cmd = %BrowsingContext.Activate{context: "ctx-1"}
+      task = Task.async(fn -> Runner.execute(conn, cmd) end)
+
+      assert_receive {:mock_transport_send, json}
+      decoded = JSON.decode!(json)
+
+      send(
+        conn,
+        {:mock_transport_receive,
+         [{:text, JSON.encode!(%{id: decoded["id"], error: "err", message: "fail"})}]}
+      )
+
+      {:error, _, _} = Task.await(task)
+
+      assert_receive {^ref, [:bibbidi, :operation, :exception], %{duration: _}, %{reason: _, operation: _}}
+
+      :telemetry.detach("test-err-#{inspect(ref)}")
+    end
+  end
 end
