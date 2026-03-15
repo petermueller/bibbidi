@@ -47,7 +47,7 @@ defmodule Bibbidi.Session do
   """
   @spec new(GenServer.server(), map()) :: {:ok, map()} | {:error, term()}
   def new(conn, capabilities \\ %{}) do
-    Connection.send_command(conn, "session.new", %{capabilities: capabilities})
+    Connection.execute(conn, %Bibbidi.Commands.Session.New{capabilities: capabilities})
   end
 
   @doc """
@@ -55,7 +55,7 @@ defmodule Bibbidi.Session do
   """
   @spec end_session(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def end_session(conn) do
-    Connection.send_command(conn, "session.end", %{})
+    Connection.execute(conn, %Bibbidi.Commands.Session.End{})
   end
 
   @doc """
@@ -63,7 +63,7 @@ defmodule Bibbidi.Session do
   """
   @spec status(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def status(conn) do
-    Connection.send_command(conn, "session.status", %{})
+    Connection.execute(conn, %Bibbidi.Commands.Session.Status{})
   end
 
   @doc """
@@ -74,15 +74,10 @@ defmodule Bibbidi.Session do
   """
   @spec subscribe(GenServer.server(), [String.t()], keyword()) :: {:ok, map()} | {:error, term()}
   def subscribe(conn, events, opts \\ []) do
-    params = %{events: events}
-
-    params =
-      case Keyword.get(opts, :contexts) do
-        nil -> params
-        contexts -> Map.put(params, :contexts, contexts)
-      end
-
-    Connection.send_command(conn, "session.subscribe", params)
+    Connection.execute(conn, %Bibbidi.Commands.Session.Subscribe{
+      events: events,
+      contexts: opts[:contexts]
+    })
   end
 
   @doc """
@@ -94,7 +89,7 @@ defmodule Bibbidi.Session do
     params = %{events: events}
 
     params =
-      case Keyword.get(opts, :contexts) do
+      case opts[:contexts] do
         nil -> params
         contexts -> Map.put(params, :contexts, contexts)
       end

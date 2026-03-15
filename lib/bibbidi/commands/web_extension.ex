@@ -16,7 +16,7 @@ defmodule Bibbidi.Commands.WebExtension do
   """
   @spec install(GenServer.server(), map()) :: {:ok, map()} | {:error, term()}
   def install(conn, extension_data) do
-    Connection.send_command(conn, "webExtension.install", %{extensionData: extension_data})
+    Connection.execute(conn, %__MODULE__.Install{extension_data: extension_data})
   end
 
   @doc """
@@ -24,6 +24,6 @@ defmodule Bibbidi.Commands.WebExtension do
   """
   @spec uninstall(GenServer.server(), String.t()) :: {:ok, map()} | {:error, term()}
   def uninstall(conn, extension) do
-    Connection.send_command(conn, "webExtension.uninstall", %{extension: extension})
+    Connection.execute(conn, %__MODULE__.Uninstall{extension: extension})
   end
 end

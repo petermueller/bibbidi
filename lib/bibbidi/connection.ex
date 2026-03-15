@@ -57,6 +57,19 @@ defmodule Bibbidi.Connection do
   end
 
   @doc """
+  Executes an `Encodable` command struct and waits for the response.
+
+  Returns `{:ok, result}` on success or `{:error, reason}` on failure.
+  """
+  @spec execute(GenServer.server(), Bibbidi.Encodable.t(), keyword()) ::
+          {:ok, map()} | {:error, term()}
+  def execute(conn, command, opts \\ []) do
+    method = Bibbidi.Encodable.method(command)
+    params = Bibbidi.Encodable.params(command)
+    send_command(conn, method, params, opts)
+  end
+
+  @doc """
   Subscribes the given process (default: caller) to events matching `method`.
 
   The subscriber receives messages as `{:bibbidi_event, method, params}`.

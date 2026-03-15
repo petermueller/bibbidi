@@ -13,7 +13,7 @@ defmodule Bibbidi.Commands.Session do
   """
   @spec new(GenServer.server(), map()) :: {:ok, map()} | {:error, term()}
   def new(conn, capabilities \\ %{}) do
-    Connection.send_command(conn, "session.new", %{capabilities: capabilities})
+    Connection.execute(conn, %__MODULE__.New{capabilities: capabilities})
   end
 
   @doc """
@@ -21,7 +21,7 @@ defmodule Bibbidi.Commands.Session do
   """
   @spec end_session(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def end_session(conn) do
-    Connection.send_command(conn, "session.end", %{})
+    Connection.execute(conn, %__MODULE__.End{})
   end
 
   @doc """
@@ -29,7 +29,7 @@ defmodule Bibbidi.Commands.Session do
   """
   @spec status(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def status(conn) do
-    Connection.send_command(conn, "session.status", %{})
+    Connection.execute(conn, %__MODULE__.Status{})
   end
 
   @doc """
@@ -42,9 +42,10 @@ defmodule Bibbidi.Commands.Session do
   @spec subscribe(GenServer.server(), [String.t()], keyword()) ::
           {:ok, map()} | {:error, term()}
   def subscribe(conn, events, opts \\ []) do
-    params = %{events: events}
-    params = put_opt(params, :contexts, opts)
-    Connection.send_command(conn, "session.subscribe", params)
+    Connection.execute(conn, %__MODULE__.Subscribe{
+      events: events,
+      contexts: opts[:contexts]
+    })
   end
 
   @doc """
@@ -58,14 +59,13 @@ defmodule Bibbidi.Commands.Session do
           {:ok, map()} | {:error, term()}
   def unsubscribe(conn, events, opts \\ []) do
     params = %{events: events}
-    params = put_opt(params, :contexts, opts)
-    Connection.send_command(conn, "session.unsubscribe", params)
-  end
 
-  defp put_opt(params, key, opts) do
-    case Keyword.get(opts, key) do
-      nil -> params
-      value -> Map.put(params, key, value)
-    end
+    params =
+      case opts[:contexts] do
+        nil -> params
+        contexts -> Map.put(params, :contexts, contexts)
+      end
+
+    Connection.send_command(conn, "session.unsubscribe", params)
   end
 end

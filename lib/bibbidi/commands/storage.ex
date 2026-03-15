@@ -15,10 +15,10 @@ defmodule Bibbidi.Commands.Storage do
   """
   @spec get_cookies(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
   def get_cookies(conn, opts \\ []) do
-    params = %{}
-    params = put_opt(params, :filter, opts)
-    params = put_opt(params, :partition, opts)
-    Connection.send_command(conn, "storage.getCookies", params)
+    Connection.execute(conn, %__MODULE__.GetCookies{
+      filter: opts[:filter],
+      partition: opts[:partition]
+    })
   end
 
   @doc """
@@ -32,9 +32,10 @@ defmodule Bibbidi.Commands.Storage do
   """
   @spec set_cookie(GenServer.server(), map(), keyword()) :: {:ok, map()} | {:error, term()}
   def set_cookie(conn, cookie, opts \\ []) do
-    params = %{cookie: cookie}
-    params = put_opt(params, :partition, opts)
-    Connection.send_command(conn, "storage.setCookie", params)
+    Connection.execute(conn, %__MODULE__.SetCookie{
+      cookie: cookie,
+      partition: opts[:partition]
+    })
   end
 
   @doc """
@@ -47,20 +48,9 @@ defmodule Bibbidi.Commands.Storage do
   """
   @spec delete_cookies(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
   def delete_cookies(conn, opts \\ []) do
-    params = %{}
-    params = put_opt(params, :filter, opts)
-    params = put_opt(params, :partition, opts)
-    Connection.send_command(conn, "storage.deleteCookies", params)
-  end
-
-  ## Private helpers
-
-  defp put_opt(params, key, opts, json_key \\ nil) do
-    json_key = json_key || key
-
-    case Keyword.get(opts, key) do
-      nil -> params
-      value -> Map.put(params, json_key, value)
-    end
+    Connection.execute(conn, %__MODULE__.DeleteCookies{
+      filter: opts[:filter],
+      partition: opts[:partition]
+    })
   end
 end

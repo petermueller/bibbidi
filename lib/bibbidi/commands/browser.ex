@@ -10,7 +10,7 @@ defmodule Bibbidi.Commands.Browser do
   """
   @spec close(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def close(conn) do
-    Connection.send_command(conn, "browser.close", %{})
+    Connection.execute(conn, %__MODULE__.Close{})
   end
 
   @doc """
@@ -24,11 +24,11 @@ defmodule Bibbidi.Commands.Browser do
   """
   @spec create_user_context(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
   def create_user_context(conn, opts \\ []) do
-    params = %{}
-    params = put_opt(params, :accept_insecure_certs, opts, :acceptInsecureCerts)
-    params = put_opt(params, :proxy, opts)
-    params = put_opt(params, :unhandled_prompt_behavior, opts, :unhandledPromptBehavior)
-    Connection.send_command(conn, "browser.createUserContext", params)
+    Connection.execute(conn, %__MODULE__.CreateUserContext{
+      accept_insecure_certs: opts[:accept_insecure_certs],
+      proxy: opts[:proxy],
+      unhandled_prompt_behavior: opts[:unhandled_prompt_behavior]
+    })
   end
 
   @doc """
@@ -36,7 +36,7 @@ defmodule Bibbidi.Commands.Browser do
   """
   @spec get_client_windows(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def get_client_windows(conn) do
-    Connection.send_command(conn, "browser.getClientWindows", %{})
+    Connection.execute(conn, %__MODULE__.GetClientWindows{})
   end
 
   @doc """
@@ -44,7 +44,7 @@ defmodule Bibbidi.Commands.Browser do
   """
   @spec get_user_contexts(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def get_user_contexts(conn) do
-    Connection.send_command(conn, "browser.getUserContexts", %{})
+    Connection.execute(conn, %__MODULE__.GetUserContexts{})
   end
 
   @doc """
@@ -52,7 +52,7 @@ defmodule Bibbidi.Commands.Browser do
   """
   @spec remove_user_context(GenServer.server(), String.t()) :: {:ok, map()} | {:error, term()}
   def remove_user_context(conn, user_context) do
-    Connection.send_command(conn, "browser.removeUserContext", %{userContext: user_context})
+    Connection.execute(conn, %__MODULE__.RemoveUserContext{user_context: user_context})
   end
 
   @doc """
@@ -83,19 +83,9 @@ defmodule Bibbidi.Commands.Browser do
   @spec set_download_behavior(GenServer.server(), map() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_download_behavior(conn, download_behavior, opts \\ []) do
-    params = %{downloadBehavior: download_behavior}
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "browser.setDownloadBehavior", params)
-  end
-
-  ## Private helpers
-
-  defp put_opt(params, key, opts, json_key \\ nil) do
-    json_key = json_key || key
-
-    case Keyword.get(opts, key) do
-      nil -> params
-      value -> Map.put(params, json_key, value)
-    end
+    Connection.execute(conn, %__MODULE__.SetDownloadBehavior{
+      download_behavior: download_behavior,
+      user_contexts: opts[:user_contexts]
+    })
   end
 end
