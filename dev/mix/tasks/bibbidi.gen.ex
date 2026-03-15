@@ -11,13 +11,17 @@ defmodule Mix.Tasks.Bibbidi.Gen do
     * `lib/bibbidi/events/<module>.ex` — event method names and helpers
   """
 
-  use Mix.Task
+  use Igniter.Mix.Task
 
   @shortdoc "Generate types and events from CDDL spec"
 
-  @impl Mix.Task
-  def run(_args) do
-    Bibbidi.CDDL.Generator.run()
-    Mix.shell().info("Done.")
+  @impl Igniter.Mix.Task
+  def info(_argv, _composing_task) do
+    %Igniter.Mix.Task.Info{}
+  end
+
+  @impl Igniter.Mix.Task
+  def igniter(igniter) do
+    Bibbidi.CDDL.Generator.run(igniter)
   end
 end

@@ -5,18 +5,26 @@ defmodule Bibbidi.CDDL.Generator do
 
   @modules ~w(browsingContext script session browser network log storage input emulation webExtension)
 
-  def run do
+  @doc """
+  Builds an `%Igniter{}` with all generated types and events modules.
+
+  Returns the igniter struct — the caller decides whether to apply or dry-run.
+  """
+  @spec run(Igniter.t()) :: Igniter.t()
+  def run(igniter) do
     {:ok, remote_rules} = Parser.parse_file("priv/cddl/remote.cddl")
     {:ok, local_rules} = Parser.parse_file("priv/cddl/local.cddl")
 
     all_rules = remote_rules ++ local_rules
     grouped = group_by_module(all_rules)
 
-    for mod <- @modules do
+    Enum.reduce(@modules, igniter, fn mod, igniter ->
       rules = Map.get(grouped, mod, [])
-      generate_types_module(mod, rules)
-      generate_events_module(mod, rules, local_rules)
-    end
+
+      igniter
+      |> maybe_generate_types_module(mod, rules)
+      |> maybe_generate_events_module(mod, rules, local_rules)
+    end)
   end
 
   defp group_by_module(rules) do
@@ -25,13 +33,14 @@ defmodule Bibbidi.CDDL.Generator do
     |> Enum.group_by(fn {name, _} -> name |> String.split(".") |> hd() end)
   end
 
-  defp generate_types_module(mod, rules) do
+  defp maybe_generate_types_module(igniter, mod, rules) do
+    types = extract_types(rules)
+    if types == [], do: igniter, else: generate_types_module(igniter, mod, types)
+  end
+
+  defp generate_types_module(igniter, mod, types) do
     snake = to_snake(mod)
     camel = to_module_name(mod)
-    types = extract_types(rules)
-
-    return = if types == [], do: :skip, else: :ok
-    if return == :skip, do: throw(:skip)
 
     type_defs =
       types
@@ -52,17 +61,16 @@ defmodule Bibbidi.CDDL.Generator do
     """
 
     path = "lib/bibbidi/types/#{snake}.ex"
-    File.mkdir_p!(Path.dirname(path))
-    File.write!(path, content)
-    Mix.shell().info("Generated #{path}")
-  catch
-    :skip -> :ok
+
+    Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
   end
 
-  defp generate_events_module(mod, _rules, local_rules) do
+  defp maybe_generate_events_module(igniter, mod, _rules, local_rules) do
     events = extract_events(mod, local_rules)
-    if events == [], do: throw(:skip)
+    if events == [], do: igniter, else: generate_events_module(igniter, mod, events)
+  end
 
+  defp generate_events_module(igniter, mod, events) do
     snake = to_snake(mod)
     camel = to_module_name(mod)
 
@@ -106,11 +114,8 @@ defmodule Bibbidi.CDDL.Generator do
     """
 
     path = "lib/bibbidi/events/#{snake}.ex"
-    File.mkdir_p!(Path.dirname(path))
-    File.write!(path, content)
-    Mix.shell().info("Generated #{path}")
-  catch
-    :skip -> :ok
+
+    Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
   end
 
   defp extract_types(rules) do
