@@ -59,6 +59,11 @@ defmodule Bibbidi.Connection do
   @doc """
   Executes an `Encodable` command struct and waits for the response.
 
+  Emits telemetry events (see `Bibbidi.Telemetry`):
+  - `[:bibbidi, :command, :start]`
+  - `[:bibbidi, :command, :stop]`
+  - `[:bibbidi, :command, :exception]`
+
   Returns `{:ok, result}` on success or `{:error, reason}` on failure.
   """
   @spec execute(GenServer.server(), Bibbidi.Encodable.t(), keyword()) ::
@@ -66,7 +71,13 @@ defmodule Bibbidi.Connection do
   def execute(conn, command, opts \\ []) do
     method = Bibbidi.Encodable.method(command)
     params = Bibbidi.Encodable.params(command)
-    send_command(conn, method, params, opts)
+
+    metadata = %{command: command, method: method, params: params, connection: conn}
+
+    :telemetry.span([:bibbidi, :command], metadata, fn ->
+      result = send_command(conn, method, params, opts)
+      {result, Map.put(metadata, :result, result)}
+    end)
   end
 
   @doc """
@@ -265,6 +276,12 @@ defmodule Bibbidi.Connection do
   end
 
   defp dispatch_event(state, method, params) do
+    :telemetry.execute(
+      [:bibbidi, :event, :received],
+      %{system_time: System.system_time()},
+      %{event: method, params: params, connection: self()}
+    )
+
     case Map.get(state.subscribers, method) do
       nil -> :ok
       pids -> Enum.each(pids, &send(&1, {:bibbidi_event, method, params}))
