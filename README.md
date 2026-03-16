@@ -6,7 +6,8 @@ Elixir implementation of the [W3C WebDriver BiDi Protocol](https://w3c.github.io
 
 ```
 packages/
-└── bibbidi/       — core hex package (WebDriver BiDi client)
+├── bibbidi/         — core hex package (WebDriver BiDi client)
+└── bibbidi_runic/   — Runic workflow integration package
 ```
 
 ## Setup
