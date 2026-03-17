@@ -167,9 +167,7 @@ defmodule Bibbidi.Browser do
   end
 
   defp find_firefox do
-    Enum.find(@firefox_paths, fn path ->
-      System.find_executable(path) != nil or File.exists?(path)
-    end)
+    Enum.find(@firefox_paths, &System.find_executable/1)
   end
 
   defp random_port do
@@ -187,12 +185,14 @@ defmodule Bibbidi.Browser do
 
   defp kill_tree(pid) do
     # Collect children before killing parent, since dead processes have no children
-    {children_str, 0} = System.cmd("pgrep", ["-P", to_string(pid)], stderr_to_stdout: true)
-
     children =
-      children_str
-      |> String.split("\n", trim: true)
-      |> Enum.map(&String.to_integer/1)
+      case System.cmd("pgrep", ["-P", to_string(pid)], stderr_to_stdout: true) do
+        {children_str, 0} ->
+          children_str |> String.split("\n", trim: true) |> Enum.map(&String.to_integer/1)
+
+        {_, _} ->
+          []
+      end
 
     Enum.each(children, &kill_tree/1)
     System.cmd("kill", ["-KILL", to_string(pid)], stderr_to_stdout: true)

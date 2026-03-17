@@ -242,11 +242,11 @@ defmodule Bibbidi.Commands.BrowsingContextTest do
     end
   end
 
-  describe "set_viewport/4" do
+  describe "set_viewport/2" do
     test "sends browsingContext.setViewport with viewport", %{conn: conn} do
       task =
         Task.async(fn ->
-          BrowsingContext.set_viewport(conn, "ctx-1", %{width: 1280, height: 720})
+          BrowsingContext.set_viewport(conn, context: "ctx-1", viewport: %{width: 1280, height: 720})
         end)
 
       assert_receive {:mock_transport_send, json}
@@ -266,7 +266,7 @@ defmodule Bibbidi.Commands.BrowsingContextTest do
     test "sends nil viewport to reset", %{conn: conn} do
       task =
         Task.async(fn ->
-          BrowsingContext.set_viewport(conn, "ctx-1", nil)
+          BrowsingContext.set_viewport(conn, context: "ctx-1", viewport: nil)
         end)
 
       assert_receive {:mock_transport_send, json}

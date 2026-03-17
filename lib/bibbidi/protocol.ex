@@ -3,6 +3,8 @@ defmodule Bibbidi.Protocol do
   Pure encoding and decoding of WebDriver BiDi protocol messages.
 
   All functions are stateless — no process state involved.
+
+  Uses the Elixir 1.18+ stdlib `JSON` module (not Jason).
   """
 
   @doc """

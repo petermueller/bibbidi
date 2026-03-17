@@ -152,39 +152,20 @@ defmodule Bibbidi.Commands.NetworkTest do
     end
   end
 
-  describe "continue_with_auth/3" do
-    test "sends network.continueWithAuth with credentials", %{conn: conn} do
+  describe "continue_with_auth/2" do
+    test "sends network.continueWithAuth command", %{conn: conn} do
       task =
         Task.async(fn ->
-          Network.continue_with_auth(conn, "req-1", %{
-            action: "provideCredentials",
-            credentials: %{type: "password", username: "user", password: "pass"}
-          })
+          Network.continue_with_auth(conn, "req-1")
         end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)
       assert decoded["method"] == "network.continueWithAuth"
       assert decoded["params"]["request"] == "req-1"
-      assert decoded["params"]["action"] == "provideCredentials"
-      assert decoded["params"]["credentials"]["username"] == "user"
 
       reply(conn, decoded["id"])
       assert {:ok, _} = Task.await(task)
-    end
-
-    test "sends network.continueWithAuth with cancel", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.continue_with_auth(conn, "req-1", %{action: "cancel"})
-        end)
-
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["action"] == "cancel"
-
-      reply(conn, decoded["id"])
-      Task.await(task)
     end
   end
 

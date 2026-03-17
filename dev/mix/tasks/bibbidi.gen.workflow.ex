@@ -91,12 +91,12 @@ defmodule Mix.Tasks.Bibbidi.Gen.Workflow do
       @spec send(t(), atom(), Bibbidi.Encodable.t() | (results() -> term())) :: t()
       def send(%__MODULE__{} = op, name, %{__struct__: _} = command) do
         validate_name!(op, name)
-        %{op | steps: op.steps ++ [{name, {:send, command}}]}
+        %{op | steps: [{name, {:send, command}} | op.steps]}
       end
 
       def send(%__MODULE__{} = op, name, fun) when is_function(fun, 1) do
         validate_name!(op, name)
-        %{op | steps: op.steps ++ [{name, {:send_fn, fun}}]}
+        %{op | steps: [{name, {:send_fn, fun}} | op.steps]}
       end
 
       @doc """
@@ -109,7 +109,7 @@ defmodule Mix.Tasks.Bibbidi.Gen.Workflow do
       @spec run(t(), atom(), (GenServer.server(), results(), keyword() -> term())) :: t()
       def run(%__MODULE__{} = op, name, fun) when is_function(fun, 3) do
         validate_name!(op, name)
-        %{op | steps: op.steps ++ [{name, {:run, fun}}]}
+        %{op | steps: [{name, {:run, fun}} | op.steps]}
       end
 
       @doc """
@@ -121,7 +121,7 @@ defmodule Mix.Tasks.Bibbidi.Gen.Workflow do
       @spec branch(t(), atom(), (results() -> term())) :: t()
       def branch(%__MODULE__{} = op, name, fun) when is_function(fun, 1) do
         validate_name!(op, name)
-        %{op | steps: op.steps ++ [{name, {:branch_fn, fun}}]}
+        %{op | steps: [{name, {:branch_fn, fun}} | op.steps]}
       end
 
       defp validate_name!(%__MODULE__{steps: steps}, name) do
@@ -212,7 +212,7 @@ defmodule Mix.Tasks.Bibbidi.Gen.Workflow do
           started_at: System.monotonic_time(:millisecond)
         }
 
-        run_pipeline(conn, op.steps, %{}, operation, opts)
+        run_pipeline(conn, Enum.reverse(op.steps), %{}, operation, opts)
       end
 
       defp run_pipeline(_conn, [], results, operation, _opts) do
@@ -292,15 +292,15 @@ defmodule Mix.Tasks.Bibbidi.Gen.Workflow do
       end
 
       defp record_step(operation, step) do
-        %{operation | steps: operation.steps ++ [step]}
+        %{operation | steps: [step | operation.steps]}
       end
 
       defp finalize(operation, results) do
-        %{operation | status: :completed, results: results, ended_at: now()}
+        %{operation | status: :completed, results: results, steps: Enum.reverse(operation.steps), ended_at: now()}
       end
 
       defp finalize_failed(operation, results, name, reason) do
-        %{operation | status: :failed, results: results, error: {name, reason}, ended_at: now()}
+        %{operation | status: :failed, results: results, steps: Enum.reverse(operation.steps), error: {name, reason}, ended_at: now()}
       end
 
       defp now, do: System.monotonic_time(:millisecond)

@@ -21,7 +21,7 @@ defmodule Bibbidi.Commands.SessionTest do
 
   describe "new/2" do
     test "sends session.new command with default capabilities", %{conn: conn} do
-      task = Task.async(fn -> Session.new(conn) end)
+      task = Task.async(fn -> Session.new(conn, %{}) end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)
@@ -45,9 +45,9 @@ defmodule Bibbidi.Commands.SessionTest do
     end
   end
 
-  describe "end_session/1" do
+  describe "session_end/1" do
     test "sends session.end command", %{conn: conn} do
-      task = Task.async(fn -> Session.end_session(conn) end)
+      task = Task.async(fn -> Session.session_end(conn) end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)
@@ -104,7 +104,7 @@ defmodule Bibbidi.Commands.SessionTest do
 
   describe "unsubscribe/3" do
     test "sends session.unsubscribe command", %{conn: conn} do
-      task = Task.async(fn -> Session.unsubscribe(conn, ["browsingContext.load"]) end)
+      task = Task.async(fn -> Session.unsubscribe(conn, events: ["browsingContext.load"]) end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)

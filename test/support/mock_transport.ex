@@ -27,6 +27,12 @@ defmodule Bibbidi.MockTransport do
   def handle_in(_state, _message), do: :unknown
 
   @impl true
+  def send_pong(state) do
+    send(state.owner, :mock_transport_pong)
+    {:ok, state}
+  end
+
+  @impl true
   def close(state) do
     send(state.owner, :mock_transport_closed)
     {:ok, state}

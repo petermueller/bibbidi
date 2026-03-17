@@ -64,43 +64,42 @@ defmodule Bibbidi.Commands.EmulationTest do
     end
   end
 
-  describe "set_geolocation_override/3" do
-    test "sends coordinates", %{conn: conn} do
-      coords = %{latitude: 37.7749, longitude: -122.4194}
-
+  describe "set_geolocation_override/2" do
+    test "sends command with no options", %{conn: conn} do
       task =
-        Task.async(fn -> Emulation.set_geolocation_override(conn, coords) end)
+        Task.async(fn -> Emulation.set_geolocation_override(conn) end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)
       assert decoded["method"] == "emulation.setGeolocationOverride"
-      assert decoded["params"]["coordinates"]["latitude"] == 37.7749
-      assert decoded["params"]["coordinates"]["longitude"] == -122.4194
 
       reply(conn, decoded["id"])
       assert {:ok, _} = Task.await(task)
     end
 
-    test "sends null to reset", %{conn: conn} do
-      task = Task.async(fn -> Emulation.set_geolocation_override(conn, nil) end)
+    test "includes contexts option", %{conn: conn} do
+      task =
+        Task.async(fn ->
+          Emulation.set_geolocation_override(conn, contexts: ["ctx-1"])
+        end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)
-      assert decoded["params"]["coordinates"] == nil
+      assert decoded["params"]["contexts"] == ["ctx-1"]
 
       reply(conn, decoded["id"])
       Task.await(task)
     end
 
-    test "sends error for position unavailable", %{conn: conn} do
+    test "includes user_contexts option", %{conn: conn} do
       task =
         Task.async(fn ->
-          Emulation.set_geolocation_override(conn, %{type: "positionUnavailable"})
+          Emulation.set_geolocation_override(conn, user_contexts: ["user-ctx-1"])
         end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)
-      assert decoded["params"]["error"]["type"] == "positionUnavailable"
+      assert decoded["params"]["userContexts"] == ["user-ctx-1"]
 
       reply(conn, decoded["id"])
       Task.await(task)

@@ -53,6 +53,20 @@ defmodule Bibbidi.Transport.MintWS do
   end
 
   @impl true
+  def send_pong(%__MODULE__{} = state) do
+    case Mint.WebSocket.encode(state.websocket, {:pong, ""}) do
+      {:ok, websocket, data} ->
+        case Mint.WebSocket.stream_request_body(state.conn, state.ref, data) do
+          {:ok, conn} -> {:ok, %{state | conn: conn, websocket: websocket}}
+          {:error, conn, reason} -> {:error, %{state | conn: conn}, reason}
+        end
+
+      {:error, websocket, reason} ->
+        {:error, %{state | websocket: websocket}, reason}
+    end
+  end
+
+  @impl true
   def close(%__MODULE__{} = state) do
     case Mint.WebSocket.encode(state.websocket, :close) do
       {:ok, websocket, data} ->

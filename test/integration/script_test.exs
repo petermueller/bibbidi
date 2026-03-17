@@ -5,14 +5,14 @@ defmodule Bibbidi.Integration.ScriptTest do
 
   describe "function API" do
     test "evaluate a simple expression", %{conn: conn, context: context} do
-      {:ok, result} = Script.evaluate(conn, "1 + 1", %{context: context})
+      {:ok, result} = Script.evaluate(conn, "1 + 1", %{context: context}, true)
       assert result["result"]["type"] == "number"
       assert result["result"]["value"] == 2
     end
 
     test "call a function", %{conn: conn, context: context} do
       {:ok, result} =
-        Script.call_function(conn, "function(a, b) { return a + b; }", %{context: context},
+        Script.call_function(conn, "function(a, b) { return a + b; }", true, %{context: context},
           arguments: [%{type: "number", value: 3}, %{type: "number", value: 4}]
         )
 

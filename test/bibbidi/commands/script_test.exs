@@ -19,9 +19,9 @@ defmodule Bibbidi.Commands.ScriptTest do
     send(conn, {:mock_transport_receive, [{:text, JSON.encode!(%{id: id, result: result})}]})
   end
 
-  describe "evaluate/4" do
+  describe "evaluate/5" do
     test "sends script.evaluate command", %{conn: conn} do
-      task = Task.async(fn -> Script.evaluate(conn, "1 + 1", %{context: "ctx-1"}) end)
+      task = Task.async(fn -> Script.evaluate(conn, "1 + 1", %{context: "ctx-1"}, true) end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)
@@ -34,10 +34,10 @@ defmodule Bibbidi.Commands.ScriptTest do
       assert {:ok, %{"type" => "number", "value" => 2}} = Task.await(task)
     end
 
-    test "respects await_promise option", %{conn: conn} do
+    test "respects await_promise argument", %{conn: conn} do
       task =
         Task.async(fn ->
-          Script.evaluate(conn, "fetch('/api')", %{context: "ctx-1"}, await_promise: false)
+          Script.evaluate(conn, "fetch('/api')", %{context: "ctx-1"}, false)
         end)
 
       assert_receive {:mock_transport_send, json}
@@ -49,11 +49,11 @@ defmodule Bibbidi.Commands.ScriptTest do
     end
   end
 
-  describe "call_function/4" do
+  describe "call_function/5" do
     test "sends script.callFunction command", %{conn: conn} do
       task =
         Task.async(fn ->
-          Script.call_function(conn, "function(a, b) { return a + b; }", %{context: "ctx-1"},
+          Script.call_function(conn, "function(a, b) { return a + b; }", true, %{context: "ctx-1"},
             arguments: [%{type: "number", value: 1}, %{type: "number", value: 2}]
           )
         end)

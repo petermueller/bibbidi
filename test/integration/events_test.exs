@@ -11,7 +11,7 @@ defmodule Bibbidi.Integration.EventsTest do
       :ok = Connection.subscribe(conn, "log.entryAdded")
 
       {:ok, _} =
-        Script.evaluate(conn, ~s[console.log("hello from test")], %{context: context})
+        Script.evaluate(conn, ~s[console.log("hello from test")], %{context: context}, true)
 
       assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
       assert params["type"] == "console"
@@ -24,7 +24,7 @@ defmodule Bibbidi.Integration.EventsTest do
 
       # Verify events arrive first
       {:ok, _} =
-        Script.evaluate(conn, ~s[console.log("before unsub")], %{context: context})
+        Script.evaluate(conn, ~s[console.log("before unsub")], %{context: context}, true)
 
       assert_receive {:bibbidi_event, "log.entryAdded", _}, 5_000
 
@@ -33,7 +33,7 @@ defmodule Bibbidi.Integration.EventsTest do
       :ok = Connection.unsubscribe(conn, "log.entryAdded")
 
       {:ok, _} =
-        Script.evaluate(conn, ~s[console.log("after unsub")], %{context: context})
+        Script.evaluate(conn, ~s[console.log("after unsub")], %{context: context}, true)
 
       refute_receive {:bibbidi_event, "log.entryAdded", _}, 1_000
     end

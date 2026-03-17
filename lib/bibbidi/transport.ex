@@ -3,8 +3,7 @@ defmodule Bibbidi.Transport do
   Behaviour for WebSocket transports.
 
   Messages from the remote end arrive as Erlang messages to the owning process.
-  Implementations must send frames as `{:bibbidi_transport, messages}` where
-  `messages` is a list of `{:text, binary()}` frames.
+  Implementations handle these in `c:handle_in/2`, returning decoded frames.
   """
 
   @type state :: term()
@@ -18,6 +17,11 @@ defmodule Bibbidi.Transport do
   Sends a text message over the WebSocket.
   """
   @callback send_message(state, message :: binary()) :: {:ok, state} | {:error, state, term()}
+
+  @doc """
+  Sends a pong frame in response to a ping.
+  """
+  @callback send_pong(state) :: {:ok, state} | {:error, state, term()}
 
   @doc """
   Handles an incoming Erlang message that may contain WebSocket data.

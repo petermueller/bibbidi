@@ -64,7 +64,7 @@ defmodule Bibbidi.Integration.NetworkTest do
 
       # Verify the page content was replaced
       {:ok, result} =
-        Script.evaluate(conn, "document.body.innerText", %{context: context})
+        Script.evaluate(conn, "document.body.innerText", %{context: context}, true)
 
       assert result["result"]["value"] =~ "Mocked"
 

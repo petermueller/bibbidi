@@ -9,7 +9,7 @@ defmodule Bibbidi.Integration.ConnectionTest do
       tasks =
         for i <- 1..3 do
           Task.async(fn ->
-            Script.evaluate(conn, "#{i} * 10", %{context: context})
+            Script.evaluate(conn, "#{i} * 10", %{context: context}, true)
           end)
         end
 
@@ -24,7 +24,7 @@ defmodule Bibbidi.Integration.ConnectionTest do
     end
 
     test "error response for invalid context", %{conn: conn} do
-      result = Script.evaluate(conn, "1 + 1", %{context: "invalid-context-id"})
+      result = Script.evaluate(conn, "1 + 1", %{context: "invalid-context-id"}, true)
 
       assert {:error, %{error: error, message: message}} = result
       assert is_binary(error)

@@ -103,45 +103,20 @@ defmodule Bibbidi.Commands.BrowserTest do
     end
   end
 
-  describe "set_client_window_state/3" do
+  describe "set_client_window_state/2" do
     test "sends browser.setClientWindowState command", %{conn: conn} do
       task =
         Task.async(fn ->
-          Browser.set_client_window_state(conn, "window-1", %{state: "maximized"})
+          Browser.set_client_window_state(conn, "window-1")
         end)
 
       assert_receive {:mock_transport_send, json}
       decoded = JSON.decode!(json)
       assert decoded["method"] == "browser.setClientWindowState"
       assert decoded["params"]["clientWindow"] == "window-1"
-      assert decoded["params"]["state"] == "maximized"
 
       reply(conn, decoded["id"], %{clientWindow: "window-1", state: "maximized"})
       assert {:ok, _} = Task.await(task)
-    end
-
-    test "sends normal state with rect", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Browser.set_client_window_state(conn, "window-1", %{
-            state: "normal",
-            width: 800,
-            height: 600,
-            x: 100,
-            y: 50
-          })
-        end)
-
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["state"] == "normal"
-      assert decoded["params"]["width"] == 800
-      assert decoded["params"]["height"] == 600
-      assert decoded["params"]["x"] == 100
-      assert decoded["params"]["y"] == 50
-
-      reply(conn, decoded["id"])
-      Task.await(task)
     end
   end
 

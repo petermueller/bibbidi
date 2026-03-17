@@ -27,6 +27,7 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
   use Mix.Task
 
   alias Bibbidi.CDDL.Parser
+  alias Bibbidi.CDDL.Utils
 
   @impl Mix.Task
   def run(argv) do
@@ -138,7 +139,7 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
     commands =
       remote_rules
       |> Enum.filter(fn {name, def} ->
-        String.starts_with?(name, mod <> ".") and is_command_def?(def)
+        String.starts_with?(name, mod <> ".") and Utils.command_def?(def)
       end)
       |> Enum.sort_by(&elem(&1, 0))
 
@@ -175,19 +176,6 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
       Mix.shell().info("")
     end
   end
-
-  defp is_command_def?({:group, members}) do
-    Enum.any?(members, fn
-      {:required, "method", {:string, _}} -> true
-      _ -> false
-    end) and
-      Enum.any?(members, fn
-        {:required, "params", _} -> true
-        _ -> false
-      end)
-  end
-
-  defp is_command_def?(_), do: false
 
   defp rule_kind({:group, _}), do: "group"
   defp rule_kind({:map, _}), do: "map"

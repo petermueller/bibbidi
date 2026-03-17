@@ -47,7 +47,7 @@ defmodule Bibbidi.Session do
   """
   @spec new(GenServer.server(), map()) :: {:ok, map()} | {:error, term()}
   def new(conn, capabilities \\ %{}) do
-    Connection.execute(conn, %Bibbidi.Commands.Session.New{capabilities: capabilities})
+    Bibbidi.Commands.Session.new(conn, capabilities)
   end
 
   @doc """
@@ -55,7 +55,7 @@ defmodule Bibbidi.Session do
   """
   @spec end_session(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def end_session(conn) do
-    Connection.execute(conn, %Bibbidi.Commands.Session.End{})
+    Bibbidi.Commands.Session.session_end(conn)
   end
 
   @doc """
@@ -63,7 +63,7 @@ defmodule Bibbidi.Session do
   """
   @spec status(GenServer.server()) :: {:ok, map()} | {:error, term()}
   def status(conn) do
-    Connection.execute(conn, %Bibbidi.Commands.Session.Status{})
+    Bibbidi.Commands.Session.status(conn)
   end
 
   @doc """
@@ -74,26 +74,19 @@ defmodule Bibbidi.Session do
   """
   @spec subscribe(GenServer.server(), [String.t()], keyword()) :: {:ok, map()} | {:error, term()}
   def subscribe(conn, events, opts \\ []) do
-    Connection.execute(conn, %Bibbidi.Commands.Session.Subscribe{
-      events: events,
-      contexts: opts[:contexts]
-    })
+    Bibbidi.Commands.Session.subscribe(conn, events, opts)
   end
 
   @doc """
   Unsubscribes from BiDi events on the server side.
+
+  ## Options
+
+  - `:subscriptions` - List of subscription IDs to unsubscribe (alternative to events).
   """
   @spec unsubscribe(GenServer.server(), [String.t()], keyword()) ::
           {:ok, map()} | {:error, term()}
   def unsubscribe(conn, events, opts \\ []) do
-    params = %{events: events}
-
-    params =
-      case opts[:contexts] do
-        nil -> params
-        contexts -> Map.put(params, :contexts, contexts)
-      end
-
-    Connection.send_command(conn, "session.unsubscribe", params)
+    Bibbidi.Commands.Session.unsubscribe(conn, events: events, subscriptions: opts[:subscriptions])
   end
 end

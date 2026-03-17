@@ -82,6 +82,69 @@ defmodule Bibbidi.ConnectionTest do
     end
   end
 
+  describe "ping handling" do
+    test "responds with pong when a ping frame is received", %{conn: conn} do
+      send(conn, {:mock_transport_receive, [:ping]})
+      assert_receive :mock_transport_pong
+    end
+  end
+
+  describe "monitor dedup" do
+    test "subscribing same pid to multiple events does not leak monitors", %{conn: conn} do
+      :ok = Connection.subscribe(conn, "browsingContext.load")
+      :ok = Connection.subscribe(conn, "browsingContext.domContentLoaded")
+
+      # Both events should be dispatched
+      event1 =
+        JSON.encode!(%{method: "browsingContext.load", params: %{context: "ctx-1"}})
+
+      event2 =
+        JSON.encode!(%{
+          method: "browsingContext.domContentLoaded",
+          params: %{context: "ctx-1"}
+        })
+
+      send(conn, {:mock_transport_receive, [{:text, event1}]})
+      assert_receive {:bibbidi_event, "browsingContext.load", _}
+
+      send(conn, {:mock_transport_receive, [{:text, event2}]})
+      assert_receive {:bibbidi_event, "browsingContext.domContentLoaded", _}
+    end
+
+    test "subscriber DOWN cleans up all method subscriptions", %{conn: conn} do
+      subscriber = spawn(fn -> Process.sleep(:infinity) end)
+
+      :ok = Connection.subscribe(conn, "browsingContext.load", subscriber)
+      :ok = Connection.subscribe(conn, "script.message", subscriber)
+
+      Process.exit(subscriber, :kill)
+      # Give connection time to process the DOWN message
+      Process.sleep(50)
+
+      event =
+        JSON.encode!(%{method: "browsingContext.load", params: %{context: "ctx-1"}})
+
+      send(conn, {:mock_transport_receive, [{:text, event}]})
+      refute_receive {:bibbidi_event, _, _}, 100
+    end
+  end
+
+  describe "remote close" do
+    test "replies error to pending commands when remote closes", %{conn: conn} do
+      task =
+        Task.async(fn ->
+          Connection.send_command(conn, "session.status", %{})
+        end)
+
+      assert_receive {:mock_transport_send, _json}
+
+      # Simulate remote close
+      send(conn, {:mock_transport_receive, [{:close, 1000, "normal"}]})
+
+      assert {:error, :connection_closed} = Task.await(task)
+    end
+  end
+
   describe "close/1" do
     test "closes the transport", %{conn: conn} do
       ref = Process.monitor(conn)

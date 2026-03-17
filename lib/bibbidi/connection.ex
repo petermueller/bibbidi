@@ -24,7 +24,8 @@ defmodule Bibbidi.Connection do
     :url,
     command_id: 0,
     pending: %{},
-    subscribers: %{}
+    subscribers: %{},
+    monitored: MapSet.new()
   ]
 
   @type option ::
@@ -44,11 +45,7 @@ defmodule Bibbidi.Connection do
     GenServer.start_link(__MODULE__, conn_opts, gen_opts)
   end
 
-  @doc """
-  Sends a command and waits for the response.
-
-  Returns `{:ok, result}` on success or `{:error, reason}` on failure.
-  """
+  @doc false
   @spec send_command(GenServer.server(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def send_command(conn, method, params \\ %{}, opts \\ []) do
@@ -158,9 +155,16 @@ defmodule Bibbidi.Connection do
   end
 
   def handle_call({:subscribe, method, pid}, _from, state) do
-    Process.monitor(pid)
+    monitored =
+      if MapSet.member?(state.monitored, pid) do
+        state.monitored
+      else
+        Process.monitor(pid)
+        MapSet.put(state.monitored, pid)
+      end
+
     subs = Map.update(state.subscribers, method, MapSet.new([pid]), &MapSet.put(&1, pid))
-    {:reply, :ok, %{state | subscribers: subs}}
+    {:reply, :ok, %{state | subscribers: subs, monitored: monitored}}
   end
 
   def handle_call({:unsubscribe, method, pid}, _from, state) do
@@ -198,7 +202,7 @@ defmodule Bibbidi.Connection do
       |> Enum.reject(fn {_method, set} -> MapSet.size(set) == 0 end)
       |> Map.new()
 
-    {:noreply, %{state | subscribers: subs}}
+    {:noreply, %{state | subscribers: subs, monitored: MapSet.delete(state.monitored, pid)}}
   end
 
   def handle_info(message, state) do
@@ -252,8 +256,7 @@ defmodule Bibbidi.Connection do
   end
 
   defp process_frames(state, [:ping | rest]) do
-    # Respond to pings with pongs
-    case state.transport_mod.send_message(state.transport_state, "") do
+    case state.transport_mod.send_pong(state.transport_state) do
       {:ok, transport_state} ->
         process_frames(%{state | transport_state: transport_state}, rest)
 
