@@ -65,6 +65,30 @@ test/integration/              — Integration tests (tagged :integration)
 Run `mix bibbidi.download_spec` to download/update the CDDL files from the W3C spec.
 The `remote.cddl` defines message formats the client sends; `local.cddl` defines what the client receives.
 
+### Debugging the CDDL parser and code generator
+
+Use `mix bibbidi.cddl.inspect` to introspect parsed CDDL rules **instead of** writing ad-hoc `mix run -e` scripts:
+
+```
+# List all parsed rule names
+mix bibbidi.cddl.inspect
+
+# Show the parsed AST for a specific rule
+mix bibbidi.cddl.inspect session.UnsubscribeParameters
+
+# Search rules by substring
+mix bibbidi.cddl.inspect --search unsubscribe
+
+# Show what fields the generator resolves for a params type
+mix bibbidi.cddl.inspect --fields session.UnsubscribeParameters
+
+# Show all commands the generator extracts for a BiDi module
+mix bibbidi.cddl.inspect --commands session
+
+# Limit to a specific spec file
+mix bibbidi.cddl.inspect --file remote
+```
+
 ---
 
 <!-- usage-rules-start -->
