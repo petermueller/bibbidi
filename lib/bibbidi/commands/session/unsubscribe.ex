@@ -4,11 +4,21 @@ defmodule Bibbidi.Commands.Session.Unsubscribe do
   Command struct for `session.unsubscribe`.
   """
 
-  defstruct []
+  defstruct [:events, :subscriptions]
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "session.unsubscribe"
 
-    def params(_cmd), do: %{}
+    def params(cmd) do
+      optional = [
+        {:events, cmd.events},
+        {:subscriptions, cmd.subscriptions}
+      ]
+
+      Enum.reduce(optional, %{}, fn
+        {_key, nil}, acc -> acc
+        {key, value}, acc -> Map.put(acc, key, value)
+      end)
+    end
   end
 end

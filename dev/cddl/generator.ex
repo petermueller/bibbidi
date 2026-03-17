@@ -233,10 +233,15 @@ defmodule Bibbidi.CDDL.Generator do
     Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
   end
 
-  defp resolve_command_fields(nil, _all_rules), do: []
-  defp resolve_command_fields("EmptyParams", _all_rules), do: []
+  @doc """
+  Resolves a CDDL params reference into a list of `{json_key, elixir_key, :required | :optional}` tuples.
 
-  defp resolve_command_fields(ref, all_rules) do
+  Used by the code generator and by `mix bibbidi.cddl.inspect --fields`.
+  """
+  def resolve_command_fields(nil, _all_rules), do: []
+  def resolve_command_fields("EmptyParams", _all_rules), do: []
+
+  def resolve_command_fields(ref, all_rules) do
     case List.keyfind(all_rules, ref, 0) do
       {^ref, {:map, content}} ->
         extract_field_defs_from_map(content)
