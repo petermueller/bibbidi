@@ -19,7 +19,7 @@ needs to talk BiDi to a browser.
 ```elixir
 def deps do
   [
-    {:bibbidi, "~> 0.1.0"}
+    {:bibbidi, "~> 0.2.0"}
   ]
 end
 ```
