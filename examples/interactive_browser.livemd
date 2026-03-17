@@ -1,8 +1,15 @@
 # Interactive Browser with Bibbidi
 
 ```elixir
+bibbidi_dep =
+  if path = System.get_env("LB_BBD_PATH") do
+    {:bibbidi, path: path}
+  else
+    {:bibbidi, "~> 0.1.0"}
+  end
+
 Mix.install([
-  {:bibbidi, "~> 0.1.0"},
+  bibbidi_dep,
   {:kino, "~> 0.14"}
 ])
 ```
@@ -14,8 +21,17 @@ defmodule UI do
   @behaviour Kino.Screen
   import Kino.{Control, Input, Screen}
 
-  alias Bibbidi.Commands.BrowsingContext
-  alias Bibbidi.Commands.Script
+  alias Bibbidi.Connection
+  alias Bibbidi.Commands.BrowsingContext.{
+    CaptureScreenshot,
+    GetTree,
+    Navigate,
+    Reload,
+    SetViewport,
+    TraverseHistory
+  }
+  alias Bibbidi.Commands.Script.{AddPreloadScript, Evaluate}
+  alias Bibbidi.Commands.Session.Subscribe
 
   @viewports %{
     desktop: {1280, 800},
@@ -143,11 +159,11 @@ defmodule UI do
 
   defp handle_start(_, state) do
     {:ok, browser} = Bibbidi.Browser.start_link(headless: false)
-    {:ok, conn} = Bibbidi.Connection.start_link(browser: browser)
+    {:ok, conn} = Connection.start_link(browser: browser)
     {:ok, _caps} = Bibbidi.Session.new(conn)
-    {:ok, %{"contexts" => [%{"context" => context} | _]}} = BrowsingContext.get_tree(conn)
+    {:ok, %{"contexts" => [%{"context" => context} | _]}} = Connection.execute(conn, %GetTree{})
 
-    BrowsingContext.set_viewport(conn, context, %{width: 1280, height: 800})
+    Connection.execute(conn, %SetViewport{context: context, viewport: %{width: 1280, height: 800}})
     install_observers(conn)
     log_listener = start_log_listener(conn, state.log_frame)
 
@@ -169,7 +185,7 @@ defmodule UI do
 
   defp handle_stop(_, state) do
     if state.log_listener, do: Process.exit(state.log_listener, :kill)
-    Bibbidi.Connection.close(state.conn)
+    Connection.close(state.conn)
     Bibbidi.Browser.stop(state.browser)
     Kino.Frame.clear(state.screenshot_frame)
     Kino.Frame.clear(state.log_frame)
@@ -190,7 +206,7 @@ defmodule UI do
   # -- Navigation --------------------------------------------------------------
 
   defp handle_navigate(%{data: %{url: url}}, state) do
-    case BrowsingContext.navigate(state.conn, state.context, url, wait: "complete") do
+    case Connection.execute(state.conn, %Navigate{context: state.context, url: url, wait: "complete"}) do
       {:ok, _} ->
         refresh_page(state, "Navigated to `#{url}`")
 
@@ -200,7 +216,7 @@ defmodule UI do
   end
 
   defp handle_back(_, state) do
-    case BrowsingContext.traverse_history(state.conn, state.context, -1) do
+    case Connection.execute(state.conn, %TraverseHistory{context: state.context, delta: -1}) do
       {:ok, _} ->
         Process.sleep(500)
         refresh_page(state, "Went back")
@@ -211,7 +227,7 @@ defmodule UI do
   end
 
   defp handle_forward(_, state) do
-    case BrowsingContext.traverse_history(state.conn, state.context, 1) do
+    case Connection.execute(state.conn, %TraverseHistory{context: state.context, delta: 1}) do
       {:ok, _} ->
         Process.sleep(500)
         refresh_page(state, "Went forward")
@@ -222,7 +238,7 @@ defmodule UI do
   end
 
   defp handle_reload(_, state) do
-    case BrowsingContext.reload(state.conn, state.context, wait: "complete") do
+    case Connection.execute(state.conn, %Reload{context: state.context, wait: "complete"}) do
       {:ok, _} -> refresh_page(state, "Page reloaded")
       {:error, err} -> %{state | status: "**Error:** `#{inspect(err)}`"}
     end
@@ -240,7 +256,12 @@ defmodule UI do
     })()
     """
 
-    case Script.evaluate(state.conn, js, %{context: state.context}, user_activation: true) do
+    case Connection.execute(state.conn, %Evaluate{
+      expression: js,
+      target: %{context: state.context},
+      await_promise: false,
+      user_activation: true
+    }) do
       {:ok, %{"result" => %{"value" => true}}} ->
         Process.sleep(1000)
         refresh_page(state, "Clicked **\"#{click_text}\"**")
@@ -256,14 +277,21 @@ defmodule UI do
   defp handle_viewport(%{data: %{size: size}}, state) do
     {w, h} = Map.fetch!(@viewports, size)
 
-    case BrowsingContext.set_viewport(state.conn, state.context, %{width: w, height: h}) do
+    case Connection.execute(state.conn, %SetViewport{
+      context: state.context,
+      viewport: %{width: w, height: h}
+    }) do
       {:ok, _} -> %{state | viewport: size, status: "Viewport set to #{w}x#{h}"}
       {:error, err} -> %{state | status: "**Error:** `#{inspect(err)}`"}
     end
   end
 
   defp handle_js(%{data: %{expression: expression}}, state) do
-    case Script.evaluate(state.conn, expression, %{context: state.context}) do
+    case Connection.execute(state.conn, %Evaluate{
+      expression: expression,
+      target: %{context: state.context},
+      await_promise: false
+    }) do
       {:ok, %{"result" => result}} ->
         %{state | js_result: "`-> #{format_js_result(result)}`"}
 
@@ -280,7 +308,7 @@ defmodule UI do
   end
 
   defp handle_screenshot(_, state) do
-    case BrowsingContext.capture_screenshot(state.conn, state.context) do
+    case Connection.execute(state.conn, %CaptureScreenshot{context: state.context}) do
       {:ok, %{"data" => base64_data}} ->
         image = Kino.Image.new(Base.decode64!(base64_data), :png)
         Kino.Frame.append(state.screenshot_frame, image)
@@ -302,7 +330,11 @@ defmodule UI do
   defp get_page_info(conn, context) do
     js = "JSON.stringify({url: location.href, title: document.title})"
 
-    case Script.evaluate(conn, js, %{context: context}) do
+    case Connection.execute(conn, %Evaluate{
+      expression: js,
+      target: %{context: context},
+      await_promise: false
+    }) do
       {:ok, %{"result" => %{"type" => "string", "value" => json}}} ->
         info = JSON.decode!(json)
         {info["url"], info["title"]}
@@ -323,7 +355,11 @@ defmodule UI do
     )
     """
 
-    case Script.evaluate(conn, js, %{context: context}) do
+    case Connection.execute(conn, %Evaluate{
+      expression: js,
+      target: %{context: context},
+      await_promise: false
+    }) do
       {:ok, %{"result" => %{"type" => "string", "value" => json}}} ->
         json
         |> JSON.decode!()
@@ -346,29 +382,31 @@ defmodule UI do
   # -- Observers ---------------------------------------------------------------
 
   defp install_observers(conn) do
-    Script.add_preload_script(conn, """
-    () => {
-      document.addEventListener('click', (e) => {
-        const tag = e.target.tagName.toLowerCase();
-        const text = (e.target.textContent || '').trim().substring(0, 40);
-        console.log('[click] <' + tag + '> ' + text);
-      }, true);
+    Connection.execute(conn, %AddPreloadScript{
+      function_declaration: """
+      () => {
+        document.addEventListener('click', (e) => {
+          const tag = e.target.tagName.toLowerCase();
+          const text = (e.target.textContent || '').trim().substring(0, 40);
+          console.log('[click] <' + tag + '> ' + text);
+        }, true);
 
-      const attach = () => {
-        new MutationObserver((mutations) => {
-          const added = mutations.reduce((n, m) => n + m.addedNodes.length, 0);
-          const removed = mutations.reduce((n, m) => n + m.removedNodes.length, 0);
-          if (added || removed) console.log('[dom] +' + added + ' -' + removed + ' nodes');
-        }).observe(document.documentElement, { childList: true, subtree: true });
-      };
+        const attach = () => {
+          new MutationObserver((mutations) => {
+            const added = mutations.reduce((n, m) => n + m.addedNodes.length, 0);
+            const removed = mutations.reduce((n, m) => n + m.removedNodes.length, 0);
+            if (added || removed) console.log('[dom] +' + added + ' -' + removed + ' nodes');
+          }).observe(document.documentElement, { childList: true, subtree: true });
+        };
 
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', attach);
-      } else {
-        attach();
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', attach);
+        } else {
+          attach();
+        }
       }
-    }
-    """)
+      """
+    })
   end
 
   # -- Console log listener ----------------------------------------------------
@@ -384,10 +422,10 @@ defmodule UI do
   ]
 
   defp start_log_listener(conn, log_frame) do
-    Bibbidi.Session.subscribe(conn, @log_events)
+    Connection.execute(conn, %Subscribe{events: @log_events})
 
     spawn(fn ->
-      for event <- @log_events, do: Bibbidi.Connection.subscribe(conn, event)
+      for event <- @log_events, do: Connection.subscribe(conn, event)
       log_loop(log_frame)
     end)
   end
