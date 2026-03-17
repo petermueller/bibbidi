@@ -34,6 +34,61 @@ firefox --headless --remote-debugging-port=9222
 
 Then in IEx:
 
+<!-- tabs-open -->
+
+### Struct API
+
+```elixir
+alias Bibbidi.Connection
+alias Bibbidi.Commands.BrowsingContext.{GetTree, Navigate, CaptureScreenshot}
+alias Bibbidi.Commands.Script.{Evaluate, CallFunction}
+alias Bibbidi.Commands.Session.Subscribe
+
+# Connect to the BiDi WebSocket endpoint
+{:ok, conn} = Connection.start_link(url: "ws://localhost:9222/session")
+
+# Start a session
+{:ok, _caps} = Bibbidi.Session.new(conn)
+
+# Get the browsing context tree
+{:ok, tree} = Connection.execute(conn, %GetTree{})
+context = hd(tree["contexts"])["context"]
+
+# Navigate to a page
+{:ok, _nav} = Connection.execute(conn, %Navigate{
+  context: context,
+  url: "https://example.com",
+  wait: "complete"
+})
+
+# Evaluate JavaScript
+{:ok, result} = Connection.execute(conn, %Evaluate{
+  expression: "document.title",
+  target: %{context: context},
+  await_promise: false
+})
+IO.inspect(result)
+# => %{"type" => "success", "result" => %{"type" => "string", "value" => "Example Domain"}, ...}
+
+# Call a function with arguments
+{:ok, result} = Connection.execute(conn, %CallFunction{
+  function_declaration: "function(a, b) { return a + b; }",
+  target: %{context: context},
+  await_promise: false,
+  arguments: [%{type: "number", value: 3}, %{type: "number", value: 4}]
+})
+
+# Take a screenshot (returns base64-encoded PNG)
+{:ok, screenshot} = Connection.execute(conn, %CaptureScreenshot{context: context})
+File.write!("screenshot.png", Base.decode64!(screenshot["data"]))
+
+# End the session
+{:ok, _} = Bibbidi.Session.end_session(conn)
+Connection.close(conn)
+```
+
+### Function API
+
 ```elixir
 # Connect to the BiDi WebSocket endpoint
 {:ok, conn} = Bibbidi.Connection.start_link(url: "ws://localhost:9222/session")
@@ -75,9 +130,63 @@ File.write!("screenshot.png", Base.decode64!(screenshot["data"]))
 Bibbidi.Connection.close(conn)
 ```
 
+<!-- tabs-close -->
+
 ## Example Module
 
 A copy-pasteable module showing common patterns:
+
+<!-- tabs-open -->
+
+### Struct API
+
+```elixir
+defmodule MyApp.Browser do
+  alias Bibbidi.{Connection, Session}
+  alias Bibbidi.Commands.BrowsingContext.{GetTree, Navigate}
+  alias Bibbidi.Commands.Script.Evaluate
+
+  def run do
+    {:ok, conn} = Connection.start_link(url: "ws://localhost:9222/session")
+    {:ok, _caps} = Session.new(conn)
+
+    try do
+      {:ok, tree} = Connection.execute(conn, %GetTree{})
+      context = hd(tree["contexts"])["context"]
+
+      # Navigate and wait for full page load
+      {:ok, _} = Connection.execute(conn, %Navigate{
+        context: context,
+        url: "https://example.com",
+        wait: "complete"
+      })
+
+      # Extract page title
+      {:ok, %{"result" => %{"value" => title}}} =
+        Connection.execute(conn, %Evaluate{
+          expression: "document.title",
+          target: %{context: context},
+          await_promise: false
+        })
+
+      # Extract all links
+      {:ok, %{"result" => %{"value" => links}}} =
+        Connection.execute(conn, %Evaluate{
+          expression: ~s|Array.from(document.querySelectorAll("a"), a => a.href)|,
+          target: %{context: context},
+          await_promise: false
+        })
+
+      %{title: title, links: links}
+    after
+      Session.end_session(conn)
+      Connection.close(conn)
+    end
+  end
+end
+```
+
+### Function API
 
 ```elixir
 defmodule MyApp.Browser do
@@ -116,7 +225,44 @@ defmodule MyApp.Browser do
 end
 ```
 
+<!-- tabs-close -->
+
 ## Listening for Events
+
+<!-- tabs-open -->
+
+### Struct API
+
+```elixir
+alias Bibbidi.Connection
+alias Bibbidi.Commands.BrowsingContext.{GetTree, Navigate}
+alias Bibbidi.Commands.Session.Subscribe
+
+{:ok, conn} = Connection.start_link(url: "ws://localhost:9222/session")
+{:ok, _} = Bibbidi.Session.new(conn)
+
+# Tell the server to send browsingContext events
+{:ok, _} = Connection.execute(conn, %Subscribe{events: ["browsingContext.load"]})
+
+# Tell the connection to forward them to us
+:ok = Connection.subscribe(conn, "browsingContext.load")
+
+{:ok, tree} = Connection.execute(conn, %GetTree{})
+context = hd(tree["contexts"])["context"]
+
+# Navigate — this will trigger a load event
+{:ok, _} = Connection.execute(conn, %Navigate{context: context, url: "https://example.com"})
+
+# Receive the event
+receive do
+  {:bibbidi_event, "browsingContext.load", params} ->
+    IO.puts("Page loaded: #{params["url"]}")
+after
+  10_000 -> IO.puts("Timeout waiting for load event")
+end
+```
+
+### Function API
 
 ```elixir
 {:ok, conn} = Bibbidi.Connection.start_link(url: "ws://localhost:9222/session")
@@ -143,6 +289,8 @@ after
 end
 ```
 
+<!-- tabs-close -->
+
 ## Supervision
 
 Bibbidi doesn't impose a process tree. Add connections to your own supervisor:
@@ -166,6 +314,8 @@ Bibbidi.Commands.BrowsingContext.get_tree(MyApp.Browser)
 | `Bibbidi.Commands.Script`          | evaluate, callFunction, getRealms, disown, addPreloadScript, removePreloadScript                                                          |
 | `Bibbidi.Commands.Session`         | new, end, status, subscribe, unsubscribe                                                                                                  |
 | `Bibbidi.Session`                  | Higher-level session lifecycle (new, end_session, status, subscribe, unsubscribe)                                                         |
+
+Each command also has a corresponding struct in `Bibbidi.Commands.<Module>.<Command>` (e.g. `Bibbidi.Commands.BrowsingContext.Navigate`) that implements the `Bibbidi.Encodable` protocol for use with `Connection.execute/2`.
 
 ## Livebook
 
