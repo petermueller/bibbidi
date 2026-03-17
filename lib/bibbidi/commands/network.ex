@@ -17,11 +17,13 @@ defmodule Bibbidi.Commands.Network do
   @spec add_data_collector(GenServer.server(), [String.t()], non_neg_integer(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def add_data_collector(conn, data_types, max_encoded_data_size, opts \\ []) do
-    params = %{dataTypes: data_types, maxEncodedDataSize: max_encoded_data_size}
-    params = put_opt(params, :collector_type, opts, :collectorType)
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "network.addDataCollector", params)
+    Connection.execute(conn, %__MODULE__.AddDataCollector{
+      data_types: data_types,
+      max_encoded_data_size: max_encoded_data_size,
+      collector_type: opts[:collector_type],
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -35,10 +37,11 @@ defmodule Bibbidi.Commands.Network do
   @spec add_intercept(GenServer.server(), [String.t()], keyword()) ::
           {:ok, map()} | {:error, term()}
   def add_intercept(conn, phases, opts \\ []) do
-    params = %{phases: phases}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :url_patterns, opts, :urlPatterns)
-    Connection.send_command(conn, "network.addIntercept", params)
+    Connection.execute(conn, %__MODULE__.AddIntercept{
+      phases: phases,
+      contexts: opts[:contexts],
+      url_patterns: opts[:url_patterns]
+    })
   end
 
   @doc """
@@ -55,13 +58,14 @@ defmodule Bibbidi.Commands.Network do
   @spec continue_request(GenServer.server(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def continue_request(conn, request, opts \\ []) do
-    params = %{request: request}
-    params = put_opt(params, :body, opts)
-    params = put_opt(params, :cookies, opts)
-    params = put_opt(params, :headers, opts)
-    params = put_opt(params, :method, opts)
-    params = put_opt(params, :url, opts)
-    Connection.send_command(conn, "network.continueRequest", params)
+    Connection.execute(conn, %__MODULE__.ContinueRequest{
+      request: request,
+      body: opts[:body],
+      cookies: opts[:cookies],
+      headers: opts[:headers],
+      method: opts[:method],
+      url: opts[:url]
+    })
   end
 
   @doc """
@@ -78,13 +82,14 @@ defmodule Bibbidi.Commands.Network do
   @spec continue_response(GenServer.server(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def continue_response(conn, request, opts \\ []) do
-    params = %{request: request}
-    params = put_opt(params, :cookies, opts)
-    params = put_opt(params, :credentials, opts)
-    params = put_opt(params, :headers, opts)
-    params = put_opt(params, :reason_phrase, opts, :reasonPhrase)
-    params = put_opt(params, :status_code, opts, :statusCode)
-    Connection.send_command(conn, "network.continueResponse", params)
+    Connection.execute(conn, %__MODULE__.ContinueResponse{
+      request: request,
+      cookies: opts[:cookies],
+      credentials: opts[:credentials],
+      headers: opts[:headers],
+      reason_phrase: opts[:reason_phrase],
+      status_code: opts[:status_code]
+    })
   end
 
   @doc """
@@ -107,8 +112,8 @@ defmodule Bibbidi.Commands.Network do
   @spec disown_data(GenServer.server(), String.t(), String.t(), String.t()) ::
           {:ok, map()} | {:error, term()}
   def disown_data(conn, data_type, collector, request) do
-    Connection.send_command(conn, "network.disownData", %{
-      dataType: data_type,
+    Connection.execute(conn, %__MODULE__.DisownData{
+      data_type: data_type,
       collector: collector,
       request: request
     })
@@ -119,7 +124,7 @@ defmodule Bibbidi.Commands.Network do
   """
   @spec fail_request(GenServer.server(), String.t()) :: {:ok, map()} | {:error, term()}
   def fail_request(conn, request) do
-    Connection.send_command(conn, "network.failRequest", %{request: request})
+    Connection.execute(conn, %__MODULE__.FailRequest{request: request})
   end
 
   @doc """
@@ -133,10 +138,12 @@ defmodule Bibbidi.Commands.Network do
   @spec get_data(GenServer.server(), String.t(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def get_data(conn, data_type, request, opts \\ []) do
-    params = %{dataType: data_type, request: request}
-    params = put_opt(params, :collector, opts)
-    params = put_opt(params, :disown, opts)
-    Connection.send_command(conn, "network.getData", params)
+    Connection.execute(conn, %__MODULE__.GetData{
+      data_type: data_type,
+      request: request,
+      collector: opts[:collector],
+      disown: opts[:disown]
+    })
   end
 
   @doc """
@@ -153,13 +160,14 @@ defmodule Bibbidi.Commands.Network do
   @spec provide_response(GenServer.server(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def provide_response(conn, request, opts \\ []) do
-    params = %{request: request}
-    params = put_opt(params, :body, opts)
-    params = put_opt(params, :cookies, opts)
-    params = put_opt(params, :headers, opts)
-    params = put_opt(params, :reason_phrase, opts, :reasonPhrase)
-    params = put_opt(params, :status_code, opts, :statusCode)
-    Connection.send_command(conn, "network.provideResponse", params)
+    Connection.execute(conn, %__MODULE__.ProvideResponse{
+      request: request,
+      body: opts[:body],
+      cookies: opts[:cookies],
+      headers: opts[:headers],
+      reason_phrase: opts[:reason_phrase],
+      status_code: opts[:status_code]
+    })
   end
 
   @doc """
@@ -168,7 +176,7 @@ defmodule Bibbidi.Commands.Network do
   @spec remove_data_collector(GenServer.server(), String.t()) ::
           {:ok, map()} | {:error, term()}
   def remove_data_collector(conn, collector) do
-    Connection.send_command(conn, "network.removeDataCollector", %{collector: collector})
+    Connection.execute(conn, %__MODULE__.RemoveDataCollector{collector: collector})
   end
 
   @doc """
@@ -176,7 +184,7 @@ defmodule Bibbidi.Commands.Network do
   """
   @spec remove_intercept(GenServer.server(), String.t()) :: {:ok, map()} | {:error, term()}
   def remove_intercept(conn, intercept) do
-    Connection.send_command(conn, "network.removeIntercept", %{intercept: intercept})
+    Connection.execute(conn, %__MODULE__.RemoveIntercept{intercept: intercept})
   end
 
   @doc """
@@ -189,9 +197,10 @@ defmodule Bibbidi.Commands.Network do
   @spec set_cache_behavior(GenServer.server(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_cache_behavior(conn, cache_behavior, opts \\ []) do
-    params = %{cacheBehavior: cache_behavior}
-    params = put_opt(params, :contexts, opts)
-    Connection.send_command(conn, "network.setCacheBehavior", params)
+    Connection.execute(conn, %__MODULE__.SetCacheBehavior{
+      cache_behavior: cache_behavior,
+      contexts: opts[:contexts]
+    })
   end
 
   @doc """
@@ -205,20 +214,10 @@ defmodule Bibbidi.Commands.Network do
   @spec set_extra_headers(GenServer.server(), [map()], keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_extra_headers(conn, headers, opts \\ []) do
-    params = %{headers: headers}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "network.setExtraHeaders", params)
-  end
-
-  ## Private helpers
-
-  defp put_opt(params, key, opts, json_key \\ nil) do
-    json_key = json_key || key
-
-    case Keyword.get(opts, key) do
-      nil -> params
-      value -> Map.put(params, json_key, value)
-    end
+    Connection.execute(conn, %__MODULE__.SetExtraHeaders{
+      headers: headers,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 end

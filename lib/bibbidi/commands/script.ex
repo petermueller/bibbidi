@@ -20,16 +20,14 @@ defmodule Bibbidi.Commands.Script do
   @spec evaluate(GenServer.server(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def evaluate(conn, expression, target, opts \\ []) do
-    params = %{
+    Connection.execute(conn, %__MODULE__.Evaluate{
       expression: expression,
       target: target,
-      awaitPromise: Keyword.get(opts, :await_promise, true)
-    }
-
-    params = put_opt(params, :result_ownership, opts, :resultOwnership)
-    params = put_opt(params, :serialization_options, opts, :serializationOptions)
-    params = put_opt(params, :user_activation, opts, :userActivation)
-    Connection.send_command(conn, "script.evaluate", params)
+      await_promise: Keyword.get(opts, :await_promise, true),
+      result_ownership: opts[:result_ownership],
+      serialization_options: opts[:serialization_options],
+      user_activation: opts[:user_activation]
+    })
   end
 
   @doc """
@@ -47,18 +45,16 @@ defmodule Bibbidi.Commands.Script do
   @spec call_function(GenServer.server(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def call_function(conn, function_declaration, target, opts \\ []) do
-    params = %{
-      functionDeclaration: function_declaration,
+    Connection.execute(conn, %__MODULE__.CallFunction{
+      function_declaration: function_declaration,
       target: target,
-      awaitPromise: Keyword.get(opts, :await_promise, true)
-    }
-
-    params = put_opt(params, :arguments, opts)
-    params = put_opt(params, :this, opts)
-    params = put_opt(params, :result_ownership, opts, :resultOwnership)
-    params = put_opt(params, :serialization_options, opts, :serializationOptions)
-    params = put_opt(params, :user_activation, opts, :userActivation)
-    Connection.send_command(conn, "script.callFunction", params)
+      await_promise: Keyword.get(opts, :await_promise, true),
+      arguments: opts[:arguments],
+      this: opts[:this],
+      result_ownership: opts[:result_ownership],
+      serialization_options: opts[:serialization_options],
+      user_activation: opts[:user_activation]
+    })
   end
 
   @doc """
@@ -71,10 +67,10 @@ defmodule Bibbidi.Commands.Script do
   """
   @spec get_realms(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
   def get_realms(conn, opts \\ []) do
-    params = %{}
-    params = put_opt(params, :context, opts)
-    params = put_opt(params, :type, opts)
-    Connection.send_command(conn, "script.getRealms", params)
+    Connection.execute(conn, %__MODULE__.GetRealms{
+      context: opts[:context],
+      type: opts[:type]
+    })
   end
 
   @doc """
@@ -82,7 +78,7 @@ defmodule Bibbidi.Commands.Script do
   """
   @spec disown(GenServer.server(), [String.t()], map()) :: {:ok, map()} | {:error, term()}
   def disown(conn, handles, target) do
-    Connection.send_command(conn, "script.disown", %{handles: handles, target: target})
+    Connection.execute(conn, %__MODULE__.Disown{handles: handles, target: target})
   end
 
   @doc """
@@ -96,10 +92,11 @@ defmodule Bibbidi.Commands.Script do
   @spec add_preload_script(GenServer.server(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def add_preload_script(conn, function_declaration, opts \\ []) do
-    params = %{functionDeclaration: function_declaration}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :sandbox, opts)
-    Connection.send_command(conn, "script.addPreloadScript", params)
+    Connection.execute(conn, %__MODULE__.AddPreloadScript{
+      function_declaration: function_declaration,
+      contexts: opts[:contexts],
+      sandbox: opts[:sandbox]
+    })
   end
 
   @doc """
@@ -107,17 +104,6 @@ defmodule Bibbidi.Commands.Script do
   """
   @spec remove_preload_script(GenServer.server(), String.t()) :: {:ok, map()} | {:error, term()}
   def remove_preload_script(conn, script_id) do
-    Connection.send_command(conn, "script.removePreloadScript", %{script: script_id})
-  end
-
-  ## Private
-
-  defp put_opt(params, key, opts, json_key \\ nil) do
-    json_key = json_key || key
-
-    case Keyword.get(opts, key) do
-      nil -> params
-      value -> Map.put(params, json_key, value)
-    end
+    Connection.execute(conn, %__MODULE__.RemovePreloadScript{script: script_id})
   end
 end

@@ -16,9 +16,11 @@ defmodule Bibbidi.Commands.BrowsingContext do
   @spec navigate(GenServer.server(), String.t(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def navigate(conn, context, url, opts \\ []) do
-    params = %{context: context, url: url}
-    params = put_opt(params, :wait, opts)
-    Connection.send_command(conn, "browsingContext.navigate", params)
+    Connection.execute(conn, %__MODULE__.Navigate{
+      context: context,
+      url: url,
+      wait: opts[:wait]
+    })
   end
 
   @doc """
@@ -31,10 +33,10 @@ defmodule Bibbidi.Commands.BrowsingContext do
   """
   @spec get_tree(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
   def get_tree(conn, opts \\ []) do
-    params = %{}
-    params = put_opt(params, :max_depth, opts, :maxDepth)
-    params = put_opt(params, :root, opts)
-    Connection.send_command(conn, "browsingContext.getTree", params)
+    Connection.execute(conn, %__MODULE__.GetTree{
+      max_depth: opts[:max_depth],
+      root: opts[:root]
+    })
   end
 
   @doc """
@@ -48,11 +50,12 @@ defmodule Bibbidi.Commands.BrowsingContext do
   """
   @spec create(GenServer.server(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def create(conn, type \\ "tab", opts \\ []) do
-    params = %{type: type}
-    params = put_opt(params, :reference_context, opts, :referenceContext)
-    params = put_opt(params, :background, opts)
-    params = put_opt(params, :user_context, opts, :userContext)
-    Connection.send_command(conn, "browsingContext.create", params)
+    Connection.execute(conn, %__MODULE__.Create{
+      type: type,
+      reference_context: opts[:reference_context],
+      background: opts[:background],
+      user_context: opts[:user_context]
+    })
   end
 
   @doc """
@@ -64,9 +67,10 @@ defmodule Bibbidi.Commands.BrowsingContext do
   """
   @spec close(GenServer.server(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def close(conn, context, opts \\ []) do
-    params = %{context: context}
-    params = put_opt(params, :prompt_unload, opts, :promptUnload)
-    Connection.send_command(conn, "browsingContext.close", params)
+    Connection.execute(conn, %__MODULE__.Close{
+      context: context,
+      prompt_unload: opts[:prompt_unload]
+    })
   end
 
   @doc """
@@ -81,11 +85,12 @@ defmodule Bibbidi.Commands.BrowsingContext do
   @spec capture_screenshot(GenServer.server(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def capture_screenshot(conn, context, opts \\ []) do
-    params = %{context: context}
-    params = put_opt(params, :origin, opts)
-    params = put_opt(params, :format, opts)
-    params = put_opt(params, :clip, opts)
-    Connection.send_command(conn, "browsingContext.captureScreenshot", params)
+    Connection.execute(conn, %__MODULE__.CaptureScreenshot{
+      context: context,
+      origin: opts[:origin],
+      format: opts[:format],
+      clip: opts[:clip]
+    })
   end
 
   @doc """
@@ -103,15 +108,16 @@ defmodule Bibbidi.Commands.BrowsingContext do
   """
   @spec print(GenServer.server(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def print(conn, context, opts \\ []) do
-    params = %{context: context}
-    params = put_opt(params, :background, opts)
-    params = put_opt(params, :margin, opts)
-    params = put_opt(params, :orientation, opts)
-    params = put_opt(params, :page, opts)
-    params = put_opt(params, :page_ranges, opts, :pageRanges)
-    params = put_opt(params, :scale, opts)
-    params = put_opt(params, :shrink_to_fit, opts, :shrinkToFit)
-    Connection.send_command(conn, "browsingContext.print", params)
+    Connection.execute(conn, %__MODULE__.Print{
+      context: context,
+      background: opts[:background],
+      margin: opts[:margin],
+      orientation: opts[:orientation],
+      page: opts[:page],
+      page_ranges: opts[:page_ranges],
+      scale: opts[:scale],
+      shrink_to_fit: opts[:shrink_to_fit]
+    })
   end
 
   @doc """
@@ -124,10 +130,11 @@ defmodule Bibbidi.Commands.BrowsingContext do
   """
   @spec reload(GenServer.server(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def reload(conn, context, opts \\ []) do
-    params = %{context: context}
-    params = put_opt(params, :ignore_cache, opts, :ignoreCache)
-    params = put_opt(params, :wait, opts)
-    Connection.send_command(conn, "browsingContext.reload", params)
+    Connection.execute(conn, %__MODULE__.Reload{
+      context: context,
+      ignore_cache: opts[:ignore_cache],
+      wait: opts[:wait]
+    })
   end
 
   @doc """
@@ -137,13 +144,11 @@ defmodule Bibbidi.Commands.BrowsingContext do
   @spec set_viewport(GenServer.server(), String.t(), map() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_viewport(conn, context, viewport, opts \\ []) do
-    params = %{context: context}
-
-    params =
-      if viewport, do: Map.put(params, :viewport, viewport), else: Map.put(params, :viewport, nil)
-
-    params = put_opt(params, :device_pixel_ratio, opts, :devicePixelRatio)
-    Connection.send_command(conn, "browsingContext.setViewport", params)
+    Connection.execute(conn, %__MODULE__.SetViewport{
+      context: context,
+      viewport: viewport,
+      device_pixel_ratio: opts[:device_pixel_ratio]
+    })
   end
 
   @doc """
@@ -152,10 +157,11 @@ defmodule Bibbidi.Commands.BrowsingContext do
   @spec handle_user_prompt(GenServer.server(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def handle_user_prompt(conn, context, opts \\ []) do
-    params = %{context: context}
-    params = put_opt(params, :accept, opts)
-    params = put_opt(params, :user_text, opts, :userText)
-    Connection.send_command(conn, "browsingContext.handleUserPrompt", params)
+    Connection.execute(conn, %__MODULE__.HandleUserPrompt{
+      context: context,
+      accept: opts[:accept],
+      user_text: opts[:user_text]
+    })
   end
 
   @doc """
@@ -163,7 +169,7 @@ defmodule Bibbidi.Commands.BrowsingContext do
   """
   @spec activate(GenServer.server(), String.t()) :: {:ok, map()} | {:error, term()}
   def activate(conn, context) do
-    Connection.send_command(conn, "browsingContext.activate", %{context: context})
+    Connection.execute(conn, %__MODULE__.Activate{context: context})
   end
 
   @doc """
@@ -172,10 +178,7 @@ defmodule Bibbidi.Commands.BrowsingContext do
   @spec traverse_history(GenServer.server(), String.t(), integer()) ::
           {:ok, map()} | {:error, term()}
   def traverse_history(conn, context, delta) do
-    Connection.send_command(conn, "browsingContext.traverseHistory", %{
-      context: context,
-      delta: delta
-    })
+    Connection.execute(conn, %__MODULE__.TraverseHistory{context: context, delta: delta})
   end
 
   @doc """
@@ -184,20 +187,11 @@ defmodule Bibbidi.Commands.BrowsingContext do
   @spec locate_nodes(GenServer.server(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def locate_nodes(conn, context, locator, opts \\ []) do
-    params = %{context: context, locator: locator}
-    params = put_opt(params, :max_node_count, opts, :maxNodeCount)
-    params = put_opt(params, :start_nodes, opts, :startNodes)
-    Connection.send_command(conn, "browsingContext.locateNodes", params)
-  end
-
-  ## Private helpers
-
-  defp put_opt(params, key, opts, json_key \\ nil) do
-    json_key = json_key || key
-
-    case Keyword.get(opts, key) do
-      nil -> params
-      value -> Map.put(params, json_key, value)
-    end
+    Connection.execute(conn, %__MODULE__.LocateNodes{
+      context: context,
+      locator: locator,
+      max_node_count: opts[:max_node_count],
+      start_nodes: opts[:start_nodes]
+    })
   end
 end

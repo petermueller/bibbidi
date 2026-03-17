@@ -5,18 +5,27 @@ defmodule Bibbidi.CDDL.Generator do
 
   @modules ~w(browsingContext script session browser network log storage input emulation webExtension)
 
-  def run do
+  @doc """
+  Builds an `%Igniter{}` with all generated types, events, and command modules.
+
+  Returns the igniter struct — the caller decides whether to apply or dry-run.
+  """
+  @spec run(Igniter.t()) :: Igniter.t()
+  def run(igniter) do
     {:ok, remote_rules} = Parser.parse_file("priv/cddl/remote.cddl")
     {:ok, local_rules} = Parser.parse_file("priv/cddl/local.cddl")
 
     all_rules = remote_rules ++ local_rules
     grouped = group_by_module(all_rules)
 
-    for mod <- @modules do
+    Enum.reduce(@modules, igniter, fn mod, igniter ->
       rules = Map.get(grouped, mod, [])
-      generate_types_module(mod, rules)
-      generate_events_module(mod, rules, local_rules)
-    end
+
+      igniter
+      |> maybe_generate_types_module(mod, rules)
+      |> maybe_generate_events_module(mod, rules, local_rules)
+      |> maybe_generate_command_modules(mod, remote_rules, all_rules)
+    end)
   end
 
   defp group_by_module(rules) do
@@ -25,13 +34,14 @@ defmodule Bibbidi.CDDL.Generator do
     |> Enum.group_by(fn {name, _} -> name |> String.split(".") |> hd() end)
   end
 
-  defp generate_types_module(mod, rules) do
+  defp maybe_generate_types_module(igniter, mod, rules) do
+    types = extract_types(rules)
+    if types == [], do: igniter, else: generate_types_module(igniter, mod, types)
+  end
+
+  defp generate_types_module(igniter, mod, types) do
     snake = to_snake(mod)
     camel = to_module_name(mod)
-    types = extract_types(rules)
-
-    return = if types == [], do: :skip, else: :ok
-    if return == :skip, do: throw(:skip)
 
     type_defs =
       types
@@ -52,17 +62,16 @@ defmodule Bibbidi.CDDL.Generator do
     """
 
     path = "lib/bibbidi/types/#{snake}.ex"
-    File.mkdir_p!(Path.dirname(path))
-    File.write!(path, content)
-    Mix.shell().info("Generated #{path}")
-  catch
-    :skip -> :ok
+
+    Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
   end
 
-  defp generate_events_module(mod, _rules, local_rules) do
+  defp maybe_generate_events_module(igniter, mod, _rules, local_rules) do
     events = extract_events(mod, local_rules)
-    if events == [], do: throw(:skip)
+    if events == [], do: igniter, else: generate_events_module(igniter, mod, events)
+  end
 
+  defp generate_events_module(igniter, mod, events) do
     snake = to_snake(mod)
     camel = to_module_name(mod)
 
@@ -106,11 +115,8 @@ defmodule Bibbidi.CDDL.Generator do
     """
 
     path = "lib/bibbidi/events/#{snake}.ex"
-    File.mkdir_p!(Path.dirname(path))
-    File.write!(path, content)
-    Mix.shell().info("Generated #{path}")
-  catch
-    :skip -> :ok
+
+    Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
   end
 
   defp extract_types(rules) do
@@ -143,6 +149,221 @@ defmodule Bibbidi.CDDL.Generator do
     end)
     |> Enum.reject(fn {method, _} -> is_nil(method) end)
   end
+
+  # ── Command struct generation ─────────────────────────────────────
+
+  defp maybe_generate_command_modules(igniter, mod, remote_rules, all_rules) do
+    commands = extract_commands(mod, remote_rules)
+    if commands == [], do: igniter, else: generate_command_modules(igniter, mod, commands, all_rules)
+  end
+
+  defp extract_commands(mod, remote_rules) do
+    remote_rules
+    |> Enum.filter(fn {name, def} ->
+      String.starts_with?(name, mod <> ".") and is_command_def?(def)
+    end)
+    |> Enum.map(fn {name, {:group, members}} ->
+      command_name = name |> String.split(".") |> List.last()
+
+      method =
+        Enum.find_value(members, fn
+          {:required, "method", {:string, m}} -> m
+          _ -> nil
+        end)
+
+      params_ref =
+        Enum.find_value(members, fn
+          {:required, "params", {:ref, r}} -> r
+          _ -> nil
+        end)
+
+      {command_name, method, params_ref}
+    end)
+    |> Enum.reject(fn {_, method, _} -> is_nil(method) end)
+  end
+
+  defp generate_command_modules(igniter, mod, commands, all_rules) do
+    Enum.reduce(commands, igniter, fn {command_name, method, params_ref}, igniter ->
+      generate_command_module(igniter, mod, command_name, method, params_ref, all_rules)
+    end)
+  end
+
+  defp generate_command_module(igniter, mod, command_name, method, params_ref, all_rules) do
+    snake_mod = to_snake(mod)
+    camel_mod = to_module_name(mod)
+    command_snake = to_snake(command_name)
+
+    fields = resolve_command_fields(params_ref, all_rules)
+
+    required = Enum.filter(fields, fn {_, _, req} -> req == :required end)
+    optional = Enum.filter(fields, fn {_, _, req} -> req == :optional end)
+    all_fields = required ++ optional
+
+    enforce_keys_line =
+      case required do
+        [] ->
+          ""
+
+        _ ->
+          keys = Enum.map_join(required, ", ", fn {_, elixir, _} -> ":#{elixir}" end)
+          "@enforce_keys [#{keys}]\n  "
+      end
+
+    struct_fields = Enum.map_join(all_fields, ", ", fn {_, elixir, _} -> ":#{elixir}" end)
+    params_body = generate_params_body(required, optional)
+
+    content = """
+    # Generated by mix bibbidi.gen — do not edit manually
+    defmodule Bibbidi.Commands.#{camel_mod}.#{command_name} do
+      @moduledoc \"\"\"
+      Command struct for `#{method}`.
+      \"\"\"
+
+      #{enforce_keys_line}defstruct [#{struct_fields}]
+
+      defimpl Bibbidi.Encodable do
+        def method(_), do: "#{method}"
+
+    #{params_body}
+      end
+    end
+    """
+
+    path = "lib/bibbidi/commands/#{snake_mod}/#{command_snake}.ex"
+    Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
+  end
+
+  @doc """
+  Resolves a CDDL params reference into a list of `{json_key, elixir_key, :required | :optional}` tuples.
+
+  Used by the code generator and by `mix bibbidi.cddl.inspect --fields`.
+  """
+  def resolve_command_fields(nil, _all_rules), do: []
+  def resolve_command_fields("EmptyParams", _all_rules), do: []
+
+  def resolve_command_fields(ref, all_rules) do
+    case List.keyfind(all_rules, ref, 0) do
+      {^ref, {:map, content}} ->
+        extract_field_defs_from_map(content)
+
+      {^ref, {:group, members}} ->
+        extract_field_defs(members)
+
+      {^ref, {:choice, alternatives}} ->
+        # For choice types, merge fields from all alternatives (all optional)
+        resolve_choice_fields(alternatives, all_rules)
+
+      _ ->
+        []
+    end
+  end
+
+  defp extract_field_defs_from_map(content) do
+    Enum.flat_map(content, fn
+      {:fields, fields} -> extract_field_defs(fields)
+      {:group_choice, groups} -> extract_field_defs_from_group_choice(groups)
+      _ -> []
+    end)
+  end
+
+  defp extract_field_defs_from_group_choice(groups) do
+    # For group choices inside maps (e.g. coordinates // error),
+    # include all fields as optional since only one branch is used at a time
+    Enum.flat_map(groups, fn
+      {:fields, fields} ->
+        Enum.flat_map(fields, fn
+          {:required, name, _type} -> [{name, to_snake(name), :optional}]
+          {:optional, name, _type} -> [{name, to_snake(name), :optional}]
+          _ -> []
+        end)
+
+      {:group, members} ->
+        Enum.flat_map(members, fn
+          {:required, name, _type} -> [{name, to_snake(name), :optional}]
+          {:optional, name, _type} -> [{name, to_snake(name), :optional}]
+          _ -> []
+        end)
+
+      _ ->
+        []
+    end)
+  end
+
+  defp resolve_choice_fields(alternatives, all_rules) do
+    # Resolve each alternative ref and merge all fields as optional
+    Enum.flat_map(alternatives, fn
+      {:ref, ref} ->
+        resolve_command_fields(ref, all_rules)
+        |> Enum.map(fn {json, elixir, _} -> {json, elixir, :optional} end)
+
+      _ ->
+        []
+    end)
+    |> Enum.uniq_by(fn {json, _, _} -> json end)
+  end
+
+  defp extract_field_defs(fields) do
+    Enum.flat_map(fields, fn
+      {:required, name, _type} ->
+        [{name, to_snake(name), :required}]
+
+      {:optional, name, _type} ->
+        [{name, to_snake(name), :optional}]
+
+      {:group_choice, groups} ->
+        extract_field_defs_from_group_choice(groups)
+
+      _ ->
+        []
+    end)
+  end
+
+  defp generate_params_body([], []) do
+    "    def params(_cmd), do: %{}"
+  end
+
+  defp generate_params_body(required, []) do
+    fields =
+      Enum.map_join(required, ", ", fn {json_key, elixir_key, _} ->
+        "#{json_key}: cmd.#{elixir_key}"
+      end)
+
+    "    def params(cmd), do: %{#{fields}}"
+  end
+
+  defp generate_params_body(required, optional) do
+    required_map =
+      if required == [] do
+        "%{}"
+      else
+        fields =
+          Enum.map_join(required, ", ", fn {json_key, elixir_key, _} ->
+            "#{json_key}: cmd.#{elixir_key}"
+          end)
+
+        "%{#{fields}}"
+      end
+
+    optional_entries =
+      Enum.map_join(optional, ",\n        ", fn {json_key, elixir_key, _} ->
+        "{:#{json_key}, cmd.#{elixir_key}}"
+      end)
+
+    """
+        def params(cmd) do
+          optional = [
+            #{optional_entries}
+          ]
+
+          Enum.reduce(optional, #{required_map}, fn
+            {_key, nil}, acc -> acc
+            {key, value}, acc -> Map.put(acc, key, value)
+          end)
+        end
+    """
+  end
+
+  # ── Predicate helpers ───────────────────────────────────────────────
 
   defp is_command_def?({:group, members}) do
     Enum.any?(members, fn

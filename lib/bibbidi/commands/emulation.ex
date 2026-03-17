@@ -18,10 +18,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_forced_colors_mode_theme_override(GenServer.server(), String.t() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_forced_colors_mode_theme_override(conn, theme, opts \\ []) do
-    params = %{theme: theme}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setForcedColorsModeThemeOverride", params)
+    Connection.execute(conn, %__MODULE__.SetForcedColorsModeThemeOverride{
+      theme: theme,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -44,8 +45,13 @@ defmodule Bibbidi.Commands.Emulation do
         other -> %{coordinates: other}
       end
 
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
+    params =
+      params
+      |> then(fn p -> if opts[:contexts], do: Map.put(p, :contexts, opts[:contexts]), else: p end)
+      |> then(fn p ->
+        if opts[:user_contexts], do: Map.put(p, :userContexts, opts[:user_contexts]), else: p
+      end)
+
     Connection.send_command(conn, "emulation.setGeolocationOverride", params)
   end
 
@@ -62,10 +68,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_locale_override(GenServer.server(), String.t() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_locale_override(conn, locale, opts \\ []) do
-    params = %{locale: locale}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setLocaleOverride", params)
+    Connection.execute(conn, %__MODULE__.SetLocaleOverride{
+      locale: locale,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -81,10 +88,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_network_conditions(GenServer.server(), map() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_network_conditions(conn, network_conditions, opts \\ []) do
-    params = %{networkConditions: network_conditions}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setNetworkConditions", params)
+    Connection.execute(conn, %__MODULE__.SetNetworkConditions{
+      network_conditions: network_conditions,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -101,10 +109,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_screen_orientation_override(GenServer.server(), map() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_screen_orientation_override(conn, screen_orientation, opts \\ []) do
-    params = %{screenOrientation: screen_orientation}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setScreenOrientationOverride", params)
+    Connection.execute(conn, %__MODULE__.SetScreenOrientationOverride{
+      screen_orientation: screen_orientation,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -120,10 +129,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_screen_settings_override(GenServer.server(), map() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_screen_settings_override(conn, screen_area, opts \\ []) do
-    params = %{screenArea: screen_area}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setScreenSettingsOverride", params)
+    Connection.execute(conn, %__MODULE__.SetScreenSettingsOverride{
+      screen_area: screen_area,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -139,10 +149,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_scripting_enabled(GenServer.server(), false | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_scripting_enabled(conn, enabled, opts \\ []) do
-    params = %{enabled: enabled}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setScriptingEnabled", params)
+    Connection.execute(conn, %__MODULE__.SetScriptingEnabled{
+      enabled: enabled,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -158,10 +169,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_scrollbar_type_override(GenServer.server(), String.t() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_scrollbar_type_override(conn, scrollbar_type, opts \\ []) do
-    params = %{scrollbarType: scrollbar_type}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setScrollbarTypeOverride", params)
+    Connection.execute(conn, %__MODULE__.SetScrollbarTypeOverride{
+      scrollbar_type: scrollbar_type,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -177,10 +189,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_timezone_override(GenServer.server(), String.t() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_timezone_override(conn, timezone, opts \\ []) do
-    params = %{timezone: timezone}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setTimezoneOverride", params)
+    Connection.execute(conn, %__MODULE__.SetTimezoneOverride{
+      timezone: timezone,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -196,10 +209,11 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_touch_override(GenServer.server(), pos_integer() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_touch_override(conn, max_touch_points, opts \\ []) do
-    params = %{maxTouchPoints: max_touch_points}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setTouchOverride", params)
+    Connection.execute(conn, %__MODULE__.SetTouchOverride{
+      max_touch_points: max_touch_points,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 
   @doc """
@@ -215,20 +229,10 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_user_agent_override(GenServer.server(), String.t() | nil, keyword()) ::
           {:ok, map()} | {:error, term()}
   def set_user_agent_override(conn, user_agent, opts \\ []) do
-    params = %{userAgent: user_agent}
-    params = put_opt(params, :contexts, opts)
-    params = put_opt(params, :user_contexts, opts, :userContexts)
-    Connection.send_command(conn, "emulation.setUserAgentOverride", params)
-  end
-
-  ## Private helpers
-
-  defp put_opt(params, key, opts, json_key \\ nil) do
-    json_key = json_key || key
-
-    case Keyword.get(opts, key) do
-      nil -> params
-      value -> Map.put(params, json_key, value)
-    end
+    Connection.execute(conn, %__MODULE__.SetUserAgentOverride{
+      user_agent: user_agent,
+      contexts: opts[:contexts],
+      user_contexts: opts[:user_contexts]
+    })
   end
 end

@@ -14,10 +14,7 @@ defmodule Bibbidi.Commands.Input do
   @spec perform_actions(GenServer.server(), String.t(), [map()]) ::
           {:ok, map()} | {:error, term()}
   def perform_actions(conn, context, actions) do
-    Connection.send_command(conn, "input.performActions", %{
-      context: context,
-      actions: actions
-    })
+    Connection.execute(conn, %__MODULE__.PerformActions{context: context, actions: actions})
   end
 
   @doc """
@@ -25,7 +22,7 @@ defmodule Bibbidi.Commands.Input do
   """
   @spec release_actions(GenServer.server(), String.t()) :: {:ok, map()} | {:error, term()}
   def release_actions(conn, context) do
-    Connection.send_command(conn, "input.releaseActions", %{context: context})
+    Connection.execute(conn, %__MODULE__.ReleaseActions{context: context})
   end
 
   @doc """
@@ -37,7 +34,7 @@ defmodule Bibbidi.Commands.Input do
   @spec set_files(GenServer.server(), String.t(), map(), [String.t()]) ::
           {:ok, map()} | {:error, term()}
   def set_files(conn, context, element, files) do
-    Connection.send_command(conn, "input.setFiles", %{
+    Connection.execute(conn, %__MODULE__.SetFiles{
       context: context,
       element: element,
       files: files
