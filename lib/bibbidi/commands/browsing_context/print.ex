@@ -4,17 +4,42 @@ defmodule Bibbidi.Commands.BrowsingContext.Print do
   Command struct for `browsingContext.print`.
   """
 
-  @enforce_keys [:context]
-  defstruct [
-    :context,
-    :background,
-    :margin,
-    :orientation,
-    :page,
-    :page_ranges,
-    :scale,
-    :shrink_to_fit
-  ]
+  @schema Zoi.struct(__MODULE__, %{
+            context: Zoi.any(),
+            background: Zoi.boolean() |> Zoi.optional(),
+            margin: Zoi.any() |> Zoi.optional(),
+            orientation: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+            page: Zoi.any() |> Zoi.optional(),
+            page_ranges: Zoi.list(Zoi.union([Zoi.any(), Zoi.string()])) |> Zoi.optional(),
+            scale: Zoi.any() |> Zoi.optional(),
+            shrink_to_fit: Zoi.boolean() |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 background: Zoi.boolean() |> Zoi.optional(),
+                 margin: Zoi.any() |> Zoi.optional(),
+                 orientation: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+                 page: Zoi.any() |> Zoi.optional(),
+                 page_ranges: Zoi.list(Zoi.union([Zoi.any(), Zoi.string()])) |> Zoi.optional(),
+                 scale: Zoi.any() |> Zoi.optional(),
+                 shrink_to_fit: Zoi.boolean() |> Zoi.optional()
+               )
+  @result_schema Zoi.map(%{data: Zoi.string()})
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "browsingContext.print"

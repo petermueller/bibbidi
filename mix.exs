@@ -28,7 +28,18 @@ defmodule Bibbidi.MixProject do
       logo: "assets/icon.png",
       assets: %{"assets" => "assets"},
       source_ref: "v#{@version}",
-      extras: ["README.md", "CHANGELOG.md", "examples/interactive_browser.livemd"],
+      extras: [
+        "README.md",
+        "CHANGELOG.md",
+        "examples/interactive_browser.livemd",
+        {"examples/op_workflow/op_workflow.md", title: "Op Workflow Example"}
+      ],
+      groups_for_extras: [
+        Examples: [
+          "examples/interactive_browser.livemd",
+          "examples/op_workflow/op_workflow.md"
+        ]
+      ],
       groups_for_modules: [
         Core: [
           Bibbidi,
@@ -40,13 +51,11 @@ defmodule Bibbidi.MixProject do
         Transport: ~r/Bibbidi\.Transport/,
         Commands: ~r/Bibbidi\.Commands\./,
         Events: ~r/Bibbidi\.Events\./,
-        Types: ~r/Bibbidi\.Types\./,
         Internals: ~r/Bibbidi\.CDDL\./
       ],
       nest_modules_by_prefix: [
         Bibbidi.Commands,
         Bibbidi.Events,
-        Bibbidi.Types,
         Bibbidi.Transport
       ]
     ]

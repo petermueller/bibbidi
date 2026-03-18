@@ -109,7 +109,7 @@ context = hd(tree["contexts"])["context"]
 {:ok, nav} = Bibbidi.Commands.BrowsingContext.navigate(conn, context, "https://example.com", wait: "complete")
 
 # Evaluate JavaScript
-{:ok, result} = Bibbidi.Commands.Script.evaluate(conn, "document.title", %{context: context})
+{:ok, result} = Bibbidi.Commands.Script.evaluate(conn, "document.title", %{context: context}, false)
 IO.inspect(result)
 # => %{"type" => "success", "result" => %{"type" => "string", "value" => "Example Domain"}, ...}
 
@@ -117,6 +117,7 @@ IO.inspect(result)
 {:ok, result} = Bibbidi.Commands.Script.call_function(
   conn,
   "function(a, b) { return a + b; }",
+  false,
   %{context: context},
   arguments: [%{type: "number", value: 3}, %{type: "number", value: 4}]
 )
@@ -206,14 +207,15 @@ defmodule MyApp.Browser do
 
       # Extract page title
       {:ok, %{"result" => %{"value" => title}}} =
-        Script.evaluate(conn, "document.title", %{context: context})
+        Script.evaluate(conn, "document.title", %{context: context}, false)
 
       # Extract all links
       {:ok, %{"result" => %{"value" => links}}} =
         Script.evaluate(
           conn,
           ~s|Array.from(document.querySelectorAll("a"), a => a.href)|,
-          %{context: context}
+          %{context: context},
+          false
         )
 
       %{title: title, links: links}
@@ -315,7 +317,36 @@ Bibbidi.Commands.BrowsingContext.get_tree(MyApp.Browser)
 | `Bibbidi.Commands.Session`         | new, end, status, subscribe, unsubscribe                                                                                                  |
 | `Bibbidi.Session`                  | Higher-level session lifecycle (new, end_session, status, subscribe, unsubscribe)                                                         |
 
-Each command also has a corresponding struct in `Bibbidi.Commands.<Module>.<Command>` (e.g. `Bibbidi.Commands.BrowsingContext.Navigate`) that implements the `Bibbidi.Encodable` protocol for use with `Connection.execute/2`.
+Each command also has a corresponding struct in `Bibbidi.Commands.<Module>.<Command>` (e.g. `Bibbidi.Commands.BrowsingContext.Navigate`) that implements the `Bibbidi.Encodable` protocol for use with `Connection.execute/2`. Every command struct exposes [Zoi](https://hex.pm/packages/zoi) schemas via `schema/0`, `opts_schema/0`, and `result_schema/0` for runtime validation and introspection.
+
+## Workflow Builder
+
+Bibbidi includes an Igniter generator that scaffolds a Multi-style pipeline
+builder into your project:
+
+```bash
+mix bibbidi.gen.workflow
+```
+
+This generates an `Op` module for composing commands, an `Operation` record
+for tracking execution, and a sequential `Runner` — all yours to own and modify.
+
+```elixir
+alias MyApp.Bibbidi.{Op, Runner}
+alias Bibbidi.Commands.BrowsingContext
+
+op =
+  Op.new()
+  |> Op.send(:nav, %BrowsingContext.Navigate{
+    context: ctx, url: "https://example.com", wait: "complete"
+  })
+  |> Op.send(:tree, %BrowsingContext.GetTree{})
+
+{:ok, results, operation} = Runner.execute(conn, op)
+```
+
+See the [Op Workflow example](examples/op_workflow/op_workflow.md) for a standalone
+Mix project demonstrating the pattern.
 
 ## Livebook
 

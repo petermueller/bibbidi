@@ -5,20 +5,18 @@ defmodule Bibbidi.Commands.WebExtension do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.Install
+  alias __MODULE__.Uninstall
 
   @doc "Executes the `webExtension.install` command."
-  @spec install(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec install(GenServer.server(), term()) :: {:ok, Install.result()} | {:error, term()}
   def install(conn, extension_data) do
-    Connection.execute(conn, %__MODULE__.Install{
-      extension_data: extension_data
-    })
+    Connection.execute(conn, struct!(Install, [{:extension_data, extension_data}]))
   end
 
   @doc "Executes the `webExtension.uninstall` command."
-  @spec uninstall(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec uninstall(GenServer.server(), term()) :: {:ok, Uninstall.result()} | {:error, term()}
   def uninstall(conn, extension) do
-    Connection.execute(conn, %__MODULE__.Uninstall{
-      extension: extension
-    })
+    Connection.execute(conn, struct!(Uninstall, [{:extension, extension}]))
   end
 end

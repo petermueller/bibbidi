@@ -5,132 +5,172 @@ defmodule Bibbidi.Commands.BrowsingContext do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.Activate
+  alias __MODULE__.CaptureScreenshot
+  alias __MODULE__.Close
+  alias __MODULE__.Create
+  alias __MODULE__.GetTree
+  alias __MODULE__.HandleUserPrompt
+  alias __MODULE__.LocateNodes
+  alias __MODULE__.Navigate
+  alias __MODULE__.Print
+  alias __MODULE__.Reload
+  alias __MODULE__.SetViewport
+  alias __MODULE__.TraverseHistory
 
   @doc "Executes the `browsingContext.activate` command."
-  @spec activate(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec activate(GenServer.server(), term()) :: {:ok, Activate.result()} | {:error, term()}
   def activate(conn, context) do
-    Connection.execute(conn, %__MODULE__.Activate{
-      context: context
-    })
+    Connection.execute(conn, struct!(Activate, [{:context, context}]))
   end
 
-  @doc "Executes the `browsingContext.captureScreenshot` command."
-  @spec capture_screenshot(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.captureScreenshot` command.
+
+  ## Options
+
+  #{Zoi.describe(CaptureScreenshot.opts_schema())}
+  """
+  @spec capture_screenshot(GenServer.server(), term(), CaptureScreenshot.opts()) ::
+          {:ok, CaptureScreenshot.result()} | {:error, term()}
   def capture_screenshot(conn, context, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.CaptureScreenshot{
-      context: context,
-      origin: opts[:origin],
-      format: opts[:format],
-      clip: opts[:clip]
-    })
+    opts = Zoi.parse!(CaptureScreenshot.opts_schema(), opts)
+    Connection.execute(conn, struct!(CaptureScreenshot, [{:context, context} | opts]))
   end
 
-  @doc "Executes the `browsingContext.close` command."
-  @spec close(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.close` command.
+
+  ## Options
+
+  #{Zoi.describe(Close.opts_schema())}
+  """
+  @spec close(GenServer.server(), term(), Close.opts()) ::
+          {:ok, Close.result()} | {:error, term()}
   def close(conn, context, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.Close{
-      context: context,
-      prompt_unload: opts[:prompt_unload]
-    })
+    opts = Zoi.parse!(Close.opts_schema(), opts)
+    Connection.execute(conn, struct!(Close, [{:context, context} | opts]))
   end
 
-  @doc "Executes the `browsingContext.create` command."
-  @spec create(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.create` command.
+
+  ## Options
+
+  #{Zoi.describe(Create.opts_schema())}
+  """
+  @spec create(GenServer.server(), term(), Create.opts()) ::
+          {:ok, Create.result()} | {:error, term()}
   def create(conn, type, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.Create{
-      type: type,
-      reference_context: opts[:reference_context],
-      background: opts[:background],
-      user_context: opts[:user_context]
-    })
+    opts = Zoi.parse!(Create.opts_schema(), opts)
+    Connection.execute(conn, struct!(Create, [{:type, type} | opts]))
   end
 
-  @doc "Executes the `browsingContext.getTree` command."
-  @spec get_tree(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.getTree` command.
+
+  ## Options
+
+  #{Zoi.describe(GetTree.opts_schema())}
+  """
+  @spec get_tree(GenServer.server(), GetTree.opts()) :: {:ok, GetTree.result()} | {:error, term()}
   def get_tree(conn, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.GetTree{
-      max_depth: opts[:max_depth],
-      root: opts[:root]
-    })
+    opts = Zoi.parse!(GetTree.opts_schema(), opts)
+    Connection.execute(conn, struct!(GetTree, opts))
   end
 
-  @doc "Executes the `browsingContext.handleUserPrompt` command."
-  @spec handle_user_prompt(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.handleUserPrompt` command.
+
+  ## Options
+
+  #{Zoi.describe(HandleUserPrompt.opts_schema())}
+  """
+  @spec handle_user_prompt(GenServer.server(), term(), HandleUserPrompt.opts()) ::
+          {:ok, HandleUserPrompt.result()} | {:error, term()}
   def handle_user_prompt(conn, context, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.HandleUserPrompt{
-      context: context,
-      accept: opts[:accept],
-      user_text: opts[:user_text]
-    })
+    opts = Zoi.parse!(HandleUserPrompt.opts_schema(), opts)
+    Connection.execute(conn, struct!(HandleUserPrompt, [{:context, context} | opts]))
   end
 
-  @doc "Executes the `browsingContext.locateNodes` command."
-  @spec locate_nodes(GenServer.server(), term(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.locateNodes` command.
+
+  ## Options
+
+  #{Zoi.describe(LocateNodes.opts_schema())}
+  """
+  @spec locate_nodes(GenServer.server(), term(), term(), LocateNodes.opts()) ::
+          {:ok, LocateNodes.result()} | {:error, term()}
   def locate_nodes(conn, context, locator, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.LocateNodes{
-      context: context,
-      locator: locator,
-      max_node_count: opts[:max_node_count],
-      serialization_options: opts[:serialization_options],
-      start_nodes: opts[:start_nodes]
-    })
+    opts = Zoi.parse!(LocateNodes.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(LocateNodes, [{:context, context}, {:locator, locator} | opts])
+    )
   end
 
-  @doc "Executes the `browsingContext.navigate` command."
-  @spec navigate(GenServer.server(), term(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.navigate` command.
+
+  ## Options
+
+  #{Zoi.describe(Navigate.opts_schema())}
+  """
+  @spec navigate(GenServer.server(), term(), String.t(), Navigate.opts()) ::
+          {:ok, Navigate.result()} | {:error, term()}
   def navigate(conn, context, url, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.Navigate{
-      context: context,
-      url: url,
-      wait: opts[:wait]
-    })
+    opts = Zoi.parse!(Navigate.opts_schema(), opts)
+    Connection.execute(conn, struct!(Navigate, [{:context, context}, {:url, url} | opts]))
   end
 
-  @doc "Executes the `browsingContext.print` command."
-  @spec print(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.print` command.
+
+  ## Options
+
+  #{Zoi.describe(Print.opts_schema())}
+  """
+  @spec print(GenServer.server(), term(), Print.opts()) ::
+          {:ok, Print.result()} | {:error, term()}
   def print(conn, context, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.Print{
-      context: context,
-      background: opts[:background],
-      margin: opts[:margin],
-      orientation: opts[:orientation],
-      page: opts[:page],
-      page_ranges: opts[:page_ranges],
-      scale: opts[:scale],
-      shrink_to_fit: opts[:shrink_to_fit]
-    })
+    opts = Zoi.parse!(Print.opts_schema(), opts)
+    Connection.execute(conn, struct!(Print, [{:context, context} | opts]))
   end
 
-  @doc "Executes the `browsingContext.reload` command."
-  @spec reload(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.reload` command.
+
+  ## Options
+
+  #{Zoi.describe(Reload.opts_schema())}
+  """
+  @spec reload(GenServer.server(), term(), Reload.opts()) ::
+          {:ok, Reload.result()} | {:error, term()}
   def reload(conn, context, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.Reload{
-      context: context,
-      ignore_cache: opts[:ignore_cache],
-      wait: opts[:wait]
-    })
+    opts = Zoi.parse!(Reload.opts_schema(), opts)
+    Connection.execute(conn, struct!(Reload, [{:context, context} | opts]))
   end
 
-  @doc "Executes the `browsingContext.setViewport` command."
-  @spec set_viewport(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browsingContext.setViewport` command.
+
+  ## Options
+
+  #{Zoi.describe(SetViewport.opts_schema())}
+  """
+  @spec set_viewport(GenServer.server(), SetViewport.opts()) ::
+          {:ok, SetViewport.result()} | {:error, term()}
   def set_viewport(conn, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetViewport{
-      context: opts[:context],
-      viewport: opts[:viewport],
-      device_pixel_ratio: opts[:device_pixel_ratio],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetViewport.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetViewport, opts))
   end
 
   @doc "Executes the `browsingContext.traverseHistory` command."
-  @spec traverse_history(GenServer.server(), term(), term()) :: {:ok, map()} | {:error, term()}
+  @spec traverse_history(GenServer.server(), term(), term()) ::
+          {:ok, TraverseHistory.result()} | {:error, term()}
   def traverse_history(conn, context, delta) do
-    Connection.execute(conn, %__MODULE__.TraverseHistory{
-      context: context,
-      delta: delta
-    })
+    Connection.execute(conn, struct!(TraverseHistory, [{:context, context}, {:delta, delta}]))
   end
 end

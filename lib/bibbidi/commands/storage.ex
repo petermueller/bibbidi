@@ -5,31 +5,49 @@ defmodule Bibbidi.Commands.Storage do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.GetCookies
+  alias __MODULE__.SetCookie
+  alias __MODULE__.DeleteCookies
 
-  @doc "Executes the `storage.getCookies` command."
-  @spec get_cookies(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `storage.getCookies` command.
+
+  ## Options
+
+  #{Zoi.describe(GetCookies.opts_schema())}
+  """
+  @spec get_cookies(GenServer.server(), GetCookies.opts()) ::
+          {:ok, GetCookies.result()} | {:error, term()}
   def get_cookies(conn, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.GetCookies{
-      filter: opts[:filter],
-      partition: opts[:partition]
-    })
+    opts = Zoi.parse!(GetCookies.opts_schema(), opts)
+    Connection.execute(conn, struct!(GetCookies, opts))
   end
 
-  @doc "Executes the `storage.setCookie` command."
-  @spec set_cookie(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `storage.setCookie` command.
+
+  ## Options
+
+  #{Zoi.describe(SetCookie.opts_schema())}
+  """
+  @spec set_cookie(GenServer.server(), term(), SetCookie.opts()) ::
+          {:ok, SetCookie.result()} | {:error, term()}
   def set_cookie(conn, cookie, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetCookie{
-      cookie: cookie,
-      partition: opts[:partition]
-    })
+    opts = Zoi.parse!(SetCookie.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetCookie, [{:cookie, cookie} | opts]))
   end
 
-  @doc "Executes the `storage.deleteCookies` command."
-  @spec delete_cookies(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `storage.deleteCookies` command.
+
+  ## Options
+
+  #{Zoi.describe(DeleteCookies.opts_schema())}
+  """
+  @spec delete_cookies(GenServer.server(), DeleteCookies.opts()) ::
+          {:ok, DeleteCookies.result()} | {:error, term()}
   def delete_cookies(conn, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.DeleteCookies{
-      filter: opts[:filter],
-      partition: opts[:partition]
-    })
+    opts = Zoi.parse!(DeleteCookies.opts_schema(), opts)
+    Connection.execute(conn, struct!(DeleteCookies, opts))
   end
 end

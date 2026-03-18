@@ -4,8 +4,33 @@ defmodule Bibbidi.Commands.Network.GetData do
   Command struct for `network.getData`.
   """
 
-  @enforce_keys [:data_type, :request]
-  defstruct [:data_type, :request, :collector, :disown]
+  @schema Zoi.struct(__MODULE__, %{
+            data_type: Zoi.any(),
+            request: Zoi.any(),
+            collector: Zoi.any() |> Zoi.optional(),
+            disown: Zoi.boolean() |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 collector: Zoi.any() |> Zoi.optional(),
+                 disown: Zoi.boolean() |> Zoi.optional()
+               )
+  @result_schema Zoi.map(%{bytes: Zoi.any()})
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "network.getData"

@@ -4,8 +4,35 @@ defmodule Bibbidi.Commands.Network.AddDataCollector do
   Command struct for `network.addDataCollector`.
   """
 
-  @enforce_keys [:data_types, :max_encoded_data_size]
-  defstruct [:data_types, :max_encoded_data_size, :collector_type, :contexts, :user_contexts]
+  @schema Zoi.struct(__MODULE__, %{
+            data_types: Zoi.list(Zoi.any()),
+            max_encoded_data_size: Zoi.any(),
+            collector_type: Zoi.any() |> Zoi.optional(),
+            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 collector_type: Zoi.any() |> Zoi.optional(),
+                 contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+                 user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+               )
+  @result_schema Zoi.map(%{collector: Zoi.any()})
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "network.addDataCollector"

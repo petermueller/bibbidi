@@ -4,8 +4,39 @@ defmodule Bibbidi.Commands.Session.New do
   Command struct for `session.new`.
   """
 
-  @enforce_keys [:capabilities]
-  defstruct [:capabilities]
+  @schema Zoi.struct(__MODULE__, %{capabilities: Zoi.any()})
+  @opts_schema Zoi.keyword([])
+  @result_schema Zoi.map(%{
+                   session_id: Zoi.string(),
+                   capabilities:
+                     Zoi.map(%{
+                       accept_insecure_certs: Zoi.boolean(),
+                       browser_name: Zoi.string(),
+                       browser_version: Zoi.string(),
+                       platform_name: Zoi.string(),
+                       set_window_rect: Zoi.boolean(),
+                       user_agent: Zoi.string(),
+                       proxy: Zoi.any() |> Zoi.optional(),
+                       unhandled_prompt_behavior: Zoi.any() |> Zoi.optional(),
+                       web_socket_url: Zoi.string() |> Zoi.optional()
+                     })
+                 })
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "session.new"

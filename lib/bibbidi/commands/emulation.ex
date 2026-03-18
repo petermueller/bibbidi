@@ -5,123 +5,201 @@ defmodule Bibbidi.Commands.Emulation do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.SetForcedColorsModeThemeOverride
+  alias __MODULE__.SetGeolocationOverride
+  alias __MODULE__.SetLocaleOverride
+  alias __MODULE__.SetNetworkConditions
+  alias __MODULE__.SetScreenSettingsOverride
+  alias __MODULE__.SetScreenOrientationOverride
+  alias __MODULE__.SetUserAgentOverride
+  alias __MODULE__.SetScriptingEnabled
+  alias __MODULE__.SetScrollbarTypeOverride
+  alias __MODULE__.SetTimezoneOverride
+  alias __MODULE__.SetTouchOverride
 
-  @doc "Executes the `emulation.setForcedColorsModeThemeOverride` command."
-  @spec set_forced_colors_mode_theme_override(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setForcedColorsModeThemeOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetForcedColorsModeThemeOverride.opts_schema())}
+  """
+  @spec set_forced_colors_mode_theme_override(
+          GenServer.server(),
+          term() | nil,
+          SetForcedColorsModeThemeOverride.opts()
+        ) :: {:ok, SetForcedColorsModeThemeOverride.result()} | {:error, term()}
   def set_forced_colors_mode_theme_override(conn, theme, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetForcedColorsModeThemeOverride{
-      theme: theme,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetForcedColorsModeThemeOverride.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetForcedColorsModeThemeOverride, [{:theme, theme} | opts]))
   end
 
-  @doc "Executes the `emulation.setGeolocationOverride` command."
-  @spec set_geolocation_override(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setGeolocationOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetGeolocationOverride.opts_schema())}
+  """
+  @spec set_geolocation_override(GenServer.server(), SetGeolocationOverride.opts()) ::
+          {:ok, SetGeolocationOverride.result()} | {:error, term()}
   def set_geolocation_override(conn, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetGeolocationOverride{
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetGeolocationOverride.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetGeolocationOverride, opts))
   end
 
-  @doc "Executes the `emulation.setLocaleOverride` command."
-  @spec set_locale_override(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setLocaleOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetLocaleOverride.opts_schema())}
+  """
+  @spec set_locale_override(GenServer.server(), String.t() | nil, SetLocaleOverride.opts()) ::
+          {:ok, SetLocaleOverride.result()} | {:error, term()}
   def set_locale_override(conn, locale, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetLocaleOverride{
-      locale: locale,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetLocaleOverride.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetLocaleOverride, [{:locale, locale} | opts]))
   end
 
-  @doc "Executes the `emulation.setNetworkConditions` command."
-  @spec set_network_conditions(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setNetworkConditions` command.
+
+  ## Options
+
+  #{Zoi.describe(SetNetworkConditions.opts_schema())}
+  """
+  @spec set_network_conditions(GenServer.server(), term() | nil, SetNetworkConditions.opts()) ::
+          {:ok, SetNetworkConditions.result()} | {:error, term()}
   def set_network_conditions(conn, network_conditions, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetNetworkConditions{
-      network_conditions: network_conditions,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetNetworkConditions.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(SetNetworkConditions, [{:network_conditions, network_conditions} | opts])
+    )
   end
 
-  @doc "Executes the `emulation.setScreenSettingsOverride` command."
-  @spec set_screen_settings_override(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setScreenSettingsOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetScreenSettingsOverride.opts_schema())}
+  """
+  @spec set_screen_settings_override(
+          GenServer.server(),
+          term() | nil,
+          SetScreenSettingsOverride.opts()
+        ) :: {:ok, SetScreenSettingsOverride.result()} | {:error, term()}
   def set_screen_settings_override(conn, screen_area, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetScreenSettingsOverride{
-      screen_area: screen_area,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetScreenSettingsOverride.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(SetScreenSettingsOverride, [{:screen_area, screen_area} | opts])
+    )
   end
 
-  @doc "Executes the `emulation.setScreenOrientationOverride` command."
-  @spec set_screen_orientation_override(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setScreenOrientationOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetScreenOrientationOverride.opts_schema())}
+  """
+  @spec set_screen_orientation_override(
+          GenServer.server(),
+          term() | nil,
+          SetScreenOrientationOverride.opts()
+        ) :: {:ok, SetScreenOrientationOverride.result()} | {:error, term()}
   def set_screen_orientation_override(conn, screen_orientation, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetScreenOrientationOverride{
-      screen_orientation: screen_orientation,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetScreenOrientationOverride.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(SetScreenOrientationOverride, [{:screen_orientation, screen_orientation} | opts])
+    )
   end
 
-  @doc "Executes the `emulation.setUserAgentOverride` command."
-  @spec set_user_agent_override(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setUserAgentOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetUserAgentOverride.opts_schema())}
+  """
+  @spec set_user_agent_override(GenServer.server(), String.t() | nil, SetUserAgentOverride.opts()) ::
+          {:ok, SetUserAgentOverride.result()} | {:error, term()}
   def set_user_agent_override(conn, user_agent, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetUserAgentOverride{
-      user_agent: user_agent,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetUserAgentOverride.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetUserAgentOverride, [{:user_agent, user_agent} | opts]))
   end
 
-  @doc "Executes the `emulation.setScriptingEnabled` command."
-  @spec set_scripting_enabled(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setScriptingEnabled` command.
+
+  ## Options
+
+  #{Zoi.describe(SetScriptingEnabled.opts_schema())}
+  """
+  @spec set_scripting_enabled(GenServer.server(), term() | nil, SetScriptingEnabled.opts()) ::
+          {:ok, SetScriptingEnabled.result()} | {:error, term()}
   def set_scripting_enabled(conn, enabled, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetScriptingEnabled{
-      enabled: enabled,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetScriptingEnabled.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetScriptingEnabled, [{:enabled, enabled} | opts]))
   end
 
-  @doc "Executes the `emulation.setScrollbarTypeOverride` command."
-  @spec set_scrollbar_type_override(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setScrollbarTypeOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetScrollbarTypeOverride.opts_schema())}
+  """
+  @spec set_scrollbar_type_override(
+          GenServer.server(),
+          String.t() | nil,
+          SetScrollbarTypeOverride.opts()
+        ) :: {:ok, SetScrollbarTypeOverride.result()} | {:error, term()}
   def set_scrollbar_type_override(conn, scrollbar_type, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetScrollbarTypeOverride{
-      scrollbar_type: scrollbar_type,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetScrollbarTypeOverride.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(SetScrollbarTypeOverride, [{:scrollbar_type, scrollbar_type} | opts])
+    )
   end
 
-  @doc "Executes the `emulation.setTimezoneOverride` command."
-  @spec set_timezone_override(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setTimezoneOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetTimezoneOverride.opts_schema())}
+  """
+  @spec set_timezone_override(GenServer.server(), String.t() | nil, SetTimezoneOverride.opts()) ::
+          {:ok, SetTimezoneOverride.result()} | {:error, term()}
   def set_timezone_override(conn, timezone, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetTimezoneOverride{
-      timezone: timezone,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetTimezoneOverride.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetTimezoneOverride, [{:timezone, timezone} | opts]))
   end
 
-  @doc "Executes the `emulation.setTouchOverride` command."
-  @spec set_touch_override(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `emulation.setTouchOverride` command.
+
+  ## Options
+
+  #{Zoi.describe(SetTouchOverride.opts_schema())}
+  """
+  @spec set_touch_override(GenServer.server(), term() | nil, SetTouchOverride.opts()) ::
+          {:ok, SetTouchOverride.result()} | {:error, term()}
   def set_touch_override(conn, max_touch_points, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetTouchOverride{
-      max_touch_points: max_touch_points,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetTouchOverride.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(SetTouchOverride, [{:max_touch_points, max_touch_points} | opts])
+    )
   end
 end

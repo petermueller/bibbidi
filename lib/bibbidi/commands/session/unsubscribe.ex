@@ -4,7 +4,31 @@ defmodule Bibbidi.Commands.Session.Unsubscribe do
   Command struct for `session.unsubscribe`.
   """
 
-  defstruct [:events, :subscriptions]
+  @schema Zoi.struct(__MODULE__, %{
+            events: Zoi.list(Zoi.string()) |> Zoi.optional(),
+            subscriptions: Zoi.list(Zoi.any()) |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 events: Zoi.list(Zoi.string()) |> Zoi.optional(),
+                 subscriptions: Zoi.list(Zoi.any()) |> Zoi.optional()
+               )
+  @result_schema Zoi.map(Zoi.string(), Zoi.any())
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "session.unsubscribe"

@@ -5,58 +5,77 @@ defmodule Bibbidi.Commands.Browser do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.Close
+  alias __MODULE__.CreateUserContext
+  alias __MODULE__.GetClientWindows
+  alias __MODULE__.GetUserContexts
+  alias __MODULE__.RemoveUserContext
+  alias __MODULE__.SetClientWindowState
+  alias __MODULE__.SetDownloadBehavior
 
   @doc "Executes the `browser.close` command."
-  @spec close(GenServer.server()) :: {:ok, map()} | {:error, term()}
+  @spec close(GenServer.server()) :: {:ok, Close.result()} | {:error, term()}
   def close(conn) do
-    Connection.execute(conn, %__MODULE__.Close{})
+    Connection.execute(conn, %Close{})
   end
 
-  @doc "Executes the `browser.createUserContext` command."
-  @spec create_user_context(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browser.createUserContext` command.
+
+  ## Options
+
+  #{Zoi.describe(CreateUserContext.opts_schema())}
+  """
+  @spec create_user_context(GenServer.server(), CreateUserContext.opts()) ::
+          {:ok, CreateUserContext.result()} | {:error, term()}
   def create_user_context(conn, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.CreateUserContext{
-      accept_insecure_certs: opts[:accept_insecure_certs],
-      proxy: opts[:proxy],
-      unhandled_prompt_behavior: opts[:unhandled_prompt_behavior]
-    })
+    opts = Zoi.parse!(CreateUserContext.opts_schema(), opts)
+    Connection.execute(conn, struct!(CreateUserContext, opts))
   end
 
   @doc "Executes the `browser.getClientWindows` command."
-  @spec get_client_windows(GenServer.server()) :: {:ok, map()} | {:error, term()}
+  @spec get_client_windows(GenServer.server()) ::
+          {:ok, GetClientWindows.result()} | {:error, term()}
   def get_client_windows(conn) do
-    Connection.execute(conn, %__MODULE__.GetClientWindows{})
+    Connection.execute(conn, %GetClientWindows{})
   end
 
   @doc "Executes the `browser.getUserContexts` command."
-  @spec get_user_contexts(GenServer.server()) :: {:ok, map()} | {:error, term()}
+  @spec get_user_contexts(GenServer.server()) ::
+          {:ok, GetUserContexts.result()} | {:error, term()}
   def get_user_contexts(conn) do
-    Connection.execute(conn, %__MODULE__.GetUserContexts{})
+    Connection.execute(conn, %GetUserContexts{})
   end
 
   @doc "Executes the `browser.removeUserContext` command."
-  @spec remove_user_context(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec remove_user_context(GenServer.server(), term()) ::
+          {:ok, RemoveUserContext.result()} | {:error, term()}
   def remove_user_context(conn, user_context) do
-    Connection.execute(conn, %__MODULE__.RemoveUserContext{
-      user_context: user_context
-    })
+    Connection.execute(conn, struct!(RemoveUserContext, [{:user_context, user_context}]))
   end
 
   @doc "Executes the `browser.setClientWindowState` command."
-  @spec set_client_window_state(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec set_client_window_state(GenServer.server(), term()) ::
+          {:ok, SetClientWindowState.result()} | {:error, term()}
   def set_client_window_state(conn, client_window) do
-    Connection.execute(conn, %__MODULE__.SetClientWindowState{
-      client_window: client_window
-    })
+    Connection.execute(conn, struct!(SetClientWindowState, [{:client_window, client_window}]))
   end
 
-  @doc "Executes the `browser.setDownloadBehavior` command."
-  @spec set_download_behavior(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `browser.setDownloadBehavior` command.
+
+  ## Options
+
+  #{Zoi.describe(SetDownloadBehavior.opts_schema())}
+  """
+  @spec set_download_behavior(GenServer.server(), term() | nil, SetDownloadBehavior.opts()) ::
+          {:ok, SetDownloadBehavior.result()} | {:error, term()}
   def set_download_behavior(conn, download_behavior, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetDownloadBehavior{
-      download_behavior: download_behavior,
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetDownloadBehavior.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(SetDownloadBehavior, [{:download_behavior, download_behavior} | opts])
+    )
   end
 end

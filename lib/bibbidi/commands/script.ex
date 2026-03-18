@@ -5,73 +5,99 @@ defmodule Bibbidi.Commands.Script do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.AddPreloadScript
+  alias __MODULE__.Disown
+  alias __MODULE__.CallFunction
+  alias __MODULE__.Evaluate
+  alias __MODULE__.GetRealms
+  alias __MODULE__.RemovePreloadScript
 
-  @doc "Executes the `script.addPreloadScript` command."
-  @spec add_preload_script(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `script.addPreloadScript` command.
+
+  ## Options
+
+  #{Zoi.describe(AddPreloadScript.opts_schema())}
+  """
+  @spec add_preload_script(GenServer.server(), String.t(), AddPreloadScript.opts()) ::
+          {:ok, AddPreloadScript.result()} | {:error, term()}
   def add_preload_script(conn, function_declaration, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.AddPreloadScript{
-      function_declaration: function_declaration,
-      arguments: opts[:arguments],
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts],
-      sandbox: opts[:sandbox]
-    })
+    opts = Zoi.parse!(AddPreloadScript.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(AddPreloadScript, [{:function_declaration, function_declaration} | opts])
+    )
   end
 
   @doc "Executes the `script.disown` command."
-  @spec disown(GenServer.server(), term(), term()) :: {:ok, map()} | {:error, term()}
+  @spec disown(GenServer.server(), [term()], term()) :: {:ok, Disown.result()} | {:error, term()}
   def disown(conn, handles, target) do
-    Connection.execute(conn, %__MODULE__.Disown{
-      handles: handles,
-      target: target
-    })
+    Connection.execute(conn, struct!(Disown, [{:handles, handles}, {:target, target}]))
   end
 
-  @doc "Executes the `script.callFunction` command."
-  @spec call_function(GenServer.server(), term(), term(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `script.callFunction` command.
+
+  ## Options
+
+  #{Zoi.describe(CallFunction.opts_schema())}
+  """
+  @spec call_function(GenServer.server(), String.t(), boolean(), term(), CallFunction.opts()) ::
+          {:ok, CallFunction.result()} | {:error, term()}
   def call_function(conn, function_declaration, await_promise, target, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.CallFunction{
-      function_declaration: function_declaration,
-      await_promise: await_promise,
-      target: target,
-      arguments: opts[:arguments],
-      result_ownership: opts[:result_ownership],
-      serialization_options: opts[:serialization_options],
-      this: opts[:this],
-      user_activation: opts[:user_activation]
-    })
+    opts = Zoi.parse!(CallFunction.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(CallFunction, [
+        {:function_declaration, function_declaration},
+        {:await_promise, await_promise},
+        {:target, target} | opts
+      ])
+    )
   end
 
-  @doc "Executes the `script.evaluate` command."
-  @spec evaluate(GenServer.server(), term(), term(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `script.evaluate` command.
+
+  ## Options
+
+  #{Zoi.describe(Evaluate.opts_schema())}
+  """
+  @spec evaluate(GenServer.server(), String.t(), term(), boolean(), Evaluate.opts()) ::
+          {:ok, Evaluate.result()} | {:error, term()}
   def evaluate(conn, expression, target, await_promise, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.Evaluate{
-      expression: expression,
-      target: target,
-      await_promise: await_promise,
-      result_ownership: opts[:result_ownership],
-      serialization_options: opts[:serialization_options],
-      user_activation: opts[:user_activation]
-    })
+    opts = Zoi.parse!(Evaluate.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(Evaluate, [
+        {:expression, expression},
+        {:target, target},
+        {:await_promise, await_promise} | opts
+      ])
+    )
   end
 
-  @doc "Executes the `script.getRealms` command."
-  @spec get_realms(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `script.getRealms` command.
+
+  ## Options
+
+  #{Zoi.describe(GetRealms.opts_schema())}
+  """
+  @spec get_realms(GenServer.server(), GetRealms.opts()) ::
+          {:ok, GetRealms.result()} | {:error, term()}
   def get_realms(conn, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.GetRealms{
-      context: opts[:context],
-      type: opts[:type]
-    })
+    opts = Zoi.parse!(GetRealms.opts_schema(), opts)
+    Connection.execute(conn, struct!(GetRealms, opts))
   end
 
   @doc "Executes the `script.removePreloadScript` command."
-  @spec remove_preload_script(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec remove_preload_script(GenServer.server(), term()) ::
+          {:ok, RemovePreloadScript.result()} | {:error, term()}
   def remove_preload_script(conn, script) do
-    Connection.execute(conn, %__MODULE__.RemovePreloadScript{
-      script: script
-    })
+    Connection.execute(conn, struct!(RemovePreloadScript, [{:script, script}]))
   end
 end

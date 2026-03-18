@@ -126,9 +126,10 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
     else
       Mix.shell().info("Fields for #{ref}:\n")
 
-      for {json_key, elixir_key, req} <- fields do
+      for {json_key, elixir_key, req, cddl_type} <- fields do
         marker = if req == :required, do: "*", else: " "
-        Mix.shell().info("  #{marker} #{elixir_key} (wire: #{json_key})")
+        type_str = Bibbidi.CDDL.Generator.type_to_spec(cddl_type)
+        Mix.shell().info("  #{marker} #{elixir_key} (wire: #{json_key}, type: #{type_str})")
       end
 
       Mix.shell().info("\n  * = required")
@@ -160,17 +161,18 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
 
       fields = Bibbidi.CDDL.Generator.resolve_command_fields(params_ref, all_rules)
 
-      required = Enum.filter(fields, fn {_, _, r} -> r == :required end)
-      optional = Enum.filter(fields, fn {_, _, r} -> r == :optional end)
+      required = Enum.filter(fields, fn {_, _, r, _} -> r == :required end)
+      optional = Enum.filter(fields, fn {_, _, r, _} -> r == :optional end)
 
       Mix.shell().info("  #{name}")
       Mix.shell().info("    method: #{method}")
       Mix.shell().info("    params: #{params_ref || "EmptyParams"}")
       Mix.shell().info("    fields: #{length(required)} required, #{length(optional)} optional")
 
-      for {json_key, elixir_key, req} <- fields do
+      for {json_key, elixir_key, req, cddl_type} <- fields do
         marker = if req == :required, do: "*", else: " "
-        Mix.shell().info("      #{marker} #{elixir_key} (#{json_key})")
+        type_str = Bibbidi.CDDL.Generator.type_to_spec(cddl_type)
+        Mix.shell().info("      #{marker} #{elixir_key} (#{json_key}, type: #{type_str})")
       end
 
       Mix.shell().info("")

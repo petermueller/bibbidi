@@ -4,15 +4,36 @@ defmodule Bibbidi.Commands.Script.Evaluate do
   Command struct for `script.evaluate`.
   """
 
-  @enforce_keys [:expression, :target, :await_promise]
-  defstruct [
-    :expression,
-    :target,
-    :await_promise,
-    :result_ownership,
-    :serialization_options,
-    :user_activation
-  ]
+  @schema Zoi.struct(__MODULE__, %{
+            expression: Zoi.string(),
+            target: Zoi.any(),
+            await_promise: Zoi.boolean(),
+            result_ownership: Zoi.any() |> Zoi.optional(),
+            serialization_options: Zoi.any() |> Zoi.optional(),
+            user_activation: Zoi.boolean() |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 result_ownership: Zoi.any() |> Zoi.optional(),
+                 serialization_options: Zoi.any() |> Zoi.optional(),
+                 user_activation: Zoi.boolean() |> Zoi.optional()
+               )
+  @result_schema Zoi.any()
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "script.evaluate"

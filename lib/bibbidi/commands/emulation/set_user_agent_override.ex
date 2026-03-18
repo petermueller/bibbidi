@@ -4,8 +4,32 @@ defmodule Bibbidi.Commands.Emulation.SetUserAgentOverride do
   Command struct for `emulation.setUserAgentOverride`.
   """
 
-  @enforce_keys [:user_agent]
-  defstruct [:user_agent, :contexts, :user_contexts]
+  @schema Zoi.struct(__MODULE__, %{
+            user_agent: Zoi.union([Zoi.string(), Zoi.null()]),
+            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+                 user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+               )
+  @result_schema Zoi.map(Zoi.string(), Zoi.any())
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "emulation.setUserAgentOverride"

@@ -4,8 +4,36 @@ defmodule Bibbidi.Commands.Script.AddPreloadScript do
   Command struct for `script.addPreloadScript`.
   """
 
-  @enforce_keys [:function_declaration]
-  defstruct [:function_declaration, :arguments, :contexts, :user_contexts, :sandbox]
+  @schema Zoi.struct(__MODULE__, %{
+            function_declaration: Zoi.string(),
+            arguments: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            sandbox: Zoi.string() |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 arguments: Zoi.list(Zoi.any()) |> Zoi.optional(),
+                 contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+                 user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+                 sandbox: Zoi.string() |> Zoi.optional()
+               )
+  @result_schema Zoi.map(%{script: Zoi.any()})
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "script.addPreloadScript"

@@ -4,7 +4,35 @@ defmodule Bibbidi.Commands.BrowsingContext.SetViewport do
   Command struct for `browsingContext.setViewport`.
   """
 
-  defstruct [:context, :viewport, :device_pixel_ratio, :user_contexts]
+  @schema Zoi.struct(__MODULE__, %{
+            context: Zoi.any() |> Zoi.optional(),
+            viewport: Zoi.union([Zoi.any(), Zoi.null()]) |> Zoi.optional(),
+            device_pixel_ratio: Zoi.union([Zoi.float(), Zoi.null()]) |> Zoi.optional(),
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 context: Zoi.any() |> Zoi.optional(),
+                 viewport: Zoi.union([Zoi.any(), Zoi.null()]) |> Zoi.optional(),
+                 device_pixel_ratio: Zoi.union([Zoi.float(), Zoi.null()]) |> Zoi.optional(),
+                 user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+               )
+  @result_schema Zoi.map(Zoi.string(), Zoi.any())
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "browsingContext.setViewport"

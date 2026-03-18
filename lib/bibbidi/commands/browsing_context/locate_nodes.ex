@@ -4,8 +4,35 @@ defmodule Bibbidi.Commands.BrowsingContext.LocateNodes do
   Command struct for `browsingContext.locateNodes`.
   """
 
-  @enforce_keys [:context, :locator]
-  defstruct [:context, :locator, :max_node_count, :serialization_options, :start_nodes]
+  @schema Zoi.struct(__MODULE__, %{
+            context: Zoi.any(),
+            locator: Zoi.any(),
+            max_node_count: Zoi.any() |> Zoi.optional(),
+            serialization_options: Zoi.any() |> Zoi.optional(),
+            start_nodes: Zoi.list(Zoi.any()) |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 max_node_count: Zoi.any() |> Zoi.optional(),
+                 serialization_options: Zoi.any() |> Zoi.optional(),
+                 start_nodes: Zoi.list(Zoi.any()) |> Zoi.optional()
+               )
+  @result_schema Zoi.map(%{nodes: Zoi.list(Zoi.any())})
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "browsingContext.locateNodes"

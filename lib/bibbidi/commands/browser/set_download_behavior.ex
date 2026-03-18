@@ -4,8 +4,28 @@ defmodule Bibbidi.Commands.Browser.SetDownloadBehavior do
   Command struct for `browser.setDownloadBehavior`.
   """
 
-  @enforce_keys [:download_behavior]
-  defstruct [:download_behavior, :user_contexts]
+  @schema Zoi.struct(__MODULE__, %{
+            download_behavior: Zoi.union([Zoi.any(), Zoi.null()]),
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional())
+  @result_schema Zoi.map(Zoi.string(), Zoi.any())
+
+  @type t :: unquote(Zoi.type_spec(@schema))
+  @type opts :: unquote(Zoi.type_spec(@opts_schema))
+  @type result :: unquote(Zoi.type_spec(@result_schema))
+
+  @enforce_keys Zoi.Struct.enforce_keys(@schema)
+  defstruct Zoi.Struct.struct_fields(@schema)
+
+  @doc "Returns the Zoi schema for this command struct."
+  def schema, do: @schema
+
+  @doc "Returns the Zoi schema for the keyword options."
+  def opts_schema, do: @opts_schema
+
+  @doc "Returns the Zoi schema for the result type."
+  def result_schema, do: @result_schema
 
   defimpl Bibbidi.Encodable do
     def method(_), do: "browser.setDownloadBehavior"

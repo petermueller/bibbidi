@@ -7,43 +7,55 @@ defmodule Bibbidi.Commands.Session do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.Status
+  alias __MODULE__.New
+  alias __MODULE__.End
+  alias __MODULE__.Subscribe
+  alias __MODULE__.Unsubscribe
 
   @doc "Executes the `session.status` command."
-  @spec status(GenServer.server()) :: {:ok, map()} | {:error, term()}
+  @spec status(GenServer.server()) :: {:ok, Status.result()} | {:error, term()}
   def status(conn) do
-    Connection.execute(conn, %__MODULE__.Status{})
+    Connection.execute(conn, %Status{})
   end
 
   @doc "Executes the `session.new` command."
-  @spec new(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec new(GenServer.server(), term()) :: {:ok, New.result()} | {:error, term()}
   def new(conn, capabilities) do
-    Connection.execute(conn, %__MODULE__.New{
-      capabilities: capabilities
-    })
+    Connection.execute(conn, struct!(New, [{:capabilities, capabilities}]))
   end
 
   @doc "Executes the `session.end` command."
-  @spec session_end(GenServer.server()) :: {:ok, map()} | {:error, term()}
+  @spec session_end(GenServer.server()) :: {:ok, End.result()} | {:error, term()}
   def session_end(conn) do
-    Connection.execute(conn, %__MODULE__.End{})
+    Connection.execute(conn, %End{})
   end
 
-  @doc "Executes the `session.subscribe` command."
-  @spec subscribe(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `session.subscribe` command.
+
+  ## Options
+
+  #{Zoi.describe(Subscribe.opts_schema())}
+  """
+  @spec subscribe(GenServer.server(), [String.t()], Subscribe.opts()) ::
+          {:ok, Subscribe.result()} | {:error, term()}
   def subscribe(conn, events, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.Subscribe{
-      events: events,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(Subscribe.opts_schema(), opts)
+    Connection.execute(conn, struct!(Subscribe, [{:events, events} | opts]))
   end
 
-  @doc "Executes the `session.unsubscribe` command."
-  @spec unsubscribe(GenServer.server(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `session.unsubscribe` command.
+
+  ## Options
+
+  #{Zoi.describe(Unsubscribe.opts_schema())}
+  """
+  @spec unsubscribe(GenServer.server(), Unsubscribe.opts()) ::
+          {:ok, Unsubscribe.result()} | {:error, term()}
   def unsubscribe(conn, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.Unsubscribe{
-      events: opts[:events],
-      subscriptions: opts[:subscriptions]
-    })
+    opts = Zoi.parse!(Unsubscribe.opts_schema(), opts)
+    Connection.execute(conn, struct!(Unsubscribe, opts))
   end
 end

@@ -87,6 +87,8 @@ defmodule Bibbidi.Session do
   @spec unsubscribe(GenServer.server(), [String.t()], keyword()) ::
           {:ok, map()} | {:error, term()}
   def unsubscribe(conn, events, opts \\ []) do
-    Bibbidi.Commands.Session.unsubscribe(conn, events: events, subscriptions: opts[:subscriptions])
+    unsub_opts = [events: events]
+    unsub_opts = if opts[:subscriptions], do: [{:subscriptions, opts[:subscriptions]} | unsub_opts], else: unsub_opts
+    Bibbidi.Commands.Session.unsubscribe(conn, unsub_opts)
   end
 end

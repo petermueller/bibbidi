@@ -5,141 +5,181 @@ defmodule Bibbidi.Commands.Network do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.AddDataCollector
+  alias __MODULE__.AddIntercept
+  alias __MODULE__.ContinueRequest
+  alias __MODULE__.ContinueResponse
+  alias __MODULE__.ContinueWithAuth
+  alias __MODULE__.DisownData
+  alias __MODULE__.FailRequest
+  alias __MODULE__.GetData
+  alias __MODULE__.ProvideResponse
+  alias __MODULE__.RemoveDataCollector
+  alias __MODULE__.RemoveIntercept
+  alias __MODULE__.SetCacheBehavior
+  alias __MODULE__.SetExtraHeaders
 
-  @doc "Executes the `network.addDataCollector` command."
-  @spec add_data_collector(GenServer.server(), term(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `network.addDataCollector` command.
+
+  ## Options
+
+  #{Zoi.describe(AddDataCollector.opts_schema())}
+  """
+  @spec add_data_collector(GenServer.server(), [term()], term(), AddDataCollector.opts()) ::
+          {:ok, AddDataCollector.result()} | {:error, term()}
   def add_data_collector(conn, data_types, max_encoded_data_size, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.AddDataCollector{
-      data_types: data_types,
-      max_encoded_data_size: max_encoded_data_size,
-      collector_type: opts[:collector_type],
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(AddDataCollector.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(AddDataCollector, [
+        {:data_types, data_types},
+        {:max_encoded_data_size, max_encoded_data_size} | opts
+      ])
+    )
   end
 
-  @doc "Executes the `network.addIntercept` command."
-  @spec add_intercept(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `network.addIntercept` command.
+
+  ## Options
+
+  #{Zoi.describe(AddIntercept.opts_schema())}
+  """
+  @spec add_intercept(GenServer.server(), [term()], AddIntercept.opts()) ::
+          {:ok, AddIntercept.result()} | {:error, term()}
   def add_intercept(conn, phases, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.AddIntercept{
-      phases: phases,
-      contexts: opts[:contexts],
-      url_patterns: opts[:url_patterns]
-    })
+    opts = Zoi.parse!(AddIntercept.opts_schema(), opts)
+    Connection.execute(conn, struct!(AddIntercept, [{:phases, phases} | opts]))
   end
 
-  @doc "Executes the `network.continueRequest` command."
-  @spec continue_request(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `network.continueRequest` command.
+
+  ## Options
+
+  #{Zoi.describe(ContinueRequest.opts_schema())}
+  """
+  @spec continue_request(GenServer.server(), term(), ContinueRequest.opts()) ::
+          {:ok, ContinueRequest.result()} | {:error, term()}
   def continue_request(conn, request, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.ContinueRequest{
-      request: request,
-      body: opts[:body],
-      cookies: opts[:cookies],
-      headers: opts[:headers],
-      method: opts[:method],
-      url: opts[:url]
-    })
+    opts = Zoi.parse!(ContinueRequest.opts_schema(), opts)
+    Connection.execute(conn, struct!(ContinueRequest, [{:request, request} | opts]))
   end
 
-  @doc "Executes the `network.continueResponse` command."
-  @spec continue_response(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `network.continueResponse` command.
+
+  ## Options
+
+  #{Zoi.describe(ContinueResponse.opts_schema())}
+  """
+  @spec continue_response(GenServer.server(), term(), ContinueResponse.opts()) ::
+          {:ok, ContinueResponse.result()} | {:error, term()}
   def continue_response(conn, request, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.ContinueResponse{
-      request: request,
-      cookies: opts[:cookies],
-      credentials: opts[:credentials],
-      headers: opts[:headers],
-      reason_phrase: opts[:reason_phrase],
-      status_code: opts[:status_code]
-    })
+    opts = Zoi.parse!(ContinueResponse.opts_schema(), opts)
+    Connection.execute(conn, struct!(ContinueResponse, [{:request, request} | opts]))
   end
 
   @doc "Executes the `network.continueWithAuth` command."
-  @spec continue_with_auth(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec continue_with_auth(GenServer.server(), term()) ::
+          {:ok, ContinueWithAuth.result()} | {:error, term()}
   def continue_with_auth(conn, request) do
-    Connection.execute(conn, %__MODULE__.ContinueWithAuth{
-      request: request
-    })
+    Connection.execute(conn, struct!(ContinueWithAuth, [{:request, request}]))
   end
 
   @doc "Executes the `network.disownData` command."
-  @spec disown_data(GenServer.server(), term(), term(), term()) :: {:ok, map()} | {:error, term()}
+  @spec disown_data(GenServer.server(), term(), term(), term()) ::
+          {:ok, DisownData.result()} | {:error, term()}
   def disown_data(conn, data_type, collector, request) do
-    Connection.execute(conn, %__MODULE__.DisownData{
-      data_type: data_type,
-      collector: collector,
-      request: request
-    })
+    Connection.execute(
+      conn,
+      struct!(DisownData, [{:data_type, data_type}, {:collector, collector}, {:request, request}])
+    )
   end
 
   @doc "Executes the `network.failRequest` command."
-  @spec fail_request(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec fail_request(GenServer.server(), term()) :: {:ok, FailRequest.result()} | {:error, term()}
   def fail_request(conn, request) do
-    Connection.execute(conn, %__MODULE__.FailRequest{
-      request: request
-    })
+    Connection.execute(conn, struct!(FailRequest, [{:request, request}]))
   end
 
-  @doc "Executes the `network.getData` command."
-  @spec get_data(GenServer.server(), term(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `network.getData` command.
+
+  ## Options
+
+  #{Zoi.describe(GetData.opts_schema())}
+  """
+  @spec get_data(GenServer.server(), term(), term(), GetData.opts()) ::
+          {:ok, GetData.result()} | {:error, term()}
   def get_data(conn, data_type, request, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.GetData{
-      data_type: data_type,
-      request: request,
-      collector: opts[:collector],
-      disown: opts[:disown]
-    })
+    opts = Zoi.parse!(GetData.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(GetData, [{:data_type, data_type}, {:request, request} | opts])
+    )
   end
 
-  @doc "Executes the `network.provideResponse` command."
-  @spec provide_response(GenServer.server(), term(), keyword()) :: {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `network.provideResponse` command.
+
+  ## Options
+
+  #{Zoi.describe(ProvideResponse.opts_schema())}
+  """
+  @spec provide_response(GenServer.server(), term(), ProvideResponse.opts()) ::
+          {:ok, ProvideResponse.result()} | {:error, term()}
   def provide_response(conn, request, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.ProvideResponse{
-      request: request,
-      body: opts[:body],
-      cookies: opts[:cookies],
-      headers: opts[:headers],
-      reason_phrase: opts[:reason_phrase],
-      status_code: opts[:status_code]
-    })
+    opts = Zoi.parse!(ProvideResponse.opts_schema(), opts)
+    Connection.execute(conn, struct!(ProvideResponse, [{:request, request} | opts]))
   end
 
   @doc "Executes the `network.removeDataCollector` command."
-  @spec remove_data_collector(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec remove_data_collector(GenServer.server(), term()) ::
+          {:ok, RemoveDataCollector.result()} | {:error, term()}
   def remove_data_collector(conn, collector) do
-    Connection.execute(conn, %__MODULE__.RemoveDataCollector{
-      collector: collector
-    })
+    Connection.execute(conn, struct!(RemoveDataCollector, [{:collector, collector}]))
   end
 
   @doc "Executes the `network.removeIntercept` command."
-  @spec remove_intercept(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec remove_intercept(GenServer.server(), term()) ::
+          {:ok, RemoveIntercept.result()} | {:error, term()}
   def remove_intercept(conn, intercept) do
-    Connection.execute(conn, %__MODULE__.RemoveIntercept{
-      intercept: intercept
-    })
+    Connection.execute(conn, struct!(RemoveIntercept, [{:intercept, intercept}]))
   end
 
-  @doc "Executes the `network.setCacheBehavior` command."
-  @spec set_cache_behavior(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `network.setCacheBehavior` command.
+
+  ## Options
+
+  #{Zoi.describe(SetCacheBehavior.opts_schema())}
+  """
+  @spec set_cache_behavior(GenServer.server(), String.t(), SetCacheBehavior.opts()) ::
+          {:ok, SetCacheBehavior.result()} | {:error, term()}
   def set_cache_behavior(conn, cache_behavior, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetCacheBehavior{
-      cache_behavior: cache_behavior,
-      contexts: opts[:contexts]
-    })
+    opts = Zoi.parse!(SetCacheBehavior.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(SetCacheBehavior, [{:cache_behavior, cache_behavior} | opts])
+    )
   end
 
-  @doc "Executes the `network.setExtraHeaders` command."
-  @spec set_extra_headers(GenServer.server(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `network.setExtraHeaders` command.
+
+  ## Options
+
+  #{Zoi.describe(SetExtraHeaders.opts_schema())}
+  """
+  @spec set_extra_headers(GenServer.server(), [term()], SetExtraHeaders.opts()) ::
+          {:ok, SetExtraHeaders.result()} | {:error, term()}
   def set_extra_headers(conn, headers, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.SetExtraHeaders{
-      headers: headers,
-      contexts: opts[:contexts],
-      user_contexts: opts[:user_contexts]
-    })
+    opts = Zoi.parse!(SetExtraHeaders.opts_schema(), opts)
+    Connection.execute(conn, struct!(SetExtraHeaders, [{:headers, headers} | opts]))
   end
 end

@@ -45,7 +45,28 @@ defmodule Bibbidi.Connection do
     GenServer.start_link(__MODULE__, conn_opts, gen_opts)
   end
 
-  @doc false
+  @doc """
+  Sends a BiDi command directly by method name and params map.
+
+  Most callers should prefer `execute/2`, which accepts `Encodable` command
+  structs and automatically emits telemetry events. This function is useful
+  when you need to send a command that doesn't have a generated struct yet
+  (e.g. a new spec addition or a vendor extension), or when you want full
+  control over the wire payload.
+
+  Note that `send_command/4` does **not** emit telemetry or go through the
+  `Encodable` protocol — if you need those, call `execute/2` instead or
+  handle them yourself.
+
+  ## Options
+
+  - `:timeout` — GenServer call timeout in milliseconds (default: `30_000`)
+
+  ## Example
+
+      # Send a vendor-specific command not yet in the spec
+      Connection.send_command(conn, "vendor.customCommand", %{key: "value"})
+  """
   @spec send_command(GenServer.server(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def send_command(conn, method, params \\ %{}, opts \\ []) do

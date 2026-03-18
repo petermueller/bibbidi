@@ -5,43 +5,50 @@ defmodule Bibbidi.Commands.Input do
   """
 
   alias Bibbidi.Connection
+  alias __MODULE__.PerformActions
+  alias __MODULE__.ReleaseActions
+  alias __MODULE__.SetFiles
+  alias __MODULE__.FileDialogOpened
 
   @doc "Executes the `input.performActions` command."
-  @spec perform_actions(GenServer.server(), term(), term()) :: {:ok, map()} | {:error, term()}
+  @spec perform_actions(GenServer.server(), term(), [term()]) ::
+          {:ok, PerformActions.result()} | {:error, term()}
   def perform_actions(conn, context, actions) do
-    Connection.execute(conn, %__MODULE__.PerformActions{
-      context: context,
-      actions: actions
-    })
+    Connection.execute(conn, struct!(PerformActions, [{:context, context}, {:actions, actions}]))
   end
 
   @doc "Executes the `input.releaseActions` command."
-  @spec release_actions(GenServer.server(), term()) :: {:ok, map()} | {:error, term()}
+  @spec release_actions(GenServer.server(), term()) ::
+          {:ok, ReleaseActions.result()} | {:error, term()}
   def release_actions(conn, context) do
-    Connection.execute(conn, %__MODULE__.ReleaseActions{
-      context: context
-    })
+    Connection.execute(conn, struct!(ReleaseActions, [{:context, context}]))
   end
 
   @doc "Executes the `input.setFiles` command."
-  @spec set_files(GenServer.server(), term(), term(), term()) :: {:ok, map()} | {:error, term()}
+  @spec set_files(GenServer.server(), term(), term(), [String.t()]) ::
+          {:ok, SetFiles.result()} | {:error, term()}
   def set_files(conn, context, element, files) do
-    Connection.execute(conn, %__MODULE__.SetFiles{
-      context: context,
-      element: element,
-      files: files
-    })
+    Connection.execute(
+      conn,
+      struct!(SetFiles, [{:context, context}, {:element, element}, {:files, files}])
+    )
   end
 
-  @doc "Executes the `input.fileDialogOpened` command."
-  @spec file_dialog_opened(GenServer.server(), term(), term(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+  @doc """
+  Executes the `input.fileDialogOpened` command.
+
+  ## Options
+
+  #{Zoi.describe(FileDialogOpened.opts_schema())}
+  """
+  @spec file_dialog_opened(GenServer.server(), term(), boolean(), FileDialogOpened.opts()) ::
+          {:ok, FileDialogOpened.result()} | {:error, term()}
   def file_dialog_opened(conn, context, multiple, opts \\ []) do
-    Connection.execute(conn, %__MODULE__.FileDialogOpened{
-      context: context,
-      multiple: multiple,
-      user_context: opts[:user_context],
-      element: opts[:element]
-    })
+    opts = Zoi.parse!(FileDialogOpened.opts_schema(), opts)
+
+    Connection.execute(
+      conn,
+      struct!(FileDialogOpened, [{:context, context}, {:multiple, multiple} | opts])
+    )
   end
 end
