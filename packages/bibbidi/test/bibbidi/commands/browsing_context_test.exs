@@ -246,7 +246,10 @@ defmodule Bibbidi.Commands.BrowsingContextTest do
     test "sends browsingContext.setViewport with viewport", %{conn: conn} do
       task =
         Task.async(fn ->
-          BrowsingContext.set_viewport(conn, context: "ctx-1", viewport: %{width: 1280, height: 720})
+          BrowsingContext.set_viewport(conn,
+            context: "ctx-1",
+            viewport: %{width: 1280, height: 720}
+          )
         end)
 
       assert_receive {:mock_transport_send, json}

@@ -53,7 +53,11 @@ defmodule Bibbidi.Commands.ScriptTest do
     test "sends script.callFunction command", %{conn: conn} do
       task =
         Task.async(fn ->
-          Script.call_function(conn, "function(a, b) { return a + b; }", true, %{context: "ctx-1"},
+          Script.call_function(
+            conn,
+            "function(a, b) { return a + b; }",
+            true,
+            %{context: "ctx-1"},
             arguments: [%{type: "number", value: 1}, %{type: "number", value: 2}]
           )
         end)
