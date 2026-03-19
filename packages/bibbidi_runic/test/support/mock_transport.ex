@@ -17,6 +17,9 @@ defmodule BibbidiRunic.MockTransport do
   end
 
   @impl true
+  def send_pong(state), do: {:ok, state}
+
+  @impl true
   def handle_in(state, {:mock_transport_receive, frames}) do
     {:ok, state, frames}
   end

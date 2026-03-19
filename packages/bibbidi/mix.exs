@@ -63,10 +63,12 @@ defmodule Bibbidi.MixProject do
 
   defp package do
     [
-      files:
-        ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* usage-rules.md),
+      files: ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* usage-rules.md),
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url, "WebDriver BiDi Spec" => "https://w3c.github.io/webdriver-bidi/"}
+      links: %{
+        "GitHub" => @source_url,
+        "WebDriver BiDi Spec" => "https://w3c.github.io/webdriver-bidi/"
+      }
     ]
   end
 
