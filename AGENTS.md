@@ -27,6 +27,8 @@ packages/
 │   ├── priv/cddl/              — downloaded CDDL spec files
 │   ├── examples/op_workflow/   — standalone example project (Op builder pattern)
 │   └── mix.exs
+├── bibbidi_runic/              — Runic workflow integration
+└── bibbidi_playwright_trace/   — Playwright trace file generation
 ```
 
 ## File Layout (packages/bibbidi/)
