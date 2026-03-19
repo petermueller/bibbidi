@@ -6,8 +6,9 @@ Elixir implementation of the [W3C WebDriver BiDi Protocol](https://w3c.github.io
 
 ```
 packages/
-├── bibbidi/         — core hex package (WebDriver BiDi client)
-└── bibbidi_runic/   — Runic workflow integration package
+├── bibbidi/                     — core hex package (WebDriver BiDi client)
+├── bibbidi_runic/               — Runic workflow integration
+└── bibbidi_playwright_trace/    — Playwright trace file generation
 ```
 
 ## Setup

@@ -22,7 +22,8 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
   defp reply_error(conn, id, error \\ "fail") do
     send(
       conn,
-      {:mock_transport_receive, [{:text, Jason.encode!(%{id: id, error: error, message: "failed"})}]}
+      {:mock_transport_receive,
+       [{:text, Jason.encode!(%{id: id, error: error, message: "failed"})}]}
     )
   end
 
@@ -30,7 +31,11 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
     test "collects before/after pairs from telemetry", %{conn: conn} do
       {:ok, collector} = Collector.start_link(browser_name: "firefox", connection: conn)
 
-      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"}
+      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-1",
+        url: "https://example.com"
+      }
+
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
 
       assert_receive {:mock_transport_send, json}
@@ -63,7 +68,11 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
     test "collects error results", %{conn: conn} do
       {:ok, collector} = Collector.start_link(connection: conn)
 
-      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"}
+      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-1",
+        url: "https://example.com"
+      }
+
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
 
       assert_receive {:mock_transport_send, json}
@@ -125,7 +134,11 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
       {:ok, collector} = Collector.start_link(connection: conn)
 
       # Command on the tracked connection
-      cmd1 = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-1", url: "https://tracked.com"}
+      cmd1 = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-1",
+        url: "https://tracked.com"
+      }
+
       task1 = Task.async(fn -> Connection.execute(conn, cmd1) end)
       assert_receive {:mock_transport_send, json1}
       decoded1 = Jason.decode!(json1)
@@ -133,7 +146,11 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
       Task.await(task1)
 
       # Command on a different connection (should be filtered out)
-      cmd2 = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-2", url: "https://other.com"}
+      cmd2 = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-2",
+        url: "https://other.com"
+      }
+
       task2 = Task.async(fn -> Connection.execute(other_conn, cmd2) end)
       assert_receive {:mock_transport_send, json2}
       decoded2 = Jason.decode!(json2)
@@ -213,9 +230,14 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
     end
 
     test "MFA reducer can rename events", %{conn: conn} do
-      {:ok, collector} = Collector.start_link(reducer: {TestReducer, :rename, 2}, connection: conn)
+      {:ok, collector} =
+        Collector.start_link(reducer: {TestReducer, :rename, 2}, connection: conn)
 
-      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"}
+      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-1",
+        url: "https://example.com"
+      }
+
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
       assert_receive {:mock_transport_send, json}
       reply(conn, Jason.decode!(json)["id"])
@@ -235,7 +257,11 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
     test "reducer can skip events", %{conn: conn} do
       {:ok, collector} = Collector.start_link(reducer: {TestReducer, :skip, 2}, connection: conn)
 
-      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"}
+      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-1",
+        url: "https://example.com"
+      }
+
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
       assert_receive {:mock_transport_send, json}
       reply(conn, Jason.decode!(json)["id"])
@@ -252,9 +278,14 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
     end
 
     test "reducer can expand into multiple events", %{conn: conn} do
-      {:ok, collector} = Collector.start_link(reducer: {TestReducer, :expand, 2}, connection: conn)
+      {:ok, collector} =
+        Collector.start_link(reducer: {TestReducer, :expand, 2}, connection: conn)
 
-      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"}
+      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-1",
+        url: "https://example.com"
+      }
+
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
       assert_receive {:mock_transport_send, json}
       reply(conn, Jason.decode!(json)["id"])
@@ -280,7 +311,11 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
           connection: conn
         )
 
-      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"}
+      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-1",
+        url: "https://example.com"
+      }
+
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
       assert_receive {:mock_transport_send, json}
       reply(conn, Jason.decode!(json)["id"])
@@ -301,7 +336,11 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
     test "returns trace data and stops the collector", %{conn: conn} do
       {:ok, collector} = Collector.start_link(connection: conn)
 
-      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"}
+      cmd = %Bibbidi.Commands.BrowsingContext.Navigate{
+        context: "ctx-1",
+        url: "https://example.com"
+      }
+
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
       assert_receive {:mock_transport_send, json}
       reply(conn, Jason.decode!(json)["id"])

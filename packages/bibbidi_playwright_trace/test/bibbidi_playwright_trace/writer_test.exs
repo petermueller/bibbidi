@@ -34,7 +34,10 @@ defmodule BibbidiPlaywrightTrace.WriterTest do
 
   describe "before_event/4" do
     test "builds before event splitting BiDi method into class and method" do
-      event = Writer.before_event("call@1", 1000, "browsingContext.navigate", %{"url" => "https://example.com"})
+      event =
+        Writer.before_event("call@1", 1000, "browsingContext.navigate", %{
+          "url" => "https://example.com"
+        })
 
       assert event["type"] == "before"
       assert event["callId"] == "call@1"
@@ -91,7 +94,8 @@ defmodule BibbidiPlaywrightTrace.WriterTest do
       # A small 1x1 red PNG pixel
       png_data = Base.encode64(<<0, 0, 0, 1, 2, 3>>)
 
-      {event, sha1, binary} = Writer.screencast_frame("page@1", 1500, png_data, width: 1, height: 1)
+      {event, sha1, binary} =
+        Writer.screencast_frame("page@1", 1500, png_data, width: 1, height: 1)
 
       assert event["type"] == "screencast-frame"
       assert event["pageId"] == "page@1"
@@ -112,7 +116,9 @@ defmodule BibbidiPlaywrightTrace.WriterTest do
 
       events = [
         Writer.context_options(browser_name: "firefox"),
-        Writer.before_event("call@1", 1000, "browsingContext.navigate", %{"url" => "https://example.com"}),
+        Writer.before_event("call@1", 1000, "browsingContext.navigate", %{
+          "url" => "https://example.com"
+        }),
         Writer.after_event("call@1", 2000, {:ok, %{"navigation" => "nav-1"}})
       ]
 

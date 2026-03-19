@@ -50,7 +50,8 @@ defmodule BibbidiPlaywrightTrace.Collector do
   @type option ::
           {:browser_name, String.t()}
           | {:platform, String.t()}
-          | {:viewport, {pos_integer(), pos_integer()} | %{width: pos_integer(), height: pos_integer()}}
+          | {:viewport,
+             {pos_integer(), pos_integer()} | %{width: pos_integer(), height: pos_integer()}}
           | {:connection, pid()}
           | {:reducer, {module(), atom(), non_neg_integer()} | {module(), atom(), list()}}
 
