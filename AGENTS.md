@@ -14,22 +14,36 @@ Building-block library — no opinionated supervision tree.
 - **`Bibbidi.Protocol`** — Pure JSON encode/decode (no process state)
 - **`Bibbidi.Session`** — Functional module for session lifecycle (takes conn pid)
 - **`Bibbidi.Commands.*`** — Command builder modules (one per BiDi module)
-- **`Bibbidi.Types.*`** — Type structs (future, from CDDL codegen)
-- **`Bibbidi.Events.*`** — Event types (future, from CDDL codegen)
+- **`Bibbidi.Events.*`** — Event types (generated from CDDL codegen)
 
-## File Layout
+## Monorepo Structure
+
+```
+packages/
+├── bibbidi/                    — the core hex package
+│   ├── lib/bibbidi/            — source code
+│   ├── dev/                    — code generators (CDDL parser, Igniter tasks)
+│   ├── test/                   — tests
+│   ├── priv/cddl/              — downloaded CDDL spec files
+│   ├── examples/op_workflow/   — standalone example project (Op builder pattern)
+│   └── mix.exs
+```
+
+## File Layout (packages/bibbidi/)
 
 ```
 lib/bibbidi/browser.ex         — Browser lifecycle GenServer
-lib/bibbidi/connection.ex      — Core GenServer
+lib/bibbidi/connection.ex      — Core GenServer (execute/2 + telemetry)
+lib/bibbidi/encodable.ex       — Encodable protocol (method/1, params/1)
+lib/bibbidi/telemetry.ex       — Telemetry event documentation
 lib/bibbidi/protocol.ex        — Pure JSON encode/decode
 lib/bibbidi/transport.ex       — Behaviour
 lib/bibbidi/transport/mint_ws.ex — Mint.WebSocket impl
 lib/bibbidi/session.ex         — Session lifecycle
-lib/bibbidi/commands/*.ex      — Command builders
-lib/bibbidi/types/*.ex         — Type structs (generated)
-lib/bibbidi/events/*.ex        — Event types (generated)
-lib/mix/tasks/*.ex             — Mix tasks
+lib/bibbidi/commands/*.ex      — Command builder modules
+lib/bibbidi/commands/<mod>/*.ex — Command structs (generated, implement Encodable)
+lib/bibbidi/events/*.ex        — Event helpers (generated)
+dev/mix/tasks/*.ex             — Mix tasks (gen, download_spec, gen.workflow)
 priv/cddl/                    — Downloaded CDDL spec files
 test/support/                  — Test helpers (IntegrationCase, MockTransport)
 test/bibbidi/                  — Unit tests
@@ -46,11 +60,17 @@ test/integration/              — Integration tests (tagged :integration)
 
 ## Testing
 
+Run from `packages/bibbidi/`:
+
 - `mix test` — Unit tests only (integration excluded by default)
 - `mix test --include integration` — Runs integration tests (needs Firefox)
 - Set `BBD_BROWSER_URL` to skip browser launch and connect to an existing instance
 - Set `BBD_DEBUG=1` to run headed (visible browser window)
 - Integration tests are tagged `@moduletag :integration`
+
+Run example project tests from `packages/bibbidi/examples/op_workflow/`:
+
+- `mix test` — Op builder and Runner tests
 
 ## Adding a New Protocol Module
 
