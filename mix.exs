@@ -8,10 +8,20 @@ defmodule Bibbidi.MixWorkspace do
       elixir: "~> 1.19",
       elixirc_paths: [],
       deps: deps(),
+      aliases: aliases(),
       workspace: [
         type: :workspace
       ],
       lockfile: "workspace.lock"
+    ]
+  end
+
+  defp aliases do
+    [
+      "test.all": ["workspace.run -t test"],
+      "format.all": ["workspace.run -t format"],
+      "deps.get.all": ["workspace.run -t deps.get"],
+      "compile.all": ["workspace.run -t compile"]
     ]
   end
 

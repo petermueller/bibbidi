@@ -60,6 +60,14 @@ test/integration/              — Integration tests (tagged :integration)
 - Event subscribers receive `{:bibbidi_event, method, params}` messages.
 - No auto-supervision — users add `Bibbidi.Connection` to their own sup trees.
 
+## Environment Variables
+
+All project env vars use the `BBD_` prefix:
+
+- `BBD_DEV` — When set, satellite packages (`bibbidi_runic`, `bibbidi_playwright_trace`) depend on bibbidi via `path: "../bibbidi"` instead of a Hex version (`~> 0.2.0`). Use this for local development across packages.
+- `BBD_BROWSER_URL` — Skip browser launch and connect to an existing instance
+- `BBD_DEBUG=1` — Run headed (visible browser window)
+
 ## Testing
 
 Run from `packages/bibbidi/`:

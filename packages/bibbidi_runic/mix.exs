@@ -23,8 +23,16 @@ defmodule BibbidiRunic.MixProject do
 
   defp deps do
     [
-      {:bibbidi, path: "../bibbidi"},
+      bibbidi_dep(),
       {:runic, "~> 0.1.0-alpha"}
     ]
+  end
+
+  defp bibbidi_dep do
+    if System.get_env("BBD_DEV") do
+      {:bibbidi, path: "../bibbidi"}
+    else
+      {:bibbidi, "~> 0.2.0"}
+    end
   end
 end
