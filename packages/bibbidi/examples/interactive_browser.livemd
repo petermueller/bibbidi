@@ -430,33 +430,39 @@ defmodule UI do
     end)
   end
 
+  alias Bibbidi.Events.BrowsingContext.{
+    NavigationStarted,
+    DomContentLoaded,
+    Load,
+    FragmentNavigated,
+    UserPromptOpened,
+    UserPromptClosed
+  }
+  alias Bibbidi.Events.Log.EntryAdded
+
   defp log_loop(frame) do
     receive do
-      {:bibbidi_event, "log.entryAdded", params} ->
-        level = params["level"] || "info"
-        text = params["text"] || ""
-        Kino.Frame.append(frame, Kino.Markdown.new("`[#{level}]` #{text}"))
+      {:bibbidi_event, "log.entryAdded", %EntryAdded{level: level, text: text}} ->
+        Kino.Frame.append(frame, Kino.Markdown.new("`[#{level || "info"}]` #{text}"))
 
-      {:bibbidi_event, "browsingContext.navigationStarted", params} ->
-        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` started: #{params["url"]}"))
+      {:bibbidi_event, "browsingContext.navigationStarted", %NavigationStarted{url: url}} ->
+        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` started: #{url}"))
 
-      {:bibbidi_event, "browsingContext.domContentLoaded", params} ->
-        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` DOM ready: #{params["url"]}"))
+      {:bibbidi_event, "browsingContext.domContentLoaded", %DomContentLoaded{url: url}} ->
+        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` DOM ready: #{url}"))
 
-      {:bibbidi_event, "browsingContext.load", params} ->
-        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` loaded: #{params["url"]}"))
+      {:bibbidi_event, "browsingContext.load", %Load{url: url}} ->
+        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` loaded: #{url}"))
 
-      {:bibbidi_event, "browsingContext.fragmentNavigated", params} ->
-        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` fragment: #{params["url"]}"))
+      {:bibbidi_event, "browsingContext.fragmentNavigated", %FragmentNavigated{url: url}} ->
+        Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` fragment: #{url}"))
 
-      {:bibbidi_event, "browsingContext.userPromptOpened", params} ->
-        type = params["type"] || "dialog"
-        msg = params["message"] || ""
-        Kino.Frame.append(frame, Kino.Markdown.new("`[prompt]` #{type} opened: #{msg}"))
+      {:bibbidi_event, "browsingContext.userPromptOpened", %UserPromptOpened{type: type, message: msg}} ->
+        Kino.Frame.append(frame, Kino.Markdown.new("`[prompt]` #{type || "dialog"} opened: #{msg}"))
 
-      {:bibbidi_event, "browsingContext.userPromptClosed", params} ->
-        accepted = if params["accepted"], do: "accepted", else: "dismissed"
-        Kino.Frame.append(frame, Kino.Markdown.new("`[prompt]` #{accepted}"))
+      {:bibbidi_event, "browsingContext.userPromptClosed", %UserPromptClosed{accepted: accepted}} ->
+        status = if accepted, do: "accepted", else: "dismissed"
+        Kino.Frame.append(frame, Kino.Markdown.new("`[prompt]` #{status}"))
     end
 
     log_loop(frame)
