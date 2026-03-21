@@ -2,6 +2,8 @@
 defmodule Bibbidi.Commands.Session.End do
   @moduledoc """
   Command struct for `session.end`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-session-end)
   """
 
   @derive Bibbidi.Telemetry.Metadata

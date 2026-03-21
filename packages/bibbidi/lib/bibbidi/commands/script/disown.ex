@@ -2,12 +2,19 @@
 defmodule Bibbidi.Commands.Script.Disown do
   @moduledoc """
   Command struct for `script.disown`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-script-disown)
+  ## Fields
+
+  - `handles` - list of `t:Bibbidi.Types.Script.Handle.t/0` (required)
+  - `target` - `t:Bibbidi.Types.Script.Target.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            handles: Zoi.list(Zoi.any()),
-            target: Zoi.any(),
+            handles: Zoi.list(Bibbidi.Types.Script.Handle.schema()),
+            target: Bibbidi.Types.Script.Target.schema(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword([])

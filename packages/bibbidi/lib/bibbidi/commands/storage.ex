@@ -31,7 +31,7 @@ defmodule Bibbidi.Commands.Storage do
 
   #{Zoi.describe(SetCookie.opts_schema())}
   """
-  @spec set_cookie(GenServer.server(), term(), SetCookie.opts()) ::
+  @spec set_cookie(GenServer.server(), Bibbidi.Types.Storage.PartialCookie.t(), SetCookie.opts()) ::
           {:ok, SetCookie.result()} | {:error, term()}
   def set_cookie(conn, cookie, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)

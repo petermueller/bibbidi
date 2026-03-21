@@ -19,7 +19,7 @@ needs to talk BiDi to a browser.
 ```elixir
 def deps do
   [
-    {:bibbidi, "~> 0.2.0"}
+    {:bibbidi, "~> 0.3.0"}
   ]
 end
 ```
@@ -345,6 +345,19 @@ Accepts atoms (`:enter`, `:arrow_up`, `:f1`), PascalCase strings (`"Enter"`,
 `"ArrowUp"`), or single characters that pass through unchanged (`"a"`, `"1"`).
 
 Each command also has a corresponding struct in `Bibbidi.Commands.<Module>.<Command>` (e.g. `Bibbidi.Commands.BrowsingContext.Navigate`) that implements the `Bibbidi.Encodable` protocol for use with `Connection.execute/2`. Every command struct exposes [Zoi](https://hex.pm/packages/zoi) schemas via `schema/0`, `opts_schema/0`, and `result_schema/0` for runtime validation and introspection.
+
+## Types
+
+All named BiDi protocol types have corresponding modules under `Bibbidi.Types.*` — generated from the W3C CDDL spec. Each type module exposes a `schema/0` function and a `@type t` for use in specs and docs:
+
+```elixir
+Bibbidi.Types.BrowsingContext          # browsingContext.BrowsingContext (text alias)
+Bibbidi.Types.Script.Target            # script.Target (choice union)
+Bibbidi.Types.Script.ContextTarget     # script.ContextTarget (struct-like map)
+Bibbidi.Types.Script.ResultOwnership   # script.ResultOwnership (string enum)
+```
+
+Command struct moduledocs cross-reference these types with ExDoc links, so you can click through from a command's field documentation to the type definition.
 
 ## Workflow Builder
 

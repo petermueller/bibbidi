@@ -52,8 +52,11 @@ defmodule Bibbidi.Commands.Browser do
   end
 
   @doc "Executes the `browser.removeUserContext` command."
-  @spec remove_user_context(GenServer.server(), term(), RemoveUserContext.opts()) ::
-          {:ok, RemoveUserContext.result()} | {:error, term()}
+  @spec remove_user_context(
+          GenServer.server(),
+          Bibbidi.Types.Browser.UserContext.t(),
+          RemoveUserContext.opts()
+        ) :: {:ok, RemoveUserContext.result()} | {:error, term()}
   def remove_user_context(conn, user_context, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
     connection_mod.execute(conn, struct!(RemoveUserContext, [{:user_context, user_context}]), [])
@@ -66,8 +69,11 @@ defmodule Bibbidi.Commands.Browser do
 
   #{Zoi.describe(SetClientWindowState.opts_schema())}
   """
-  @spec set_client_window_state(GenServer.server(), term(), SetClientWindowState.opts()) ::
-          {:ok, SetClientWindowState.result()} | {:error, term()}
+  @spec set_client_window_state(
+          GenServer.server(),
+          Bibbidi.Types.Browser.ClientWindow.t(),
+          SetClientWindowState.opts()
+        ) :: {:ok, SetClientWindowState.result()} | {:error, term()}
   def set_client_window_state(conn, client_window, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetClientWindowState.opts_schema(), opts)
@@ -86,8 +92,11 @@ defmodule Bibbidi.Commands.Browser do
 
   #{Zoi.describe(SetDownloadBehavior.opts_schema())}
   """
-  @spec set_download_behavior(GenServer.server(), term() | nil, SetDownloadBehavior.opts()) ::
-          {:ok, SetDownloadBehavior.result()} | {:error, term()}
+  @spec set_download_behavior(
+          GenServer.server(),
+          Bibbidi.Types.Browser.DownloadBehavior.t() | nil,
+          SetDownloadBehavior.opts()
+        ) :: {:ok, SetDownloadBehavior.result()} | {:error, term()}
   def set_download_behavior(conn, download_behavior, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetDownloadBehavior.opts_schema(), opts)

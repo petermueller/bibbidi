@@ -2,17 +2,31 @@
 defmodule Bibbidi.Commands.Script.CallFunction do
   @moduledoc """
   Command struct for `script.callFunction`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-script-callFunction)
+  ## Fields
+
+  - `function_declaration` - `String.t()` (required)
+  - `await_promise` - `boolean()` (required)
+  - `target` - `t:Bibbidi.Types.Script.Target.t/0` (required)
+  - `arguments` - list of `t:Bibbidi.Types.Script.LocalValue.t/0` (optional)
+  - `result_ownership` - `t:Bibbidi.Types.Script.ResultOwnership.t/0` (optional)
+  - `serialization_options` - `t:Bibbidi.Types.Script.SerializationOptions.t/0` (optional)
+  - `this` - `t:Bibbidi.Types.Script.LocalValue.t/0` (optional)
+  - `user_activation` - `boolean()` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             function_declaration: Zoi.string(),
             await_promise: Zoi.boolean(),
-            target: Zoi.any(),
-            arguments: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            result_ownership: Zoi.any() |> Zoi.optional(),
-            serialization_options: Zoi.any() |> Zoi.optional(),
-            this: Zoi.any() |> Zoi.optional(),
+            target: Bibbidi.Types.Script.Target.schema(),
+            arguments: Zoi.list(Bibbidi.Types.Script.LocalValue.schema()) |> Zoi.optional(),
+            result_ownership: Bibbidi.Types.Script.ResultOwnership.schema() |> Zoi.optional(),
+            serialization_options:
+              Bibbidi.Types.Script.SerializationOptions.schema() |> Zoi.optional(),
+            this: Bibbidi.Types.Script.LocalValue.schema() |> Zoi.optional(),
             user_activation: Zoi.boolean() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })

@@ -4,6 +4,13 @@ defmodule Bibbidi.Events.Input.FileDialogOpened do
   Event struct for `input.fileDialogOpened`.
 
   Params type: `input.FileDialogInfo`
+
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+  - `element` - `t:Bibbidi.Types.Script.SharedReference.t/0` (optional)
+  - `multiple` - `boolean()` (required)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}

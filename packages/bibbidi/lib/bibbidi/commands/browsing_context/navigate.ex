@@ -2,17 +2,29 @@
 defmodule Bibbidi.Commands.BrowsingContext.Navigate do
   @moduledoc """
   Command struct for `browsingContext.navigate`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-navigate)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `url` - `String.t()` (required)
+  - `wait` - `t:Bibbidi.Types.BrowsingContext.ReadinessState.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
             url: Zoi.string(),
-            wait: Zoi.any() |> Zoi.optional(),
+            wait: Bibbidi.Types.BrowsingContext.ReadinessState.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(wait: Zoi.any() |> Zoi.optional())
-  @result_schema Zoi.map(%{navigation: Zoi.union([Zoi.any(), Zoi.null()]), url: Zoi.string()})
+  @result_schema Zoi.map(%{
+                   navigation:
+                     Zoi.union([Bibbidi.Types.BrowsingContext.Navigation.schema(), Zoi.null()]),
+                   url: Zoi.string()
+                 })
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

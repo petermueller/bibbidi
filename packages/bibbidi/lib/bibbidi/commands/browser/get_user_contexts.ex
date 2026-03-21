@@ -2,6 +2,8 @@
 defmodule Bibbidi.Commands.Browser.GetUserContexts do
   @moduledoc """
   Command struct for `browser.getUserContexts`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browser-getUserContexts)
   """
 
   @derive Bibbidi.Telemetry.Metadata

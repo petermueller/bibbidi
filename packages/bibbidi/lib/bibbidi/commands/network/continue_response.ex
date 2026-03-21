@@ -2,16 +2,27 @@
 defmodule Bibbidi.Commands.Network.ContinueResponse do
   @moduledoc """
   Command struct for `network.continueResponse`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-continueResponse)
+  ## Fields
+
+  - `request` - `t:Bibbidi.Types.Network.Request.t/0` (required)
+  - `cookies` - list of `t:Bibbidi.Types.Network.SetCookieHeader.t/0` (optional)
+  - `credentials` - `t:Bibbidi.Types.Network.AuthCredentials.t/0` (optional)
+  - `headers` - list of `t:Bibbidi.Types.Network.Header.t/0` (optional)
+  - `reason_phrase` - `String.t()` (optional)
+  - `status_code` - `t:Bibbidi.Types.JsUint.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            request: Zoi.any(),
-            cookies: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            credentials: Zoi.any() |> Zoi.optional(),
-            headers: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            request: Bibbidi.Types.Network.Request.schema(),
+            cookies: Zoi.list(Bibbidi.Types.Network.SetCookieHeader.schema()) |> Zoi.optional(),
+            credentials: Bibbidi.Types.Network.AuthCredentials.schema() |> Zoi.optional(),
+            headers: Zoi.list(Bibbidi.Types.Network.Header.schema()) |> Zoi.optional(),
             reason_phrase: Zoi.string() |> Zoi.optional(),
-            status_code: Zoi.any() |> Zoi.optional(),
+            status_code: Bibbidi.Types.JsUint.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

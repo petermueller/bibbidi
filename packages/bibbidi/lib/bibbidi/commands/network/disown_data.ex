@@ -2,13 +2,21 @@
 defmodule Bibbidi.Commands.Network.DisownData do
   @moduledoc """
   Command struct for `network.disownData`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-disownData)
+  ## Fields
+
+  - `data_type` - `t:Bibbidi.Types.Network.DataType.t/0` (required)
+  - `collector` - `t:Bibbidi.Types.Network.Collector.t/0` (required)
+  - `request` - `t:Bibbidi.Types.Network.Request.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            data_type: Zoi.any(),
-            collector: Zoi.any(),
-            request: Zoi.any(),
+            data_type: Bibbidi.Types.Network.DataType.schema(),
+            collector: Bibbidi.Types.Network.Collector.schema(),
+            request: Bibbidi.Types.Network.Request.schema(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword([])

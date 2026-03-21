@@ -19,7 +19,7 @@ defmodule Bibbidi.Commands.BrowsingContext do
   alias __MODULE__.TraverseHistory
 
   @doc "Executes the `browsingContext.activate` command."
-  @spec activate(GenServer.server(), term(), Activate.opts()) ::
+  @spec activate(GenServer.server(), Bibbidi.Types.BrowsingContext.t(), Activate.opts()) ::
           {:ok, Activate.result()} | {:error, term()}
   def activate(conn, context, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
@@ -33,8 +33,11 @@ defmodule Bibbidi.Commands.BrowsingContext do
 
   #{Zoi.describe(CaptureScreenshot.opts_schema())}
   """
-  @spec capture_screenshot(GenServer.server(), term(), CaptureScreenshot.opts()) ::
-          {:ok, CaptureScreenshot.result()} | {:error, term()}
+  @spec capture_screenshot(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          CaptureScreenshot.opts()
+        ) :: {:ok, CaptureScreenshot.result()} | {:error, term()}
   def capture_screenshot(conn, context, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(CaptureScreenshot.opts_schema(), opts)
@@ -48,7 +51,7 @@ defmodule Bibbidi.Commands.BrowsingContext do
 
   #{Zoi.describe(Close.opts_schema())}
   """
-  @spec close(GenServer.server(), term(), Close.opts()) ::
+  @spec close(GenServer.server(), Bibbidi.Types.BrowsingContext.t(), Close.opts()) ::
           {:ok, Close.result()} | {:error, term()}
   def close(conn, context, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
@@ -63,7 +66,7 @@ defmodule Bibbidi.Commands.BrowsingContext do
 
   #{Zoi.describe(Create.opts_schema())}
   """
-  @spec create(GenServer.server(), term(), Create.opts()) ::
+  @spec create(GenServer.server(), Bibbidi.Types.BrowsingContext.CreateType.t(), Create.opts()) ::
           {:ok, Create.result()} | {:error, term()}
   def create(conn, type, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
@@ -92,8 +95,11 @@ defmodule Bibbidi.Commands.BrowsingContext do
 
   #{Zoi.describe(HandleUserPrompt.opts_schema())}
   """
-  @spec handle_user_prompt(GenServer.server(), term(), HandleUserPrompt.opts()) ::
-          {:ok, HandleUserPrompt.result()} | {:error, term()}
+  @spec handle_user_prompt(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          HandleUserPrompt.opts()
+        ) :: {:ok, HandleUserPrompt.result()} | {:error, term()}
   def handle_user_prompt(conn, context, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(HandleUserPrompt.opts_schema(), opts)
@@ -107,8 +113,12 @@ defmodule Bibbidi.Commands.BrowsingContext do
 
   #{Zoi.describe(LocateNodes.opts_schema())}
   """
-  @spec locate_nodes(GenServer.server(), term(), term(), LocateNodes.opts()) ::
-          {:ok, LocateNodes.result()} | {:error, term()}
+  @spec locate_nodes(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          Bibbidi.Types.BrowsingContext.Locator.t(),
+          LocateNodes.opts()
+        ) :: {:ok, LocateNodes.result()} | {:error, term()}
   def locate_nodes(conn, context, locator, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(LocateNodes.opts_schema(), opts)
@@ -127,8 +137,12 @@ defmodule Bibbidi.Commands.BrowsingContext do
 
   #{Zoi.describe(Navigate.opts_schema())}
   """
-  @spec navigate(GenServer.server(), term(), String.t(), Navigate.opts()) ::
-          {:ok, Navigate.result()} | {:error, term()}
+  @spec navigate(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          String.t(),
+          Navigate.opts()
+        ) :: {:ok, Navigate.result()} | {:error, term()}
   def navigate(conn, context, url, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(Navigate.opts_schema(), opts)
@@ -142,7 +156,7 @@ defmodule Bibbidi.Commands.BrowsingContext do
 
   #{Zoi.describe(Print.opts_schema())}
   """
-  @spec print(GenServer.server(), term(), Print.opts()) ::
+  @spec print(GenServer.server(), Bibbidi.Types.BrowsingContext.t(), Print.opts()) ::
           {:ok, Print.result()} | {:error, term()}
   def print(conn, context, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
@@ -157,7 +171,7 @@ defmodule Bibbidi.Commands.BrowsingContext do
 
   #{Zoi.describe(Reload.opts_schema())}
   """
-  @spec reload(GenServer.server(), term(), Reload.opts()) ::
+  @spec reload(GenServer.server(), Bibbidi.Types.BrowsingContext.t(), Reload.opts()) ::
           {:ok, Reload.result()} | {:error, term()}
   def reload(conn, context, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
@@ -181,8 +195,12 @@ defmodule Bibbidi.Commands.BrowsingContext do
   end
 
   @doc "Executes the `browsingContext.traverseHistory` command."
-  @spec traverse_history(GenServer.server(), term(), term(), TraverseHistory.opts()) ::
-          {:ok, TraverseHistory.result()} | {:error, term()}
+  @spec traverse_history(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          Bibbidi.Types.JsInt.t(),
+          TraverseHistory.opts()
+        ) :: {:ok, TraverseHistory.result()} | {:error, term()}
   def traverse_history(conn, context, delta, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
 

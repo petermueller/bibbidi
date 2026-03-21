@@ -2,11 +2,19 @@
 defmodule Bibbidi.Commands.BrowsingContext.HandleUserPrompt do
   @moduledoc """
   Command struct for `browsingContext.handleUserPrompt`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-handleUserPrompt)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `accept` - `boolean()` (optional)
+  - `user_text` - `String.t()` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
             accept: Zoi.boolean() |> Zoi.optional(),
             user_text: Zoi.string() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()

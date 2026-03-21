@@ -2,14 +2,23 @@
 defmodule Bibbidi.Commands.BrowsingContext.Create do
   @moduledoc """
   Command struct for `browsingContext.create`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-create)
+  ## Fields
+
+  - `type` - `t:Bibbidi.Types.BrowsingContext.CreateType.t/0` (required)
+  - `reference_context` - `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `background` - `boolean()` (optional)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            type: Zoi.any(),
-            reference_context: Zoi.any() |> Zoi.optional(),
+            type: Bibbidi.Types.BrowsingContext.CreateType.schema(),
+            reference_context: Bibbidi.Types.BrowsingContext.schema() |> Zoi.optional(),
             background: Zoi.boolean() |> Zoi.optional(),
-            user_context: Zoi.any() |> Zoi.optional(),
+            user_context: Bibbidi.Types.Browser.UserContext.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
@@ -17,7 +26,10 @@ defmodule Bibbidi.Commands.BrowsingContext.Create do
                  background: Zoi.boolean() |> Zoi.optional(),
                  user_context: Zoi.any() |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{context: Zoi.any(), user_context: Zoi.any() |> Zoi.optional()})
+  @result_schema Zoi.map(%{
+                   context: Bibbidi.Types.BrowsingContext.schema(),
+                   user_context: Bibbidi.Types.Browser.UserContext.schema() |> Zoi.optional()
+                 })
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

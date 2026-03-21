@@ -2,14 +2,25 @@
 defmodule Bibbidi.Commands.BrowsingContext.SetViewport do
   @moduledoc """
   Command struct for `browsingContext.setViewport`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-setViewport)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `viewport` - `t:Bibbidi.Types.BrowsingContext.Viewport.t/0` or `nil` (optional)
+  - `device_pixel_ratio` - `float()` or `nil` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any() |> Zoi.optional(),
-            viewport: Zoi.union([Zoi.any(), Zoi.null()]) |> Zoi.optional(),
+            context: Bibbidi.Types.BrowsingContext.schema() |> Zoi.optional(),
+            viewport:
+              Zoi.union([Bibbidi.Types.BrowsingContext.Viewport.schema(), Zoi.null()])
+              |> Zoi.optional(),
             device_pixel_ratio: Zoi.union([Zoi.float(), Zoi.null()]) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

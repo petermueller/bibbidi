@@ -2,12 +2,19 @@
 defmodule Bibbidi.Commands.Storage.SetCookie do
   @moduledoc """
   Command struct for `storage.setCookie`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-storage-setCookie)
+  ## Fields
+
+  - `cookie` - `t:Bibbidi.Types.Storage.PartialCookie.t/0` (required)
+  - `partition` - `t:Bibbidi.Types.Storage.PartitionDescriptor.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            cookie: Zoi.any(),
-            partition: Zoi.any() |> Zoi.optional(),
+            cookie: Bibbidi.Types.Storage.PartialCookie.schema(),
+            partition: Bibbidi.Types.Storage.PartitionDescriptor.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(partition: Zoi.any() |> Zoi.optional())

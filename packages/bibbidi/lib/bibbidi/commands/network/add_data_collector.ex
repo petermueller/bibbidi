@@ -2,15 +2,25 @@
 defmodule Bibbidi.Commands.Network.AddDataCollector do
   @moduledoc """
   Command struct for `network.addDataCollector`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-addDataCollector)
+  ## Fields
+
+  - `data_types` - list of `t:Bibbidi.Types.Network.DataType.t/0` (required)
+  - `max_encoded_data_size` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `collector_type` - `term()` (optional)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            data_types: Zoi.list(Zoi.any()),
-            max_encoded_data_size: Zoi.any(),
+            data_types: Zoi.list(Bibbidi.Types.Network.DataType.schema()),
+            max_encoded_data_size: Bibbidi.Types.JsUint.schema(),
             collector_type: Zoi.any() |> Zoi.optional(),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
@@ -18,7 +28,7 @@ defmodule Bibbidi.Commands.Network.AddDataCollector do
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
                  user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{collector: Zoi.any()})
+  @result_schema Zoi.map(%{collector: Bibbidi.Types.Network.Collector.schema()})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

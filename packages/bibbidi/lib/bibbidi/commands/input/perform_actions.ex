@@ -2,12 +2,19 @@
 defmodule Bibbidi.Commands.Input.PerformActions do
   @moduledoc """
   Command struct for `input.performActions`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-input-performActions)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `actions` - list of `t:Bibbidi.Types.Input.SourceActions.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
-            actions: Zoi.list(Zoi.any()),
+            context: Bibbidi.Types.BrowsingContext.schema(),
+            actions: Zoi.list(Bibbidi.Types.Input.SourceActions.schema()),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword([])

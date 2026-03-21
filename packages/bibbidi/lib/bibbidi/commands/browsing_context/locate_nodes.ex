@@ -2,15 +2,27 @@
 defmodule Bibbidi.Commands.BrowsingContext.LocateNodes do
   @moduledoc """
   Command struct for `browsingContext.locateNodes`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-locateNodes)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `locator` - `t:Bibbidi.Types.BrowsingContext.Locator.t/0` (required)
+  - `max_node_count` - `term()` (optional)
+  - `serialization_options` - `t:Bibbidi.Types.Script.SerializationOptions.t/0` (optional)
+  - `start_nodes` - list of `t:Bibbidi.Types.Script.SharedReference.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
-            locator: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
+            locator: Bibbidi.Types.BrowsingContext.Locator.schema(),
             max_node_count: Zoi.any() |> Zoi.optional(),
-            serialization_options: Zoi.any() |> Zoi.optional(),
-            start_nodes: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            serialization_options:
+              Bibbidi.Types.Script.SerializationOptions.schema() |> Zoi.optional(),
+            start_nodes:
+              Zoi.list(Bibbidi.Types.Script.SharedReference.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
@@ -18,7 +30,7 @@ defmodule Bibbidi.Commands.BrowsingContext.LocateNodes do
                  serialization_options: Zoi.any() |> Zoi.optional(),
                  start_nodes: Zoi.list(Zoi.any()) |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{nodes: Zoi.list(Zoi.any())})
+  @result_schema Zoi.map(%{nodes: Zoi.list(Bibbidi.Types.Script.NodeRemoteValue.schema())})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

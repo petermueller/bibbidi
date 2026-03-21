@@ -2,10 +2,19 @@
 defmodule Bibbidi.Commands.Session.New do
   @moduledoc """
   Command struct for `session.new`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-session-new)
+  ## Fields
+
+  - `capabilities` - `t:Bibbidi.Types.Session.CapabilitiesRequest.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
-  @schema Zoi.struct(__MODULE__, %{capabilities: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
+  @schema Zoi.struct(__MODULE__, %{
+            capabilities: Bibbidi.Types.Session.CapabilitiesRequest.schema(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(%{
                    session_id: Zoi.string(),
@@ -17,8 +26,9 @@ defmodule Bibbidi.Commands.Session.New do
                        platform_name: Zoi.string(),
                        set_window_rect: Zoi.boolean(),
                        user_agent: Zoi.string(),
-                       proxy: Zoi.any() |> Zoi.optional(),
-                       unhandled_prompt_behavior: Zoi.any() |> Zoi.optional(),
+                       proxy: Bibbidi.Types.Session.ProxyConfiguration.schema() |> Zoi.optional(),
+                       unhandled_prompt_behavior:
+                         Bibbidi.Types.Session.UserPromptHandler.schema() |> Zoi.optional(),
                        web_socket_url: Zoi.string() |> Zoi.optional()
                      })
                  })

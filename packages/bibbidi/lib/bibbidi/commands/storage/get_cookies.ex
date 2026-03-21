@@ -2,19 +2,29 @@
 defmodule Bibbidi.Commands.Storage.GetCookies do
   @moduledoc """
   Command struct for `storage.getCookies`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-storage-getCookies)
+  ## Fields
+
+  - `filter` - `t:Bibbidi.Types.Storage.CookieFilter.t/0` (optional)
+  - `partition` - `t:Bibbidi.Types.Storage.PartitionDescriptor.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            filter: Zoi.any() |> Zoi.optional(),
-            partition: Zoi.any() |> Zoi.optional(),
+            filter: Bibbidi.Types.Storage.CookieFilter.schema() |> Zoi.optional(),
+            partition: Bibbidi.Types.Storage.PartitionDescriptor.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  filter: Zoi.any() |> Zoi.optional(),
                  partition: Zoi.any() |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{cookies: Zoi.list(Zoi.any()), partition_key: Zoi.any()})
+  @result_schema Zoi.map(%{
+                   cookies: Zoi.list(Bibbidi.Types.Network.Cookie.schema()),
+                   partition_key: Zoi.any()
+                 })
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

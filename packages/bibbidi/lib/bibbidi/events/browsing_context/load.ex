@@ -4,6 +4,14 @@ defmodule Bibbidi.Events.BrowsingContext.Load do
   Event struct for `browsingContext.load`.
 
   Params type: `browsingContext.NavigationInfo`
+
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `navigation` - `t:Bibbidi.Types.BrowsingContext.Navigation.t/0` or `nil` (required)
+  - `timestamp` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `url` - `String.t()` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context, :navigation]}

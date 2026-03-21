@@ -2,13 +2,21 @@
 defmodule Bibbidi.Commands.Emulation.SetScreenSettingsOverride do
   @moduledoc """
   Command struct for `emulation.setScreenSettingsOverride`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-emulation-setScreenSettingsOverride)
+  ## Fields
+
+  - `screen_area` - `t:Bibbidi.Types.Emulation.ScreenArea.t/0` or `nil` (required)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            screen_area: Zoi.union([Zoi.any(), Zoi.null()]),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            screen_area: Zoi.union([Bibbidi.Types.Emulation.ScreenArea.schema(), Zoi.null()]),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

@@ -2,13 +2,22 @@
 defmodule Bibbidi.Commands.Browser.CreateUserContext do
   @moduledoc """
   Command struct for `browser.createUserContext`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browser-createUserContext)
+  ## Fields
+
+  - `accept_insecure_certs` - `boolean()` (optional)
+  - `proxy` - `t:Bibbidi.Types.Session.ProxyConfiguration.t/0` (optional)
+  - `unhandled_prompt_behavior` - `t:Bibbidi.Types.Session.UserPromptHandler.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             accept_insecure_certs: Zoi.boolean() |> Zoi.optional(),
-            proxy: Zoi.any() |> Zoi.optional(),
-            unhandled_prompt_behavior: Zoi.any() |> Zoi.optional(),
+            proxy: Bibbidi.Types.Session.ProxyConfiguration.schema() |> Zoi.optional(),
+            unhandled_prompt_behavior:
+              Bibbidi.Types.Session.UserPromptHandler.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
@@ -16,7 +25,7 @@ defmodule Bibbidi.Commands.Browser.CreateUserContext do
                  proxy: Zoi.any() |> Zoi.optional(),
                  unhandled_prompt_behavior: Zoi.any() |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{user_context: Zoi.any()})
+  @result_schema Zoi.map(%{user_context: Bibbidi.Types.Browser.UserContext.schema()})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

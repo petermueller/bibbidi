@@ -2,20 +2,28 @@
 defmodule Bibbidi.Commands.Network.AddIntercept do
   @moduledoc """
   Command struct for `network.addIntercept`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-addIntercept)
+  ## Fields
+
+  - `phases` - list of `t:Bibbidi.Types.Network.InterceptPhase.t/0` (required)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `url_patterns` - list of `t:Bibbidi.Types.Network.UrlPattern.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            phases: Zoi.list(Zoi.any()),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            url_patterns: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            phases: Zoi.list(Bibbidi.Types.Network.InterceptPhase.schema()),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            url_patterns: Zoi.list(Bibbidi.Types.Network.UrlPattern.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
                  url_patterns: Zoi.list(Zoi.any()) |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{intercept: Zoi.any()})
+  @result_schema Zoi.map(%{intercept: Bibbidi.Types.Network.Intercept.schema()})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

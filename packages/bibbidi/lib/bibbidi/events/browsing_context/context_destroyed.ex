@@ -4,6 +4,16 @@ defmodule Bibbidi.Events.BrowsingContext.ContextDestroyed do
   Event struct for `browsingContext.contextDestroyed`.
 
   Params type: `browsingContext.Info`
+
+  ## Fields
+
+  - `children` - `t:Bibbidi.Types.BrowsingContext.InfoList.t/0` or `nil` (required)
+  - `client_window` - `t:Bibbidi.Types.Browser.ClientWindow.t/0` (required)
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `original_opener` - `t:Bibbidi.Types.BrowsingContext.t/0` or `nil` (required)
+  - `url` - `String.t()` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (required)
+  - `parent` - `t:Bibbidi.Types.BrowsingContext.t/0` or `nil` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}

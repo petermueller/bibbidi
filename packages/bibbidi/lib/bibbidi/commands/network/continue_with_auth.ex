@@ -2,13 +2,21 @@
 defmodule Bibbidi.Commands.Network.ContinueWithAuth do
   @moduledoc """
   Command struct for `network.continueWithAuth`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-continueWithAuth)
+  ## Fields
+
+  - `request` - `t:Bibbidi.Types.Network.Request.t/0` (required)
+  - `action` - `"provideCredentials"` (optional)
+  - `credentials` - `t:Bibbidi.Types.Network.AuthCredentials.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            request: Zoi.any(),
+            request: Bibbidi.Types.Network.Request.schema(),
             action: Zoi.string() |> Zoi.optional(),
-            credentials: Zoi.any() |> Zoi.optional(),
+            credentials: Bibbidi.Types.Network.AuthCredentials.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

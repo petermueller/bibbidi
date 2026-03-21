@@ -2,14 +2,24 @@
 defmodule Bibbidi.Commands.Script.AddPreloadScript do
   @moduledoc """
   Command struct for `script.addPreloadScript`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-script-addPreloadScript)
+  ## Fields
+
+  - `function_declaration` - `String.t()` (required)
+  - `arguments` - list of `t:Bibbidi.Types.Script.ChannelValue.t/0` (optional)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+  - `sandbox` - `String.t()` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             function_declaration: Zoi.string(),
-            arguments: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            arguments: Zoi.list(Bibbidi.Types.Script.ChannelValue.schema()) |> Zoi.optional(),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             sandbox: Zoi.string() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
@@ -19,7 +29,7 @@ defmodule Bibbidi.Commands.Script.AddPreloadScript do
                  user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
                  sandbox: Zoi.string() |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{script: Zoi.any()})
+  @result_schema Zoi.map(%{script: Bibbidi.Types.Script.PreloadScript.schema()})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

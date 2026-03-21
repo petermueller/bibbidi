@@ -2,6 +2,8 @@
 defmodule Bibbidi.Commands.Session.Status do
   @moduledoc """
   Command struct for `session.status`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-session-status)
   """
 
   @derive Bibbidi.Telemetry.Metadata

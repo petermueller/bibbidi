@@ -2,12 +2,20 @@
 defmodule Bibbidi.Commands.Browser.SetDownloadBehavior do
   @moduledoc """
   Command struct for `browser.setDownloadBehavior`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browser-setDownloadBehavior)
+  ## Fields
+
+  - `download_behavior` - `t:Bibbidi.Types.Browser.DownloadBehavior.t/0` or `nil` (required)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            download_behavior: Zoi.union([Zoi.any(), Zoi.null()]),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            download_behavior:
+              Zoi.union([Bibbidi.Types.Browser.DownloadBehavior.schema(), Zoi.null()]),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional())

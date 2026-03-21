@@ -2,14 +2,23 @@
 defmodule Bibbidi.Commands.BrowsingContext.CaptureScreenshot do
   @moduledoc """
   Command struct for `browsingContext.captureScreenshot`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-captureScreenshot)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `origin` - `"viewport"` or `"document"` (optional)
+  - `format` - `t:Bibbidi.Types.BrowsingContext.ImageFormat.t/0` (optional)
+  - `clip` - `t:Bibbidi.Types.BrowsingContext.ClipRectangle.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
             origin: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
-            format: Zoi.any() |> Zoi.optional(),
-            clip: Zoi.any() |> Zoi.optional(),
+            format: Bibbidi.Types.BrowsingContext.ImageFormat.schema() |> Zoi.optional(),
+            clip: Bibbidi.Types.BrowsingContext.ClipRectangle.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

@@ -2,10 +2,19 @@
 defmodule Bibbidi.Commands.WebExtension.Uninstall do
   @moduledoc """
   Command struct for `webExtension.uninstall`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-webExtension-uninstall)
+  ## Fields
+
+  - `extension` - `t:Bibbidi.Types.WebExtension.Extension.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
-  @schema Zoi.struct(__MODULE__, %{extension: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
+  @schema Zoi.struct(__MODULE__, %{
+            extension: Bibbidi.Types.WebExtension.Extension.schema(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

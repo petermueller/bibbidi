@@ -2,12 +2,20 @@
 defmodule Bibbidi.Commands.Session.Unsubscribe do
   @moduledoc """
   Command struct for `session.unsubscribe`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-session-unsubscribe)
+  ## Fields
+
+  - `events` - list of `String.t()` (optional)
+  - `subscriptions` - list of `t:Bibbidi.Types.Session.Subscription.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             events: Zoi.list(Zoi.string()) |> Zoi.optional(),
-            subscriptions: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            subscriptions:
+              Zoi.list(Bibbidi.Types.Session.Subscription.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

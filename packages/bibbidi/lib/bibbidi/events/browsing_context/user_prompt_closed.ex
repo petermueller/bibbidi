@@ -4,6 +4,14 @@ defmodule Bibbidi.Events.BrowsingContext.UserPromptClosed do
   Event struct for `browsingContext.userPromptClosed`.
 
   Params type: `browsingContext.UserPromptClosedParameters`
+
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `accepted` - `boolean()` (required)
+  - `type` - `t:Bibbidi.Types.BrowsingContext.UserPromptType.t/0` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+  - `user_text` - `String.t()` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}

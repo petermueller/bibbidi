@@ -2,13 +2,21 @@
 defmodule Bibbidi.Commands.Network.SetExtraHeaders do
   @moduledoc """
   Command struct for `network.setExtraHeaders`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-setExtraHeaders)
+  ## Fields
+
+  - `headers` - list of `t:Bibbidi.Types.Network.Header.t/0` (required)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            headers: Zoi.list(Zoi.any()),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            headers: Zoi.list(Bibbidi.Types.Network.Header.schema()),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

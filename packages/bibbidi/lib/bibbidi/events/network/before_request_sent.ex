@@ -4,6 +4,18 @@ defmodule Bibbidi.Events.Network.BeforeRequestSent do
   Event struct for `network.beforeRequestSent`.
 
   Params type: `network.BeforeRequestSentParameters`
+
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` or `nil` (required)
+  - `is_blocked` - `boolean()` (required)
+  - `navigation` - `t:Bibbidi.Types.BrowsingContext.Navigation.t/0` or `nil` (required)
+  - `redirect_count` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `request` - `t:Bibbidi.Types.Network.RequestData.t/0` (required)
+  - `timestamp` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` or `nil` (optional)
+  - `intercepts` - list of `t:Bibbidi.Types.Network.Intercept.t/0` (optional)
+  - `initiator` - `t:Bibbidi.Types.Network.Initiator.t/0` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context, :navigation, :request]}

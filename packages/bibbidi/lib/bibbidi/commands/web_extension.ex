@@ -9,7 +9,7 @@ defmodule Bibbidi.Commands.WebExtension do
   alias __MODULE__.Uninstall
 
   @doc "Executes the `webExtension.install` command."
-  @spec install(GenServer.server(), term(), Install.opts()) ::
+  @spec install(GenServer.server(), Bibbidi.Types.WebExtension.ExtensionData.t(), Install.opts()) ::
           {:ok, Install.result()} | {:error, term()}
   def install(conn, extension_data, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
@@ -17,7 +17,7 @@ defmodule Bibbidi.Commands.WebExtension do
   end
 
   @doc "Executes the `webExtension.uninstall` command."
-  @spec uninstall(GenServer.server(), term(), Uninstall.opts()) ::
+  @spec uninstall(GenServer.server(), Bibbidi.Types.WebExtension.Extension.t(), Uninstall.opts()) ::
           {:ok, Uninstall.result()} | {:error, term()}
   def uninstall(conn, extension, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)

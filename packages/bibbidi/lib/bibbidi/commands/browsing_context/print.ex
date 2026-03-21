@@ -2,16 +2,31 @@
 defmodule Bibbidi.Commands.BrowsingContext.Print do
   @moduledoc """
   Command struct for `browsingContext.print`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-print)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `background` - `boolean()` (optional)
+  - `margin` - `t:Bibbidi.Types.BrowsingContext.PrintMarginParameters.t/0` (optional)
+  - `orientation` - `"portrait"` or `"landscape"` (optional)
+  - `page` - `t:Bibbidi.Types.BrowsingContext.PrintPageParameters.t/0` (optional)
+  - `page_ranges` - list of `t:Bibbidi.Types.JsUint.t/0` or `String.t()` (optional)
+  - `scale` - `term()` (optional)
+  - `shrink_to_fit` - `boolean()` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
             background: Zoi.boolean() |> Zoi.optional(),
-            margin: Zoi.any() |> Zoi.optional(),
+            margin:
+              Bibbidi.Types.BrowsingContext.PrintMarginParameters.schema() |> Zoi.optional(),
             orientation: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
-            page: Zoi.any() |> Zoi.optional(),
-            page_ranges: Zoi.list(Zoi.union([Zoi.any(), Zoi.string()])) |> Zoi.optional(),
+            page: Bibbidi.Types.BrowsingContext.PrintPageParameters.schema() |> Zoi.optional(),
+            page_ranges:
+              Zoi.list(Zoi.union([Bibbidi.Types.JsUint.schema(), Zoi.string()])) |> Zoi.optional(),
             scale: Zoi.any() |> Zoi.optional(),
             shrink_to_fit: Zoi.boolean() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()

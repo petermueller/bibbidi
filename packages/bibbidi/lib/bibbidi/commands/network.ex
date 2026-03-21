@@ -26,8 +26,12 @@ defmodule Bibbidi.Commands.Network do
 
   #{Zoi.describe(AddDataCollector.opts_schema())}
   """
-  @spec add_data_collector(GenServer.server(), [term()], term(), AddDataCollector.opts()) ::
-          {:ok, AddDataCollector.result()} | {:error, term()}
+  @spec add_data_collector(
+          GenServer.server(),
+          [Bibbidi.Types.Network.DataType.t()],
+          Bibbidi.Types.JsUint.t(),
+          AddDataCollector.opts()
+        ) :: {:ok, AddDataCollector.result()} | {:error, term()}
   def add_data_collector(conn, data_types, max_encoded_data_size, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(AddDataCollector.opts_schema(), opts)
@@ -49,8 +53,11 @@ defmodule Bibbidi.Commands.Network do
 
   #{Zoi.describe(AddIntercept.opts_schema())}
   """
-  @spec add_intercept(GenServer.server(), [term()], AddIntercept.opts()) ::
-          {:ok, AddIntercept.result()} | {:error, term()}
+  @spec add_intercept(
+          GenServer.server(),
+          [Bibbidi.Types.Network.InterceptPhase.t()],
+          AddIntercept.opts()
+        ) :: {:ok, AddIntercept.result()} | {:error, term()}
   def add_intercept(conn, phases, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(AddIntercept.opts_schema(), opts)
@@ -64,8 +71,11 @@ defmodule Bibbidi.Commands.Network do
 
   #{Zoi.describe(ContinueRequest.opts_schema())}
   """
-  @spec continue_request(GenServer.server(), term(), ContinueRequest.opts()) ::
-          {:ok, ContinueRequest.result()} | {:error, term()}
+  @spec continue_request(
+          GenServer.server(),
+          Bibbidi.Types.Network.Request.t(),
+          ContinueRequest.opts()
+        ) :: {:ok, ContinueRequest.result()} | {:error, term()}
   def continue_request(conn, request, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(ContinueRequest.opts_schema(), opts)
@@ -79,8 +89,11 @@ defmodule Bibbidi.Commands.Network do
 
   #{Zoi.describe(ContinueResponse.opts_schema())}
   """
-  @spec continue_response(GenServer.server(), term(), ContinueResponse.opts()) ::
-          {:ok, ContinueResponse.result()} | {:error, term()}
+  @spec continue_response(
+          GenServer.server(),
+          Bibbidi.Types.Network.Request.t(),
+          ContinueResponse.opts()
+        ) :: {:ok, ContinueResponse.result()} | {:error, term()}
   def continue_response(conn, request, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(ContinueResponse.opts_schema(), opts)
@@ -94,8 +107,11 @@ defmodule Bibbidi.Commands.Network do
 
   #{Zoi.describe(ContinueWithAuth.opts_schema())}
   """
-  @spec continue_with_auth(GenServer.server(), term(), ContinueWithAuth.opts()) ::
-          {:ok, ContinueWithAuth.result()} | {:error, term()}
+  @spec continue_with_auth(
+          GenServer.server(),
+          Bibbidi.Types.Network.Request.t(),
+          ContinueWithAuth.opts()
+        ) :: {:ok, ContinueWithAuth.result()} | {:error, term()}
   def continue_with_auth(conn, request, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(ContinueWithAuth.opts_schema(), opts)
@@ -103,8 +119,13 @@ defmodule Bibbidi.Commands.Network do
   end
 
   @doc "Executes the `network.disownData` command."
-  @spec disown_data(GenServer.server(), term(), term(), term(), DisownData.opts()) ::
-          {:ok, DisownData.result()} | {:error, term()}
+  @spec disown_data(
+          GenServer.server(),
+          Bibbidi.Types.Network.DataType.t(),
+          Bibbidi.Types.Network.Collector.t(),
+          Bibbidi.Types.Network.Request.t(),
+          DisownData.opts()
+        ) :: {:ok, DisownData.result()} | {:error, term()}
   def disown_data(conn, data_type, collector, request, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
 
@@ -116,7 +137,7 @@ defmodule Bibbidi.Commands.Network do
   end
 
   @doc "Executes the `network.failRequest` command."
-  @spec fail_request(GenServer.server(), term(), FailRequest.opts()) ::
+  @spec fail_request(GenServer.server(), Bibbidi.Types.Network.Request.t(), FailRequest.opts()) ::
           {:ok, FailRequest.result()} | {:error, term()}
   def fail_request(conn, request, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
@@ -130,8 +151,12 @@ defmodule Bibbidi.Commands.Network do
 
   #{Zoi.describe(GetData.opts_schema())}
   """
-  @spec get_data(GenServer.server(), term(), term(), GetData.opts()) ::
-          {:ok, GetData.result()} | {:error, term()}
+  @spec get_data(
+          GenServer.server(),
+          Bibbidi.Types.Network.DataType.t(),
+          Bibbidi.Types.Network.Request.t(),
+          GetData.opts()
+        ) :: {:ok, GetData.result()} | {:error, term()}
   def get_data(conn, data_type, request, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(GetData.opts_schema(), opts)
@@ -150,8 +175,11 @@ defmodule Bibbidi.Commands.Network do
 
   #{Zoi.describe(ProvideResponse.opts_schema())}
   """
-  @spec provide_response(GenServer.server(), term(), ProvideResponse.opts()) ::
-          {:ok, ProvideResponse.result()} | {:error, term()}
+  @spec provide_response(
+          GenServer.server(),
+          Bibbidi.Types.Network.Request.t(),
+          ProvideResponse.opts()
+        ) :: {:ok, ProvideResponse.result()} | {:error, term()}
   def provide_response(conn, request, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(ProvideResponse.opts_schema(), opts)
@@ -159,16 +187,22 @@ defmodule Bibbidi.Commands.Network do
   end
 
   @doc "Executes the `network.removeDataCollector` command."
-  @spec remove_data_collector(GenServer.server(), term(), RemoveDataCollector.opts()) ::
-          {:ok, RemoveDataCollector.result()} | {:error, term()}
+  @spec remove_data_collector(
+          GenServer.server(),
+          Bibbidi.Types.Network.Collector.t(),
+          RemoveDataCollector.opts()
+        ) :: {:ok, RemoveDataCollector.result()} | {:error, term()}
   def remove_data_collector(conn, collector, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
     connection_mod.execute(conn, struct!(RemoveDataCollector, [{:collector, collector}]), [])
   end
 
   @doc "Executes the `network.removeIntercept` command."
-  @spec remove_intercept(GenServer.server(), term(), RemoveIntercept.opts()) ::
-          {:ok, RemoveIntercept.result()} | {:error, term()}
+  @spec remove_intercept(
+          GenServer.server(),
+          Bibbidi.Types.Network.Intercept.t(),
+          RemoveIntercept.opts()
+        ) :: {:ok, RemoveIntercept.result()} | {:error, term()}
   def remove_intercept(conn, intercept, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
     connection_mod.execute(conn, struct!(RemoveIntercept, [{:intercept, intercept}]), [])
@@ -201,8 +235,11 @@ defmodule Bibbidi.Commands.Network do
 
   #{Zoi.describe(SetExtraHeaders.opts_schema())}
   """
-  @spec set_extra_headers(GenServer.server(), [term()], SetExtraHeaders.opts()) ::
-          {:ok, SetExtraHeaders.result()} | {:error, term()}
+  @spec set_extra_headers(
+          GenServer.server(),
+          [Bibbidi.Types.Network.Header.t()],
+          SetExtraHeaders.opts()
+        ) :: {:ok, SetExtraHeaders.result()} | {:error, term()}
   def set_extra_headers(conn, headers, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetExtraHeaders.opts_schema(), opts)

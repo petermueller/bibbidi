@@ -19,13 +19,19 @@ defmodule Bibbidi.CDDL.Generator do
     all_rules = remote_rules ++ local_rules
     grouped = group_by_module(all_rules)
 
+    # Collect all type refs used in command/event fields, transitively
+    type_refs = collect_all_type_refs(remote_rules, local_rules, all_rules)
+
+    # Generate type modules first (commands/events reference them)
+    igniter = generate_type_modules(igniter, type_refs, all_rules)
+
     Enum.reduce(@modules, igniter, fn mod, igniter ->
       rules = Map.get(grouped, mod, [])
 
       igniter
-      |> maybe_generate_events_module(mod, rules, local_rules, all_rules)
-      |> maybe_generate_command_modules(mod, remote_rules, all_rules)
-      |> maybe_generate_facade_module(mod, remote_rules, all_rules)
+      |> maybe_generate_events_module(mod, rules, local_rules, all_rules, type_refs)
+      |> maybe_generate_command_modules(mod, remote_rules, all_rules, type_refs)
+      |> maybe_generate_facade_module(mod, remote_rules, all_rules, type_refs)
     end)
   end
 
@@ -35,14 +41,510 @@ defmodule Bibbidi.CDDL.Generator do
     |> Enum.group_by(fn {name, _} -> name |> String.split(".") |> hd() end)
   end
 
-  @correlation_keys ~w(context navigation request)a
+  # ── Type ref collection ──────────────────────────────────────────
 
-  defp maybe_generate_events_module(igniter, mod, _rules, local_rules, all_rules) do
-    events = extract_events(mod, local_rules)
-    if events == [], do: igniter, else: generate_events_module(igniter, mod, events, all_rules)
+  @doc """
+  Collects all CDDL ref names that should have generated type modules.
+
+  Walks all command/event fields, extracts {:ref, name} types, and
+  transitively follows those refs to find more refs.
+  """
+  def collect_all_type_refs(remote_rules, local_rules, all_rules) do
+    # Collect refs from command fields
+    command_refs =
+      Enum.flat_map(@modules, fn mod ->
+        commands = extract_commands(mod, remote_rules)
+
+        Enum.flat_map(commands, fn {_, _, params_ref} ->
+          fields = resolve_command_fields(params_ref, all_rules)
+          Enum.flat_map(fields, fn {_, _, _, cddl_type} -> collect_refs_from_type(cddl_type) end)
+        end)
+      end)
+
+    # Collect refs from event fields
+    event_refs =
+      Enum.flat_map(@modules, fn mod ->
+        events = extract_events(mod, local_rules)
+
+        Enum.flat_map(events, fn {_, params_ref} ->
+          fields = resolve_command_fields(params_ref, all_rules)
+          Enum.flat_map(fields, fn {_, _, _, cddl_type} -> collect_refs_from_type(cddl_type) end)
+        end)
+      end)
+
+    # Transitively follow all refs
+    seed_refs = MapSet.new(command_refs ++ event_refs)
+    all_refs = expand_refs_transitively(seed_refs, all_rules, MapSet.new())
+
+    # Filter to only refs that have an actual rule definition
+    rule_names = MapSet.new(all_rules, fn {name, _} -> name end)
+    MapSet.intersection(all_refs, rule_names)
   end
 
-  defp generate_events_module(igniter, mod, events, all_rules) do
+  defp expand_refs_transitively(to_visit, all_rules, visited) do
+    new_refs = MapSet.difference(to_visit, visited)
+
+    if MapSet.size(new_refs) == 0 do
+      visited
+    else
+      visited = MapSet.union(visited, new_refs)
+
+      # For each new ref, look up its definition and collect more refs
+      more_refs =
+        new_refs
+        |> Enum.flat_map(fn ref_name ->
+          case List.keyfind(all_rules, ref_name, 0) do
+            {_, definition} -> collect_refs_from_definition(definition)
+            nil -> []
+          end
+        end)
+        |> MapSet.new()
+
+      expand_refs_transitively(more_refs, all_rules, visited)
+    end
+  end
+
+  defp collect_refs_from_definition({:map, content}) do
+    Enum.flat_map(content, fn
+      {:fields, fields} ->
+        Enum.flat_map(fields, fn
+          {:required, _, type} -> collect_refs_from_type(type)
+          {:optional, _, type} -> collect_refs_from_type(type)
+          {:embed, ref} -> [ref]
+          {:extensible, _, _} -> []
+          {:group_choice, groups} -> collect_refs_from_group_choice(groups)
+          _ -> []
+        end)
+
+      {:group_choice, groups} ->
+        collect_refs_from_group_choice(groups)
+
+      _ ->
+        []
+    end)
+  end
+
+  defp collect_refs_from_definition({:choice, items}) do
+    Enum.flat_map(items, &collect_refs_from_type/1)
+  end
+
+  defp collect_refs_from_definition({:choice, items, _constraint}) do
+    Enum.flat_map(items, &collect_refs_from_type/1)
+  end
+
+  defp collect_refs_from_definition({:group, members}) do
+    Enum.flat_map(members, fn
+      {:required, _, type} -> collect_refs_from_type(type)
+      {:optional, _, type} -> collect_refs_from_type(type)
+      {:embed, ref} -> [ref]
+      _ -> []
+    end)
+  end
+
+  defp collect_refs_from_definition({:ref, name}), do: [name]
+  defp collect_refs_from_definition({:array, inner, _}), do: collect_refs_from_type(inner)
+  defp collect_refs_from_definition(_), do: []
+
+  defp collect_refs_from_group_choice(groups) do
+    Enum.flat_map(groups, fn
+      {:fields, fields} ->
+        Enum.flat_map(fields, fn
+          {:required, _, type} -> collect_refs_from_type(type)
+          {:optional, _, type} -> collect_refs_from_type(type)
+          {:embed, ref} -> [ref]
+          _ -> []
+        end)
+
+      {:group, members} ->
+        Enum.flat_map(members, fn
+          {:required, _, type} -> collect_refs_from_type(type)
+          {:optional, _, type} -> collect_refs_from_type(type)
+          {:embed, ref} -> [ref]
+          _ -> []
+        end)
+
+      _ ->
+        []
+    end)
+  end
+
+  @doc false
+  def collect_refs_from_type({:ref, name}), do: [name]
+  def collect_refs_from_type({:array, inner, _}), do: collect_refs_from_type(inner)
+  def collect_refs_from_type({:choice, items}), do: Enum.flat_map(items, &collect_refs_from_type/1)
+
+  def collect_refs_from_type({:choice, items, _constraint}),
+    do: Enum.flat_map(items, &collect_refs_from_type/1)
+
+  def collect_refs_from_type({:map, [{:fields, fields}]}) do
+    Enum.flat_map(fields, fn
+      {:required, _, type} -> collect_refs_from_type(type)
+      {:optional, _, type} -> collect_refs_from_type(type)
+      {:embed, ref} -> [ref]
+      _ -> []
+    end)
+  end
+
+  def collect_refs_from_type(_), do: []
+
+  # ── Ref-to-module name mapping ───────────────────────────────────
+
+  @doc """
+  Converts a CDDL ref name to an Elixir module name under `Bibbidi.Types`.
+
+  ## Namespace convention
+
+  - `browsingContext.BrowsingContext` → `Bibbidi.Types.BrowsingContext` (collapsed)
+  - `script.Target` → `Bibbidi.Types.Script.Target` (nested)
+  - `js-uint` → `Bibbidi.Types.JsUint` (no dot, top-level)
+  """
+  def cddl_ref_to_module(ref_name) do
+    if String.contains?(ref_name, ".") do
+      [mod_part, type_part] = String.split(ref_name, ".", parts: 2)
+      mod_name = to_module_name(mod_part)
+      type_name = to_module_name(type_part)
+
+      if mod_name == type_name do
+        # Collapsed: browsingContext.BrowsingContext → Bibbidi.Types.BrowsingContext
+        "Bibbidi.Types.#{type_name}"
+      else
+        # Nested: script.Target → Bibbidi.Types.Script.Target
+        "Bibbidi.Types.#{mod_name}.#{type_name}"
+      end
+    else
+      # Top-level: js-uint → Bibbidi.Types.JsUint
+      "Bibbidi.Types.#{to_module_name(ref_name)}"
+    end
+  end
+
+  @doc """
+  Converts a CDDL ref name to the file path for its type module.
+  """
+  def cddl_ref_to_path(ref_name) do
+    if String.contains?(ref_name, ".") do
+      [mod_part, type_part] = String.split(ref_name, ".", parts: 2)
+      mod_snake = to_snake(mod_part)
+      type_snake = to_snake(type_part)
+
+      if to_module_name(mod_part) == to_module_name(type_part) do
+        "lib/bibbidi/types/#{type_snake}.ex"
+      else
+        "lib/bibbidi/types/#{mod_snake}/#{type_snake}.ex"
+      end
+    else
+      "lib/bibbidi/types/#{to_snake(ref_name)}.ex"
+    end
+  end
+
+  @doc """
+  Generates a spec anchor URL for a BiDi method name.
+  """
+  def spec_anchor(method) do
+    # input.performActions → command-input-performActions
+    [mod, cmd] = String.split(method, ".")
+    "https://w3c.github.io/webdriver-bidi/#command-#{mod}-#{cmd}"
+  end
+
+  # ── Type module generation ───────────────────────────────────────
+
+  defp generate_type_modules(igniter, type_refs, all_rules) do
+    Enum.reduce(type_refs, igniter, fn ref_name, igniter ->
+      case List.keyfind(all_rules, ref_name, 0) do
+        {_, definition} ->
+          generate_type_module(igniter, ref_name, definition, type_refs, all_rules)
+
+        nil ->
+          igniter
+      end
+    end)
+  end
+
+  defp generate_type_module(igniter, ref_name, definition, type_refs, all_rules) do
+    module_name = cddl_ref_to_module(ref_name)
+    path = cddl_ref_to_path(ref_name)
+
+    content = build_type_module_content(module_name, ref_name, definition, type_refs, all_rules)
+    Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
+  end
+
+  defp build_type_module_content(module_name, ref_name, definition, type_refs, all_rules) do
+    case classify_type(definition, all_rules) do
+      {:primitive_alias, _prim} ->
+        build_primitive_alias_module(module_name, ref_name, definition, type_refs)
+
+      {:string_enum, values} ->
+        build_string_enum_module(module_name, ref_name, values)
+
+      {:struct_like, fields} ->
+        build_struct_like_module(module_name, ref_name, fields, type_refs)
+
+      {:choice_union, alternatives} ->
+        build_choice_union_module(module_name, ref_name, alternatives, type_refs)
+
+      :opaque ->
+        build_opaque_module(module_name, ref_name, definition, type_refs)
+    end
+  end
+
+  defp classify_type({:primitive, _} = _def, _all_rules), do: {:primitive_alias, :primitive}
+  defp classify_type({:primitive, _, _} = _def, _all_rules), do: {:primitive_alias, :primitive}
+  defp classify_type({:range, _, _}, _all_rules), do: {:primitive_alias, :range}
+  defp classify_type({:range_exclusive, _, _}, _all_rules), do: {:primitive_alias, :range}
+
+  defp classify_type({:ref, inner_ref}, all_rules) do
+    # Follow the ref to classify the underlying type
+    case List.keyfind(all_rules, inner_ref, 0) do
+      {_, inner_def} -> classify_type(inner_def, all_rules)
+      nil -> :opaque
+    end
+  end
+
+  defp classify_type({:choice, items}, _all_rules) do
+    cond do
+      Enum.all?(items, &match?({:string, _}, &1)) ->
+        values = Enum.map(items, fn {:string, v} -> v end)
+        {:string_enum, values}
+
+      Enum.all?(items, &match?({:ref, _}, &1)) ->
+        {:choice_union, items}
+
+      true ->
+        :opaque
+    end
+  end
+
+  defp classify_type({:choice, items, _constraint}, all_rules) do
+    classify_type({:choice, items}, all_rules)
+  end
+
+  defp classify_type({:map, [{:fields, fields}]}, _all_rules) do
+    field_defs =
+      fields
+      |> Enum.flat_map(fn
+        {:required, name, type} -> [{name, :required, type}]
+        {:optional, name, type} -> [{name, :optional, type}]
+        _ -> []
+      end)
+
+    {:struct_like, field_defs}
+  end
+
+  defp classify_type(_, _all_rules), do: :opaque
+
+  defp build_primitive_alias_module(module_name, ref_name, definition, type_refs) do
+    schema_str = type_to_schema(definition, type_refs)
+    spec_str = type_to_spec(definition, type_refs)
+
+    """
+    # Generated by mix bibbidi.gen — do not edit manually
+    defmodule #{module_name} do
+      @moduledoc \"\"\"
+      `#{ref_name}`
+      \"\"\"
+
+      @schema #{schema_str}
+      @type t :: #{spec_str}
+
+      @doc "Returns the Zoi schema for this type."
+      def schema, do: @schema
+    end
+    """
+  end
+
+  defp build_string_enum_module(module_name, ref_name, values) do
+    enum_values = Enum.map_join(values, ", ", fn v -> ~s["#{v}"] end)
+    doc_values = Enum.map_join(values, "`, `", &~s(#{&1}))
+
+    """
+    # Generated by mix bibbidi.gen — do not edit manually
+    defmodule #{module_name} do
+      @moduledoc \"\"\"
+      `#{ref_name}`
+
+      Values: `#{doc_values}`
+      \"\"\"
+
+      @schema Zoi.enum([#{enum_values}])
+      @type t :: String.t()
+      @values ~w(#{Enum.join(values, " ")})
+
+      @doc "Returns the Zoi schema for this type."
+      def schema, do: @schema
+
+      @doc "Returns the list of valid values."
+      def values, do: @values
+    end
+    """
+  end
+
+  defp build_struct_like_module(module_name, ref_name, fields, type_refs) do
+    schema_entries =
+      fields
+      |> Enum.map(fn {name, req, cddl_type} ->
+        elixir_key = to_snake(name)
+        base = type_to_schema_lazy(cddl_type, type_refs)
+
+        if req == :optional do
+          "#{elixir_key}: #{base} |> Zoi.optional()"
+        else
+          "#{elixir_key}: #{base}"
+        end
+      end)
+      |> Enum.join(", ")
+
+    spec_entries =
+      fields
+      |> Enum.map(fn {name, req, cddl_type} ->
+        elixir_key = to_snake(name)
+        spec = type_to_spec(cddl_type, type_refs)
+
+        if req == :optional do
+          "#{elixir_key}: #{spec} | nil"
+        else
+          "#{elixir_key}: #{spec}"
+        end
+      end)
+      |> Enum.join(", ")
+
+    doc_fields =
+      fields
+      |> Enum.map(fn {name, req, cddl_type} ->
+        elixir_key = to_snake(name)
+        type_doc = cddl_type_to_doc(cddl_type, type_refs)
+        req_str = if req == :required, do: "required", else: "optional"
+        "  - `#{elixir_key}` - #{type_doc} (#{req_str})"
+      end)
+      |> Enum.join("\n")
+
+    """
+    # Generated by mix bibbidi.gen — do not edit manually
+    defmodule #{module_name} do
+      @moduledoc \"\"\"
+      `#{ref_name}`
+
+      ## Fields
+
+    #{doc_fields}
+      \"\"\"
+
+      @schema Zoi.map(%{#{schema_entries}})
+      @type t :: %{#{spec_entries}}
+
+      @doc "Returns the Zoi schema for this type."
+      def schema, do: @schema
+    end
+    """
+  end
+
+  defp build_choice_union_module(module_name, ref_name, alternatives, type_refs) do
+    schema_entries =
+      alternatives
+      |> Enum.map(fn {:ref, r} -> type_to_schema_lazy({:ref, r}, type_refs) end)
+      |> Enum.join(", ")
+
+    spec_entries =
+      alternatives
+      |> Enum.map(fn {:ref, r} -> type_to_spec({:ref, r}, type_refs) end)
+      |> Enum.join(" | ")
+
+    doc_items =
+      alternatives
+      |> Enum.map(fn {:ref, r} ->
+        mod = cddl_ref_to_module(r)
+        "  - `t:#{mod}.t/0`"
+      end)
+      |> Enum.join("\n")
+
+    """
+    # Generated by mix bibbidi.gen — do not edit manually
+    defmodule #{module_name} do
+      @moduledoc \"\"\"
+      `#{ref_name}`
+
+      One of:
+    #{doc_items}
+      \"\"\"
+
+      @schema Zoi.union([#{schema_entries}])
+      @type t :: #{spec_entries}
+
+      @doc "Returns the Zoi schema for this type."
+      def schema, do: @schema
+    end
+    """
+  end
+
+  defp build_opaque_module(module_name, ref_name, definition, type_refs) do
+    schema_str = type_to_schema_lazy(definition, type_refs)
+    spec_str = type_to_spec(definition, type_refs)
+
+    """
+    # Generated by mix bibbidi.gen — do not edit manually
+    defmodule #{module_name} do
+      @moduledoc \"\"\"
+      `#{ref_name}`
+      \"\"\"
+
+      @schema #{schema_str}
+      @type t :: #{spec_str}
+
+      @doc "Returns the Zoi schema for this type."
+      def schema, do: @schema
+    end
+    """
+  end
+
+  # ── ExDoc type documentation helper ──────────────────────────────
+
+  @doc """
+  Renders a CDDL type as an ExDoc-linked string for use in moduledocs.
+  """
+  def cddl_type_to_doc({:ref, name}, type_refs) do
+    if MapSet.member?(type_refs, name) do
+      mod = cddl_ref_to_module(name)
+      "`t:#{mod}.t/0`"
+    else
+      "`#{name}`"
+    end
+  end
+
+  def cddl_type_to_doc({:array, inner, _}, type_refs) do
+    "list of #{cddl_type_to_doc(inner, type_refs)}"
+  end
+
+  def cddl_type_to_doc({:choice, items}, type_refs) do
+    items
+    |> Enum.map(&cddl_type_to_doc(&1, type_refs))
+    |> Enum.join(" or ")
+  end
+
+  def cddl_type_to_doc({:choice, items, _}, type_refs), do: cddl_type_to_doc({:choice, items}, type_refs)
+  def cddl_type_to_doc({:primitive, :text}, _), do: "`String.t()`"
+  def cddl_type_to_doc({:primitive, :text, _}, _), do: "`String.t()`"
+  def cddl_type_to_doc({:primitive, :uint}, _), do: "`non_neg_integer()`"
+  def cddl_type_to_doc({:primitive, :uint, _}, _), do: "`non_neg_integer()`"
+  def cddl_type_to_doc({:primitive, :int}, _), do: "`integer()`"
+  def cddl_type_to_doc({:primitive, :int, _}, _), do: "`integer()`"
+  def cddl_type_to_doc({:primitive, :float}, _), do: "`float()`"
+  def cddl_type_to_doc({:primitive, :float, _}, _), do: "`float()`"
+  def cddl_type_to_doc({:primitive, :bool}, _), do: "`boolean()`"
+  def cddl_type_to_doc({:primitive, :bool, _}, _), do: "`boolean()`"
+  def cddl_type_to_doc({:primitive, :any}, _), do: "`term()`"
+  def cddl_type_to_doc({:primitive, :null}, _), do: "`nil`"
+  def cddl_type_to_doc({:string, v}, _), do: "`\"#{v}\"`"
+  def cddl_type_to_doc({:map, _}, _), do: "`map()`"
+  def cddl_type_to_doc(_, _), do: "`term()`"
+
+  # ── Event generation ─────────────────────────────────────────────
+
+  @correlation_keys ~w(context navigation request)a
+
+  defp maybe_generate_events_module(igniter, mod, _rules, local_rules, all_rules, type_refs) do
+    events = extract_events(mod, local_rules)
+    if events == [], do: igniter, else: generate_events_module(igniter, mod, events, all_rules, type_refs)
+  end
+
+  defp generate_events_module(igniter, mod, events, all_rules, type_refs) do
     snake = to_snake(mod)
     camel = to_module_name(mod)
 
@@ -102,7 +604,7 @@ defmodule Bibbidi.CDDL.Generator do
     igniter = Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
 
     # Generate event struct modules
-    generate_event_struct_modules(igniter, mod, events, all_rules)
+    generate_event_struct_modules(igniter, mod, events, all_rules, type_refs)
   end
 
   defp generate_parse_clauses(events, all_rules) do
@@ -142,7 +644,7 @@ defmodule Bibbidi.CDDL.Generator do
     |> Enum.join("\n")
   end
 
-  defp generate_event_struct_modules(igniter, mod, events, all_rules) do
+  defp generate_event_struct_modules(igniter, mod, events, all_rules, type_refs) do
     snake_mod = to_snake(mod)
 
     events
@@ -150,14 +652,14 @@ defmodule Bibbidi.CDDL.Generator do
       fields = resolve_event_fields(params_ref, all_rules)
 
       if fields != [] do
-        generate_event_struct_module(igniter, snake_mod, mod, method, params_ref, fields)
+        generate_event_struct_module(igniter, snake_mod, mod, method, params_ref, fields, type_refs)
       else
         igniter
       end
     end)
   end
 
-  defp generate_event_struct_module(igniter, snake_mod, mod, method, params_ref, fields) do
+  defp generate_event_struct_module(igniter, snake_mod, mod, method, params_ref, fields, type_refs) do
     camel_mod = to_module_name(mod)
     struct_name = event_struct_name(method)
     snake_struct = to_snake(struct_name)
@@ -181,6 +683,15 @@ defmodule Bibbidi.CDDL.Generator do
         "  @derive {Bibbidi.Telemetry.Metadata, keys: [#{keys_str}]}\n"
       end
 
+    doc_fields =
+      unique_fields
+      |> Enum.map(fn {_json, elixir_key, req, cddl_type} ->
+        type_doc = cddl_type_to_doc(cddl_type, type_refs)
+        req_str = if req == :required, do: "required", else: "optional"
+        "  - `#{elixir_key}` - #{type_doc} (#{req_str})"
+      end)
+      |> Enum.join("\n")
+
     content = """
     # Generated by mix bibbidi.gen — do not edit manually
     defmodule Bibbidi.Events.#{camel_mod}.#{struct_name} do
@@ -188,6 +699,10 @@ defmodule Bibbidi.CDDL.Generator do
       Event struct for `#{method}`.
 
       Params type: `#{params_ref}`
+
+      ## Fields
+
+    #{doc_fields}
       \"\"\"
 
     #{derive_line}  defstruct [#{fields_str}]
@@ -234,9 +749,9 @@ defmodule Bibbidi.CDDL.Generator do
 
   # ── Command struct generation ─────────────────────────────────────
 
-  defp maybe_generate_command_modules(igniter, mod, remote_rules, all_rules) do
+  defp maybe_generate_command_modules(igniter, mod, remote_rules, all_rules, type_refs) do
     commands = extract_commands(mod, remote_rules)
-    if commands == [], do: igniter, else: generate_command_modules(igniter, mod, commands, all_rules)
+    if commands == [], do: igniter, else: generate_command_modules(igniter, mod, commands, all_rules, type_refs)
   end
 
   defp extract_commands(mod, remote_rules) do
@@ -264,13 +779,13 @@ defmodule Bibbidi.CDDL.Generator do
     |> Enum.reject(fn {_, method, _} -> is_nil(method) end)
   end
 
-  defp generate_command_modules(igniter, mod, commands, all_rules) do
+  defp generate_command_modules(igniter, mod, commands, all_rules, type_refs) do
     Enum.reduce(commands, igniter, fn {command_name, method, params_ref}, igniter ->
-      generate_command_module(igniter, mod, command_name, method, params_ref, all_rules)
+      generate_command_module(igniter, mod, command_name, method, params_ref, all_rules, type_refs)
     end)
   end
 
-  defp generate_command_module(igniter, mod, command_name, method, params_ref, all_rules) do
+  defp generate_command_module(igniter, mod, command_name, method, params_ref, all_rules, type_refs) do
     snake_mod = to_snake(mod)
     camel_mod = to_module_name(mod)
     command_snake = to_snake(command_name)
@@ -285,7 +800,7 @@ defmodule Bibbidi.CDDL.Generator do
     schema_fields =
       all_fields
       |> Enum.map(fn {_json, elixir, req, cddl_type} ->
-        base = type_to_schema(cddl_type)
+        base = type_to_schema(cddl_type, type_refs)
 
         if req == :optional do
           "#{elixir}: #{base} |> Zoi.optional()"
@@ -296,15 +811,16 @@ defmodule Bibbidi.CDDL.Generator do
       |> Enum.join(", ")
 
     # Build @opts_schema (Zoi.keyword for optional fields)
+    # Use Zoi.any() for ref types since users pass raw wire-format (camelCase) maps
     opts_schema_fields =
       optional
       |> Enum.map(fn {_json, elixir, _, cddl_type} ->
-        "#{elixir}: #{type_to_schema(cddl_type)} |> Zoi.optional()"
+        "#{elixir}: #{type_to_opts_schema(cddl_type)} |> Zoi.optional()"
       end)
       |> Enum.join(", ")
 
     # Build @result_schema
-    result_schema = resolve_result_schema(mod, command_name, all_rules)
+    result_schema = resolve_result_schema(mod, command_name, all_rules, type_refs)
 
     params_body = generate_params_body(required, optional)
 
@@ -318,11 +834,14 @@ defmodule Bibbidi.CDDL.Generator do
         "#{schema_fields}, #{meta_schema_field}"
       end
 
+    # Build moduledoc with spec link and field descriptions
+    moduledoc = build_command_moduledoc(method, all_fields, type_refs)
+
     content = """
     # Generated by mix bibbidi.gen — do not edit manually
     defmodule Bibbidi.Commands.#{camel_mod}.#{command_name} do
       @moduledoc \"\"\"
-      Command struct for `#{method}`.
+    #{moduledoc}
       \"\"\"
 
       @derive Bibbidi.Telemetry.Metadata
@@ -356,6 +875,28 @@ defmodule Bibbidi.CDDL.Generator do
 
     path = "lib/bibbidi/commands/#{snake_mod}/#{command_snake}.ex"
     Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
+  end
+
+  defp build_command_moduledoc(method, fields, type_refs) do
+    anchor = spec_anchor(method)
+
+    field_docs =
+      if fields == [] do
+        ""
+      else
+        lines =
+          fields
+          |> Enum.map(fn {_json, elixir, req, cddl_type} ->
+            type_doc = cddl_type_to_doc(cddl_type, type_refs)
+            req_str = if req == :required, do: "required", else: "optional"
+            "  - `#{elixir}` - #{type_doc} (#{req_str})"
+          end)
+          |> Enum.join("\n")
+
+        "\n  ## Fields\n\n#{lines}\n"
+      end
+
+    "  Command struct for `#{method}`.\n\n  [WebDriver BiDi Spec](#{anchor})#{field_docs}"
   end
 
   @doc """
@@ -507,16 +1048,16 @@ defmodule Bibbidi.CDDL.Generator do
 
   Looks up `<mod>.<CommandName>Result` in all_rules.
   """
-  def resolve_result_schema(mod, command_name, all_rules) do
+  def resolve_result_schema(mod, command_name, all_rules, type_refs) do
     result_ref = "#{mod}.#{command_name}Result"
-    resolve_result_ref(result_ref, all_rules, 0)
+    resolve_result_ref(result_ref, all_rules, type_refs, 0)
   end
 
-  defp resolve_result_ref(_ref, _all_rules, depth) when depth > 5 do
+  defp resolve_result_ref(_ref, _all_rules, _type_refs, depth) when depth > 5 do
     "Zoi.map(Zoi.string(), Zoi.any())"
   end
 
-  defp resolve_result_ref(ref, all_rules, depth) do
+  defp resolve_result_ref(ref, all_rules, type_refs, depth) do
     case List.keyfind(all_rules, ref, 0) do
       nil ->
         # No result type found
@@ -527,7 +1068,7 @@ defmodule Bibbidi.CDDL.Generator do
 
       {^ref, {:ref, inner_ref}} ->
         # Follow reference chain (e.g., ReloadResult → NavigateResult)
-        resolve_result_ref(inner_ref, all_rules, depth + 1)
+        resolve_result_ref(inner_ref, all_rules, type_refs, depth + 1)
 
       {^ref, {:map, [{:fields, []}]}} ->
         "Zoi.map(Zoi.string(), Zoi.any())"
@@ -536,8 +1077,8 @@ defmodule Bibbidi.CDDL.Generator do
         field_schemas =
           fields
           |> Enum.map(fn
-            {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type)}"
-            {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type)} |> Zoi.optional()"
+            {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
+            {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
             {:extensible, _, _} -> nil
             {:embed, _} -> nil
             {:group_choice, _} -> nil
@@ -565,8 +1106,8 @@ defmodule Bibbidi.CDDL.Generator do
           field_schemas =
             real_fields
             |> Enum.map(fn
-              {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type)}"
-              {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type)} |> Zoi.optional()"
+              {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
+              {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
             end)
             |> Enum.join(", ")
 
@@ -594,43 +1135,113 @@ defmodule Bibbidi.CDDL.Generator do
 
   # ── Zoi schema generation ─────────────────────────────────────────
 
-  @doc false
-  def type_to_schema({:primitive, :text}), do: "Zoi.string()"
-  def type_to_schema({:primitive, :text, _}), do: "Zoi.string()"
-  def type_to_schema({:primitive, :uint}), do: "Zoi.integer() |> Zoi.min(0)"
-  def type_to_schema({:primitive, :uint, _}), do: "Zoi.integer() |> Zoi.min(0)"
-  def type_to_schema({:primitive, :int}), do: "Zoi.integer()"
-  def type_to_schema({:primitive, :int, _}), do: "Zoi.integer()"
-  def type_to_schema({:primitive, :float}), do: "Zoi.float()"
-  def type_to_schema({:primitive, :float, _}), do: "Zoi.float()"
-  def type_to_schema({:primitive, :bool}), do: "Zoi.boolean()"
-  def type_to_schema({:primitive, :bool, _}), do: "Zoi.boolean()"
-  def type_to_schema({:primitive, :any}), do: "Zoi.any()"
-  def type_to_schema({:primitive, :null}), do: "Zoi.null()"
-  def type_to_schema({:string, _}), do: "Zoi.string()"
-  def type_to_schema({:number, n}) when is_integer(n), do: "Zoi.integer()"
-  def type_to_schema({:number, n}) when is_float(n), do: "Zoi.float()"
-  def type_to_schema({:range, low, high}), do: "Zoi.integer() |> Zoi.min(#{low}) |> Zoi.max(#{high})"
-  def type_to_schema({:range_exclusive, _low, _high}), do: "Zoi.integer()"
-  def type_to_schema({:ref, _name}), do: "Zoi.any()"
-  def type_to_schema({:array, inner, _q}), do: "Zoi.list(#{type_to_schema(inner)})"
+  @doc """
+  Like `type_to_schema/2` but wraps ref calls in `Zoi.lazy` to avoid
+  compile-time circular dependencies between type modules.
+  """
+  def type_to_schema_lazy(type, type_refs) do
+    # For refs, wrap in Zoi.lazy; for everything else, delegate to type_to_schema
+    case type do
+      {:ref, name} ->
+        if MapSet.member?(type_refs, name) do
+          "Zoi.lazy({#{cddl_ref_to_module(name)}, :schema, []})"
+        else
+          "Zoi.any()"
+        end
 
-  def type_to_schema({:choice, items}) do
-    schemas = Enum.map(items, &type_to_schema/1)
+      {:array, inner, _q} ->
+        "Zoi.list(#{type_to_schema_lazy(inner, type_refs)})"
+
+      {:choice, items} ->
+        schemas = Enum.map(items, &type_to_schema_lazy(&1, type_refs))
+        "Zoi.union([#{Enum.join(schemas, ", ")}])"
+
+      {:choice, items, _constraint} ->
+        type_to_schema_lazy({:choice, items}, type_refs)
+
+      {:map, [{:fields, fields}]} ->
+        field_schemas =
+          fields
+          |> Enum.map(fn
+            {:required, key, t} -> "#{to_snake(key)}: #{type_to_schema_lazy(t, type_refs)}"
+            {:optional, key, t} -> "#{to_snake(key)}: #{type_to_schema_lazy(t, type_refs)} |> Zoi.optional()"
+            _ -> nil
+          end)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.join(", ")
+
+        "Zoi.map(%{#{field_schemas}})"
+
+      _ ->
+        type_to_schema(type, type_refs)
+    end
+  end
+
+  @doc """
+  Like `type_to_schema/2` but keeps ref types as `Zoi.any()`.
+
+  Used for `@opts_schema` where users pass raw wire-format (camelCase) maps
+  that shouldn't be validated/stripped by typed schemas.
+  """
+  def type_to_opts_schema({:ref, _name}), do: "Zoi.any()"
+  def type_to_opts_schema({:array, inner, _q}), do: "Zoi.list(#{type_to_opts_schema(inner)})"
+
+  def type_to_opts_schema({:choice, items}) do
+    schemas = Enum.map(items, &type_to_opts_schema/1)
     "Zoi.union([#{Enum.join(schemas, ", ")}])"
   end
 
-  def type_to_schema({:choice, items, _constraint}) do
-    # 3-element choice with constraint (e.g. {:choice, items, {:default, _}})
-    type_to_schema({:choice, items})
+  def type_to_opts_schema({:choice, items, _}), do: type_to_opts_schema({:choice, items})
+  def type_to_opts_schema({:map, _}), do: "Zoi.any()"
+  def type_to_opts_schema(type), do: type_to_schema(type)
+
+  @doc false
+  def type_to_schema(type, type_refs \\ MapSet.new())
+
+  def type_to_schema({:primitive, :text}, _type_refs), do: "Zoi.string()"
+  def type_to_schema({:primitive, :text, _}, _type_refs), do: "Zoi.string()"
+  def type_to_schema({:primitive, :uint}, _type_refs), do: "Zoi.integer() |> Zoi.min(0)"
+  def type_to_schema({:primitive, :uint, _}, _type_refs), do: "Zoi.integer() |> Zoi.min(0)"
+  def type_to_schema({:primitive, :int}, _type_refs), do: "Zoi.integer()"
+  def type_to_schema({:primitive, :int, _}, _type_refs), do: "Zoi.integer()"
+  def type_to_schema({:primitive, :float}, _type_refs), do: "Zoi.float()"
+  def type_to_schema({:primitive, :float, _}, _type_refs), do: "Zoi.float()"
+  def type_to_schema({:primitive, :bool}, _type_refs), do: "Zoi.boolean()"
+  def type_to_schema({:primitive, :bool, _}, _type_refs), do: "Zoi.boolean()"
+  def type_to_schema({:primitive, :any}, _type_refs), do: "Zoi.any()"
+  def type_to_schema({:primitive, :null}, _type_refs), do: "Zoi.null()"
+  def type_to_schema({:string, _}, _type_refs), do: "Zoi.string()"
+  def type_to_schema({:number, n}, _type_refs) when is_integer(n), do: "Zoi.integer()"
+  def type_to_schema({:number, n}, _type_refs) when is_float(n), do: "Zoi.float()"
+  def type_to_schema({:range, low, high}, _type_refs), do: "Zoi.integer() |> Zoi.min(#{low}) |> Zoi.max(#{high})"
+  def type_to_schema({:range_exclusive, _low, _high}, _type_refs), do: "Zoi.integer()"
+
+  def type_to_schema({:ref, name}, type_refs) do
+    if MapSet.member?(type_refs, name) do
+      "#{cddl_ref_to_module(name)}.schema()"
+    else
+      "Zoi.any()"
+    end
   end
 
-  def type_to_schema({:map, [{:fields, fields}]}) do
+  def type_to_schema({:array, inner, _q}, type_refs), do: "Zoi.list(#{type_to_schema(inner, type_refs)})"
+
+  def type_to_schema({:choice, items}, type_refs) do
+    schemas = Enum.map(items, &type_to_schema(&1, type_refs))
+    "Zoi.union([#{Enum.join(schemas, ", ")}])"
+  end
+
+  def type_to_schema({:choice, items, _constraint}, type_refs) do
+    # 3-element choice with constraint (e.g. {:choice, items, {:default, _}})
+    type_to_schema({:choice, items}, type_refs)
+  end
+
+  def type_to_schema({:map, [{:fields, fields}]}, type_refs) do
     field_schemas =
       fields
       |> Enum.map(fn
-        {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type)}"
-        {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type)} |> Zoi.optional()"
+        {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
+        {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
         {:extensible, _, _} -> nil
         {:embed, _} -> nil
         {:group_choice, _} -> nil
@@ -641,60 +1252,69 @@ defmodule Bibbidi.CDDL.Generator do
     "Zoi.map(%{#{field_schemas}})"
   end
 
-  def type_to_schema({:map, _}), do: "Zoi.map(Zoi.string(), Zoi.any())"
-  def type_to_schema({:group, _}), do: "Zoi.map(Zoi.string(), Zoi.any())"
-  def type_to_schema({:tuple, items}), do: "Zoi.tuple({#{Enum.map_join(items, ", ", &type_to_schema/1)}})"
-  def type_to_schema({:group_choice, _}), do: "Zoi.any()"
-  def type_to_schema(_), do: "Zoi.any()"
+  def type_to_schema({:map, _}, _type_refs), do: "Zoi.map(Zoi.string(), Zoi.any())"
+  def type_to_schema({:group, _}, _type_refs), do: "Zoi.map(Zoi.string(), Zoi.any())"
+  def type_to_schema({:tuple, items}, type_refs), do: "Zoi.tuple({#{Enum.map_join(items, ", ", &type_to_schema(&1, type_refs))}})"
+  def type_to_schema({:group_choice, _}, _type_refs), do: "Zoi.any()"
+  def type_to_schema(_, _type_refs), do: "Zoi.any()"
 
   # ── Typespec generation (for facade specs from CDDL types) ──────
 
   @doc false
-  def type_to_spec({:primitive, :text}), do: "String.t()"
-  def type_to_spec({:primitive, :text, _constraint}), do: "String.t()"
-  def type_to_spec({:primitive, :uint}), do: "non_neg_integer()"
-  def type_to_spec({:primitive, :uint, _constraint}), do: "non_neg_integer()"
-  def type_to_spec({:primitive, :int}), do: "integer()"
-  def type_to_spec({:primitive, :int, _constraint}), do: "integer()"
-  def type_to_spec({:primitive, :float}), do: "float()"
-  def type_to_spec({:primitive, :float, _constraint}), do: "float()"
-  def type_to_spec({:primitive, :bool}), do: "boolean()"
-  def type_to_spec({:primitive, :bool, _constraint}), do: "boolean()"
-  def type_to_spec({:primitive, :any}), do: "term()"
-  def type_to_spec({:primitive, :null}), do: "nil"
-  def type_to_spec({:string, _}), do: "String.t()"
-  def type_to_spec({:ref, _name}), do: "term()"
-  def type_to_spec({:number, n}) when is_integer(n), do: "integer()"
-  def type_to_spec({:number, n}) when is_float(n), do: "float()"
-  def type_to_spec({:range, _low, _high}), do: "integer()"
-  def type_to_spec({:range_exclusive, _low, _high}), do: "integer()"
+  def type_to_spec(type, type_refs \\ MapSet.new())
 
-  def type_to_spec({:choice, items}) do
+  def type_to_spec({:primitive, :text}, _type_refs), do: "String.t()"
+  def type_to_spec({:primitive, :text, _constraint}, _type_refs), do: "String.t()"
+  def type_to_spec({:primitive, :uint}, _type_refs), do: "non_neg_integer()"
+  def type_to_spec({:primitive, :uint, _constraint}, _type_refs), do: "non_neg_integer()"
+  def type_to_spec({:primitive, :int}, _type_refs), do: "integer()"
+  def type_to_spec({:primitive, :int, _constraint}, _type_refs), do: "integer()"
+  def type_to_spec({:primitive, :float}, _type_refs), do: "float()"
+  def type_to_spec({:primitive, :float, _constraint}, _type_refs), do: "float()"
+  def type_to_spec({:primitive, :bool}, _type_refs), do: "boolean()"
+  def type_to_spec({:primitive, :bool, _constraint}, _type_refs), do: "boolean()"
+  def type_to_spec({:primitive, :any}, _type_refs), do: "term()"
+  def type_to_spec({:primitive, :null}, _type_refs), do: "nil"
+  def type_to_spec({:string, _}, _type_refs), do: "String.t()"
+  def type_to_spec({:number, n}, _type_refs) when is_integer(n), do: "integer()"
+  def type_to_spec({:number, n}, _type_refs) when is_float(n), do: "float()"
+  def type_to_spec({:range, _low, _high}, _type_refs), do: "integer()"
+  def type_to_spec({:range_exclusive, _low, _high}, _type_refs), do: "integer()"
+
+  def type_to_spec({:ref, name}, type_refs) do
+    if MapSet.member?(type_refs, name) do
+      "#{cddl_ref_to_module(name)}.t()"
+    else
+      "term()"
+    end
+  end
+
+  def type_to_spec({:choice, items}, type_refs) do
     items
-    |> Enum.map(&type_to_spec/1)
+    |> Enum.map(&type_to_spec(&1, type_refs))
     |> Enum.uniq()
     |> Enum.join(" | ")
   end
 
-  def type_to_spec({:choice, items, _constraint}) do
-    type_to_spec({:choice, items})
+  def type_to_spec({:choice, items, _constraint}, type_refs) do
+    type_to_spec({:choice, items}, type_refs)
   end
 
-  def type_to_spec({:array, inner, _quantifier}), do: "[#{type_to_spec(inner)}]"
-  def type_to_spec({:tuple, items}), do: "{#{Enum.map_join(items, ", ", &type_to_spec/1)}}"
-  def type_to_spec({:map, _}), do: "map()"
-  def type_to_spec({:group, _}), do: "map()"
-  def type_to_spec({:group_choice, _}), do: "map()"
-  def type_to_spec(_), do: "term()"
+  def type_to_spec({:array, inner, _quantifier}, type_refs), do: "[#{type_to_spec(inner, type_refs)}]"
+  def type_to_spec({:tuple, items}, type_refs), do: "{#{Enum.map_join(items, ", ", &type_to_spec(&1, type_refs))}}"
+  def type_to_spec({:map, _}, _type_refs), do: "map()"
+  def type_to_spec({:group, _}, _type_refs), do: "map()"
+  def type_to_spec({:group_choice, _}, _type_refs), do: "map()"
+  def type_to_spec(_, _type_refs), do: "term()"
 
   # ── Facade module generation ──────────────────────────────────────
 
-  defp maybe_generate_facade_module(igniter, mod, remote_rules, all_rules) do
+  defp maybe_generate_facade_module(igniter, mod, remote_rules, all_rules, type_refs) do
     commands = extract_commands(mod, remote_rules)
-    if commands == [], do: igniter, else: generate_facade_module(igniter, mod, commands, all_rules)
+    if commands == [], do: igniter, else: generate_facade_module(igniter, mod, commands, all_rules, type_refs)
   end
 
-  defp generate_facade_module(igniter, mod, commands, all_rules) do
+  defp generate_facade_module(igniter, mod, commands, all_rules, type_refs) do
     snake = to_snake(mod)
     camel = to_module_name(mod)
 
@@ -708,7 +1328,7 @@ defmodule Bibbidi.CDDL.Generator do
     functions =
       commands
       |> Enum.map(fn {command_name, method, params_ref} ->
-        generate_facade_function(camel, command_name, method, params_ref, all_rules)
+        generate_facade_function(camel, command_name, method, params_ref, all_rules, type_refs)
       end)
       |> Enum.join("\n")
 
@@ -739,7 +1359,7 @@ defmodule Bibbidi.CDDL.Generator do
   # Elixir reserved words that can't be function names
   @reserved_words ~w(end do fn if else case cond for receive try raise rescue after catch with)
 
-  defp generate_facade_function(_camel_mod, command_name, method, params_ref, all_rules) do
+  defp generate_facade_function(_camel_mod, command_name, method, params_ref, all_rules, type_refs) do
     raw_name = to_snake(command_name)
 
     fun_name =
@@ -796,7 +1416,7 @@ defmodule Bibbidi.CDDL.Generator do
     # Build the @spec with real types
     spec_required_args =
       required
-      |> Enum.map(fn {_, _, _, cddl_type} -> type_to_spec(cddl_type) end)
+      |> Enum.map(fn {_, _, _, cddl_type} -> type_to_spec(cddl_type, type_refs) end)
 
     spec_args =
       case spec_required_args do

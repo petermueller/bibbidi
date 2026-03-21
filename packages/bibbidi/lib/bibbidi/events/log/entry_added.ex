@@ -4,6 +4,17 @@ defmodule Bibbidi.Events.Log.EntryAdded do
   Event struct for `log.entryAdded`.
 
   Params type: `log.Entry`
+
+  ## Fields
+
+  - `level` - `t:Bibbidi.Types.Log.Level.t/0` (optional)
+  - `source` - `t:Bibbidi.Types.Script.Source.t/0` (optional)
+  - `text` - `String.t()` or `nil` (optional)
+  - `timestamp` - `t:Bibbidi.Types.JsUint.t/0` (optional)
+  - `stack_trace` - `t:Bibbidi.Types.Script.StackTrace.t/0` (optional)
+  - `type` - `String.t()` (optional)
+  - `method` - `String.t()` (optional)
+  - `args` - list of `t:Bibbidi.Types.Script.RemoteValue.t/0` (optional)
   """
 
   defstruct [:level, :source, :text, :timestamp, :stack_trace, :type, :method, :args]

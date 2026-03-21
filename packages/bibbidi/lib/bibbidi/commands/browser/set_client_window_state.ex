@@ -2,16 +2,27 @@
 defmodule Bibbidi.Commands.Browser.SetClientWindowState do
   @moduledoc """
   Command struct for `browser.setClientWindowState`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browser-setClientWindowState)
+  ## Fields
+
+  - `client_window` - `t:Bibbidi.Types.Browser.ClientWindow.t/0` (required)
+  - `state` - `"fullscreen"` or `"maximized"` or `"minimized"` (optional)
+  - `width` - `t:Bibbidi.Types.JsUint.t/0` (optional)
+  - `height` - `t:Bibbidi.Types.JsUint.t/0` (optional)
+  - `x` - `t:Bibbidi.Types.JsInt.t/0` (optional)
+  - `y` - `t:Bibbidi.Types.JsInt.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            client_window: Zoi.any(),
+            client_window: Bibbidi.Types.Browser.ClientWindow.schema(),
             state: Zoi.union([Zoi.string(), Zoi.string(), Zoi.string()]) |> Zoi.optional(),
-            width: Zoi.any() |> Zoi.optional(),
-            height: Zoi.any() |> Zoi.optional(),
-            x: Zoi.any() |> Zoi.optional(),
-            y: Zoi.any() |> Zoi.optional(),
+            width: Bibbidi.Types.JsUint.schema() |> Zoi.optional(),
+            height: Bibbidi.Types.JsUint.schema() |> Zoi.optional(),
+            x: Bibbidi.Types.JsInt.schema() |> Zoi.optional(),
+            y: Bibbidi.Types.JsInt.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
@@ -23,12 +34,12 @@ defmodule Bibbidi.Commands.Browser.SetClientWindowState do
                )
   @result_schema Zoi.map(%{
                    active: Zoi.boolean(),
-                   client_window: Zoi.any(),
-                   height: Zoi.any(),
+                   client_window: Bibbidi.Types.Browser.ClientWindow.schema(),
+                   height: Bibbidi.Types.JsUint.schema(),
                    state: Zoi.union([Zoi.string(), Zoi.string(), Zoi.string(), Zoi.string()]),
-                   width: Zoi.any(),
-                   x: Zoi.any(),
-                   y: Zoi.any()
+                   width: Bibbidi.Types.JsUint.schema(),
+                   x: Bibbidi.Types.JsInt.schema(),
+                   y: Bibbidi.Types.JsInt.schema()
                  })
 
   @type t :: unquote(Zoi.type_spec(@schema))

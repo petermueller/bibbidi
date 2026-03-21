@@ -4,6 +4,12 @@ defmodule Bibbidi.Events.Script.Message do
   Event struct for `script.message`.
 
   Params type: `script.MessageParameters`
+
+  ## Fields
+
+  - `channel` - `t:Bibbidi.Types.Script.Channel.t/0` (required)
+  - `data` - `t:Bibbidi.Types.Script.RemoteValue.t/0` (required)
+  - `source` - `t:Bibbidi.Types.Script.Source.t/0` (required)
   """
 
   defstruct [:channel, :data, :source]

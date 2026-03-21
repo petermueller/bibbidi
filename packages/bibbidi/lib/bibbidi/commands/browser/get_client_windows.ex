@@ -2,6 +2,8 @@
 defmodule Bibbidi.Commands.Browser.GetClientWindows do
   @moduledoc """
   Command struct for `browser.getClientWindows`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browser-getClientWindows)
   """
 
   @derive Bibbidi.Telemetry.Metadata

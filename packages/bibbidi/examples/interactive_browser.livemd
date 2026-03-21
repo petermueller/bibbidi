@@ -5,7 +5,7 @@ bibbidi_dep =
   if path = System.get_env("LB_BBD_PATH") do
     {:bibbidi, path: path}
   else
-    {:bibbidi, "~> 0.2.0"}
+    {:bibbidi, "~> 0.3.0"}
   end
 
 Mix.install([

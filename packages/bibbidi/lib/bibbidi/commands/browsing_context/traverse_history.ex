@@ -2,12 +2,19 @@
 defmodule Bibbidi.Commands.BrowsingContext.TraverseHistory do
   @moduledoc """
   Command struct for `browsingContext.traverseHistory`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-traverseHistory)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `delta` - `t:Bibbidi.Types.JsInt.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
-            delta: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
+            delta: Bibbidi.Types.JsInt.schema(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword([])

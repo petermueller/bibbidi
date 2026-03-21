@@ -4,6 +4,18 @@ defmodule Bibbidi.Events.Network.FetchError do
   Event struct for `network.fetchError`.
 
   Params type: `network.FetchErrorParameters`
+
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` or `nil` (required)
+  - `is_blocked` - `boolean()` (required)
+  - `navigation` - `t:Bibbidi.Types.BrowsingContext.Navigation.t/0` or `nil` (required)
+  - `redirect_count` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `request` - `t:Bibbidi.Types.Network.RequestData.t/0` (required)
+  - `timestamp` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` or `nil` (optional)
+  - `intercepts` - list of `t:Bibbidi.Types.Network.Intercept.t/0` (optional)
+  - `error_text` - `String.t()` (required)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context, :navigation, :request]}

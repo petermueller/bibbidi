@@ -2,20 +2,28 @@
 defmodule Bibbidi.Commands.Session.Subscribe do
   @moduledoc """
   Command struct for `session.subscribe`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-session-subscribe)
+  ## Fields
+
+  - `events` - list of `String.t()` (required)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             events: Zoi.list(Zoi.string()),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
                  user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{subscription: Zoi.any()})
+  @result_schema Zoi.map(%{subscription: Bibbidi.Types.Session.Subscription.schema()})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

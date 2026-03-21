@@ -2,14 +2,25 @@
 defmodule Bibbidi.Commands.Network.ContinueRequest do
   @moduledoc """
   Command struct for `network.continueRequest`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-continueRequest)
+  ## Fields
+
+  - `request` - `t:Bibbidi.Types.Network.Request.t/0` (required)
+  - `body` - `t:Bibbidi.Types.Network.BytesValue.t/0` (optional)
+  - `cookies` - list of `t:Bibbidi.Types.Network.CookieHeader.t/0` (optional)
+  - `headers` - list of `t:Bibbidi.Types.Network.Header.t/0` (optional)
+  - `method` - `String.t()` (optional)
+  - `url` - `String.t()` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            request: Zoi.any(),
-            body: Zoi.any() |> Zoi.optional(),
-            cookies: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            headers: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            request: Bibbidi.Types.Network.Request.schema(),
+            body: Bibbidi.Types.Network.BytesValue.schema() |> Zoi.optional(),
+            cookies: Zoi.list(Bibbidi.Types.Network.CookieHeader.schema()) |> Zoi.optional(),
+            headers: Zoi.list(Bibbidi.Types.Network.Header.schema()) |> Zoi.optional(),
             method: Zoi.string() |> Zoi.optional(),
             url: Zoi.string() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()

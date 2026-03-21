@@ -2,13 +2,21 @@
 defmodule Bibbidi.Commands.Emulation.SetTimezoneOverride do
   @moduledoc """
   Command struct for `emulation.setTimezoneOverride`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-emulation-setTimezoneOverride)
+  ## Fields
+
+  - `timezone` - `String.t()` or `nil` (required)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             timezone: Zoi.union([Zoi.string(), Zoi.null()]),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

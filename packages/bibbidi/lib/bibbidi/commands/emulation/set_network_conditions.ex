@@ -2,13 +2,22 @@
 defmodule Bibbidi.Commands.Emulation.SetNetworkConditions do
   @moduledoc """
   Command struct for `emulation.setNetworkConditions`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-emulation-setNetworkConditions)
+  ## Fields
+
+  - `network_conditions` - `t:Bibbidi.Types.Emulation.NetworkConditions.t/0` or `nil` (required)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            network_conditions: Zoi.union([Zoi.any(), Zoi.null()]),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            network_conditions:
+              Zoi.union([Bibbidi.Types.Emulation.NetworkConditions.schema(), Zoi.null()]),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

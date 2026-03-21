@@ -2,13 +2,22 @@
 defmodule Bibbidi.Commands.Network.GetData do
   @moduledoc """
   Command struct for `network.getData`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-getData)
+  ## Fields
+
+  - `data_type` - `t:Bibbidi.Types.Network.DataType.t/0` (required)
+  - `request` - `t:Bibbidi.Types.Network.Request.t/0` (required)
+  - `collector` - `t:Bibbidi.Types.Network.Collector.t/0` (optional)
+  - `disown` - `boolean()` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            data_type: Zoi.any(),
-            request: Zoi.any(),
-            collector: Zoi.any() |> Zoi.optional(),
+            data_type: Bibbidi.Types.Network.DataType.schema(),
+            request: Bibbidi.Types.Network.Request.schema(),
+            collector: Bibbidi.Types.Network.Collector.schema() |> Zoi.optional(),
             disown: Zoi.boolean() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
@@ -16,7 +25,7 @@ defmodule Bibbidi.Commands.Network.GetData do
                  collector: Zoi.any() |> Zoi.optional(),
                  disown: Zoi.boolean() |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{bytes: Zoi.any()})
+  @result_schema Zoi.map(%{bytes: Bibbidi.Types.Network.BytesValue.schema()})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

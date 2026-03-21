@@ -2,15 +2,27 @@
 defmodule Bibbidi.Commands.Script.Evaluate do
   @moduledoc """
   Command struct for `script.evaluate`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-script-evaluate)
+  ## Fields
+
+  - `expression` - `String.t()` (required)
+  - `target` - `t:Bibbidi.Types.Script.Target.t/0` (required)
+  - `await_promise` - `boolean()` (required)
+  - `result_ownership` - `t:Bibbidi.Types.Script.ResultOwnership.t/0` (optional)
+  - `serialization_options` - `t:Bibbidi.Types.Script.SerializationOptions.t/0` (optional)
+  - `user_activation` - `boolean()` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             expression: Zoi.string(),
-            target: Zoi.any(),
+            target: Bibbidi.Types.Script.Target.schema(),
             await_promise: Zoi.boolean(),
-            result_ownership: Zoi.any() |> Zoi.optional(),
-            serialization_options: Zoi.any() |> Zoi.optional(),
+            result_ownership: Bibbidi.Types.Script.ResultOwnership.schema() |> Zoi.optional(),
+            serialization_options:
+              Bibbidi.Types.Script.SerializationOptions.schema() |> Zoi.optional(),
             user_activation: Zoi.boolean() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })

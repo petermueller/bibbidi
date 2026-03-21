@@ -11,8 +11,12 @@ defmodule Bibbidi.Commands.Input do
   alias __MODULE__.FileDialogOpened
 
   @doc "Executes the `input.performActions` command."
-  @spec perform_actions(GenServer.server(), term(), [term()], PerformActions.opts()) ::
-          {:ok, PerformActions.result()} | {:error, term()}
+  @spec perform_actions(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          [Bibbidi.Types.Input.SourceActions.t()],
+          PerformActions.opts()
+        ) :: {:ok, PerformActions.result()} | {:error, term()}
   def perform_actions(conn, context, actions, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
 
@@ -24,16 +28,24 @@ defmodule Bibbidi.Commands.Input do
   end
 
   @doc "Executes the `input.releaseActions` command."
-  @spec release_actions(GenServer.server(), term(), ReleaseActions.opts()) ::
-          {:ok, ReleaseActions.result()} | {:error, term()}
+  @spec release_actions(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          ReleaseActions.opts()
+        ) :: {:ok, ReleaseActions.result()} | {:error, term()}
   def release_actions(conn, context, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
     connection_mod.execute(conn, struct!(ReleaseActions, [{:context, context}]), [])
   end
 
   @doc "Executes the `input.setFiles` command."
-  @spec set_files(GenServer.server(), term(), term(), [String.t()], SetFiles.opts()) ::
-          {:ok, SetFiles.result()} | {:error, term()}
+  @spec set_files(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          Bibbidi.Types.Script.SharedReference.t(),
+          [String.t()],
+          SetFiles.opts()
+        ) :: {:ok, SetFiles.result()} | {:error, term()}
   def set_files(conn, context, element, files, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
 
@@ -51,8 +63,12 @@ defmodule Bibbidi.Commands.Input do
 
   #{Zoi.describe(FileDialogOpened.opts_schema())}
   """
-  @spec file_dialog_opened(GenServer.server(), term(), boolean(), FileDialogOpened.opts()) ::
-          {:ok, FileDialogOpened.result()} | {:error, term()}
+  @spec file_dialog_opened(
+          GenServer.server(),
+          Bibbidi.Types.BrowsingContext.t(),
+          boolean(),
+          FileDialogOpened.opts()
+        ) :: {:ok, FileDialogOpened.result()} | {:error, term()}
   def file_dialog_opened(conn, context, multiple, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(FileDialogOpened.opts_schema(), opts)

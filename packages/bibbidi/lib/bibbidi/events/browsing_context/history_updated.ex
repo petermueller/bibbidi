@@ -4,6 +4,13 @@ defmodule Bibbidi.Events.BrowsingContext.HistoryUpdated do
   Event struct for `browsingContext.historyUpdated`.
 
   Params type: `browsingContext.HistoryUpdatedParameters`
+
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `timestamp` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `url` - `String.t()` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}

@@ -2,6 +2,8 @@
 defmodule Bibbidi.Commands.Browser.Close do
   @moduledoc """
   Command struct for `browser.close`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browser-close)
   """
 
   @derive Bibbidi.Telemetry.Metadata

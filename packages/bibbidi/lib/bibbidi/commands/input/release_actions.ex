@@ -2,10 +2,19 @@
 defmodule Bibbidi.Commands.Input.ReleaseActions do
   @moduledoc """
   Command struct for `input.releaseActions`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-input-releaseActions)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
-  @schema Zoi.struct(__MODULE__, %{context: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
+  @schema Zoi.struct(__MODULE__, %{
+            context: Bibbidi.Types.BrowsingContext.schema(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

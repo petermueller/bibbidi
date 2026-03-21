@@ -2,12 +2,19 @@
 defmodule Bibbidi.Commands.Storage.DeleteCookies do
   @moduledoc """
   Command struct for `storage.deleteCookies`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-storage-deleteCookies)
+  ## Fields
+
+  - `filter` - `t:Bibbidi.Types.Storage.CookieFilter.t/0` (optional)
+  - `partition` - `t:Bibbidi.Types.Storage.PartitionDescriptor.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            filter: Zoi.any() |> Zoi.optional(),
-            partition: Zoi.any() |> Zoi.optional(),
+            filter: Bibbidi.Types.Storage.CookieFilter.schema() |> Zoi.optional(),
+            partition: Bibbidi.Types.Storage.PartitionDescriptor.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

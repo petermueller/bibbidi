@@ -2,12 +2,19 @@
 defmodule Bibbidi.Commands.Script.GetRealms do
   @moduledoc """
   Command struct for `script.getRealms`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-script-getRealms)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `type` - `t:Bibbidi.Types.Script.RealmType.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any() |> Zoi.optional(),
-            type: Zoi.any() |> Zoi.optional(),
+            context: Bibbidi.Types.BrowsingContext.schema() |> Zoi.optional(),
+            type: Bibbidi.Types.Script.RealmType.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

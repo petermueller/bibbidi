@@ -4,6 +4,10 @@ defmodule Bibbidi.Events.Script.RealmDestroyed do
   Event struct for `script.realmDestroyed`.
 
   Params type: `script.RealmDestroyedParameters`
+
+  ## Fields
+
+  - `realm` - `t:Bibbidi.Types.Script.Realm.t/0` (required)
   """
 
   defstruct [:realm]

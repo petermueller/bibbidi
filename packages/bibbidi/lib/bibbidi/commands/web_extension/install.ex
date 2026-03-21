@@ -2,12 +2,21 @@
 defmodule Bibbidi.Commands.WebExtension.Install do
   @moduledoc """
   Command struct for `webExtension.install`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-webExtension-install)
+  ## Fields
+
+  - `extension_data` - `t:Bibbidi.Types.WebExtension.ExtensionData.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
-  @schema Zoi.struct(__MODULE__, %{extension_data: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
+  @schema Zoi.struct(__MODULE__, %{
+            extension_data: Bibbidi.Types.WebExtension.ExtensionData.schema(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
-  @result_schema Zoi.map(%{extension: Zoi.any()})
+  @result_schema Zoi.map(%{extension: Bibbidi.Types.WebExtension.Extension.schema()})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

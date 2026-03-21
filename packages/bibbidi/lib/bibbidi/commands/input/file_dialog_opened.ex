@@ -2,14 +2,23 @@
 defmodule Bibbidi.Commands.Input.FileDialogOpened do
   @moduledoc """
   Command struct for `input.fileDialogOpened`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-input-fileDialogOpened)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `multiple` - `boolean()` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+  - `element` - `t:Bibbidi.Types.Script.SharedReference.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
             multiple: Zoi.boolean(),
-            user_context: Zoi.any() |> Zoi.optional(),
-            element: Zoi.any() |> Zoi.optional(),
+            user_context: Bibbidi.Types.Browser.UserContext.schema() |> Zoi.optional(),
+            element: Bibbidi.Types.Script.SharedReference.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

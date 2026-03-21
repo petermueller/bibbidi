@@ -4,6 +4,15 @@ defmodule Bibbidi.Events.BrowsingContext.UserPromptOpened do
   Event struct for `browsingContext.userPromptOpened`.
 
   Params type: `browsingContext.UserPromptOpenedParameters`
+
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `handler` - `t:Bibbidi.Types.Session.UserPromptHandlerType.t/0` (required)
+  - `message` - `String.t()` (required)
+  - `type` - `t:Bibbidi.Types.BrowsingContext.UserPromptType.t/0` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+  - `default_value` - `String.t()` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}

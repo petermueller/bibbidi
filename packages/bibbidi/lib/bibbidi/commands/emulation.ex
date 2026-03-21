@@ -26,7 +26,7 @@ defmodule Bibbidi.Commands.Emulation do
   """
   @spec set_forced_colors_mode_theme_override(
           GenServer.server(),
-          term() | nil,
+          Bibbidi.Types.Emulation.ForcedColorsModeTheme.t() | nil,
           SetForcedColorsModeThemeOverride.opts()
         ) :: {:ok, SetForcedColorsModeThemeOverride.result()} | {:error, term()}
   def set_forced_colors_mode_theme_override(conn, theme, opts \\ []) do
@@ -77,8 +77,11 @@ defmodule Bibbidi.Commands.Emulation do
 
   #{Zoi.describe(SetNetworkConditions.opts_schema())}
   """
-  @spec set_network_conditions(GenServer.server(), term() | nil, SetNetworkConditions.opts()) ::
-          {:ok, SetNetworkConditions.result()} | {:error, term()}
+  @spec set_network_conditions(
+          GenServer.server(),
+          Bibbidi.Types.Emulation.NetworkConditions.t() | nil,
+          SetNetworkConditions.opts()
+        ) :: {:ok, SetNetworkConditions.result()} | {:error, term()}
   def set_network_conditions(conn, network_conditions, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetNetworkConditions.opts_schema(), opts)
@@ -99,7 +102,7 @@ defmodule Bibbidi.Commands.Emulation do
   """
   @spec set_screen_settings_override(
           GenServer.server(),
-          term() | nil,
+          Bibbidi.Types.Emulation.ScreenArea.t() | nil,
           SetScreenSettingsOverride.opts()
         ) :: {:ok, SetScreenSettingsOverride.result()} | {:error, term()}
   def set_screen_settings_override(conn, screen_area, opts \\ []) do
@@ -122,7 +125,7 @@ defmodule Bibbidi.Commands.Emulation do
   """
   @spec set_screen_orientation_override(
           GenServer.server(),
-          term() | nil,
+          Bibbidi.Types.Emulation.ScreenOrientation.t() | nil,
           SetScreenOrientationOverride.opts()
         ) :: {:ok, SetScreenOrientationOverride.result()} | {:error, term()}
   def set_screen_orientation_override(conn, screen_orientation, opts \\ []) do

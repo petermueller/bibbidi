@@ -4,6 +4,15 @@ defmodule Bibbidi.Events.BrowsingContext.DownloadWillBegin do
   Event struct for `browsingContext.downloadWillBegin`.
 
   Params type: `browsingContext.DownloadWillBeginParams`
+
+  ## Fields
+
+  - `suggested_filename` - `String.t()` (required)
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `navigation` - `t:Bibbidi.Types.BrowsingContext.Navigation.t/0` or `nil` (required)
+  - `timestamp` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `url` - `String.t()` (required)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context, :navigation]}

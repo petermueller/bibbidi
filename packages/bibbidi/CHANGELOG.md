@@ -4,6 +4,9 @@
 
 ### Features
 
+- **Type modules (`Bibbidi.Types.*`)** — all named BiDi protocol types now have generated modules under `Bibbidi.Types.*` with Zoi schemas (`schema/0`), `@type t`, and ExDoc documentation. Covers primitive aliases, string enums, struct-like maps, and choice/union types (~163 modules).
+- **Improved command struct documentation** — moduledocs include spec links, field descriptions with ExDoc cross-references to type modules (e.g. `t:Bibbidi.Types.Script.Target.t/0`), and required/optional annotations.
+- **Typed schemas on command structs** — `@schema` fields now reference type module schemas (e.g. `Bibbidi.Types.BrowsingContext.schema()`) instead of `Zoi.any()`, providing real validation and introspection for command fields.
 - **Event structs** — BiDi events are parsed into typed structs (one per event method). Subscribers receive `{:bibbidi_event, method, %EventStruct{}}` instead of raw maps. Unknown events still arrive as raw maps.
 - **`Bibbidi.Events.parse/2`** — top-level dispatcher that converts raw event params into typed structs, delegating to per-module parsers (`Events.BrowsingContext.parse/2`, etc.)
 - **`Bibbidi.Telemetry.Metadata` protocol** — extracts correlation metadata from command and event structs for telemetry enrichment. Command structs derive `%{meta: value}`, event structs derive relevant correlation keys (`:context`, `:navigation`, `:request`).
@@ -49,7 +52,7 @@
 
 ### Breaking
 
-- **`Bibbidi.Types.*` modules removed** — type information now lives directly on command structs (`@type t`, `@type opts`, `@type result`). Delete any `alias Bibbidi.Types.*` references.
+- **`Bibbidi.Types.*` modules replaced** — the v0.1.0 type modules were removed in v0.2.0. In v0.3.0, new type modules were generated from CDDL with Zoi schemas, `@type t`, and ExDoc docs. These are a different API — delete any old `alias Bibbidi.Types.*` references and refer to the new modules.
 - **`Connection.send_command/4` is now a documented low-level escape hatch** — use `Connection.execute/2` for normal usage. `send_command/4` does not emit telemetry or go through `Encodable`; it's useful for vendor extensions or commands not yet in the spec.
 - **`Commands.Session.end_session/1` renamed to `Commands.Session.session_end/1`** — `end` is a reserved word; the generated facade uses the `session_end` name. `Bibbidi.Session.end_session/1` is unchanged.
 - **`Commands.Session.unsubscribe/3` changed to `Commands.Session.unsubscribe/2`** — `events` moved from a required positional arg into the keyword opts. `Bibbidi.Session.unsubscribe/3` is unchanged.

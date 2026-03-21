@@ -4,6 +4,16 @@ defmodule Bibbidi.Events.Script.RealmCreated do
   Event struct for `script.realmCreated`.
 
   Params type: `script.RealmInfo`
+
+  ## Fields
+
+  - `realm` - `t:Bibbidi.Types.Script.Realm.t/0` (optional)
+  - `origin` - `String.t()` (optional)
+  - `type` - `"window"` (optional)
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+  - `sandbox` - `String.t()` (optional)
+  - `owners` - list of `t:Bibbidi.Types.Script.Realm.t/0` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}

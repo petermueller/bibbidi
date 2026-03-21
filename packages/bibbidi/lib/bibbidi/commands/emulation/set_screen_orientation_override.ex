@@ -2,13 +2,22 @@
 defmodule Bibbidi.Commands.Emulation.SetScreenOrientationOverride do
   @moduledoc """
   Command struct for `emulation.setScreenOrientationOverride`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-emulation-setScreenOrientationOverride)
+  ## Fields
+
+  - `screen_orientation` - `t:Bibbidi.Types.Emulation.ScreenOrientation.t/0` or `nil` (required)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `user_contexts` - list of `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            screen_orientation: Zoi.union([Zoi.any(), Zoi.null()]),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            screen_orientation:
+              Zoi.union([Bibbidi.Types.Emulation.ScreenOrientation.schema(), Zoi.null()]),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
+            user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(

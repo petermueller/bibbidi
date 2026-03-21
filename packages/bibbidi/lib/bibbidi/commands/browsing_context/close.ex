@@ -2,11 +2,18 @@
 defmodule Bibbidi.Commands.BrowsingContext.Close do
   @moduledoc """
   Command struct for `browsingContext.close`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-close)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `prompt_unload` - `boolean()` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
             prompt_unload: Zoi.boolean() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })

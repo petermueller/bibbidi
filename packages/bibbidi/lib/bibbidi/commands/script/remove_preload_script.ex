@@ -2,10 +2,19 @@
 defmodule Bibbidi.Commands.Script.RemovePreloadScript do
   @moduledoc """
   Command struct for `script.removePreloadScript`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-script-removePreloadScript)
+  ## Fields
+
+  - `script` - `t:Bibbidi.Types.Script.PreloadScript.t/0` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
-  @schema Zoi.struct(__MODULE__, %{script: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
+  @schema Zoi.struct(__MODULE__, %{
+            script: Bibbidi.Types.Script.PreloadScript.schema(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

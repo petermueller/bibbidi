@@ -33,8 +33,12 @@ defmodule Bibbidi.Commands.Script do
   end
 
   @doc "Executes the `script.disown` command."
-  @spec disown(GenServer.server(), [term()], term(), Disown.opts()) ::
-          {:ok, Disown.result()} | {:error, term()}
+  @spec disown(
+          GenServer.server(),
+          [Bibbidi.Types.Script.Handle.t()],
+          Bibbidi.Types.Script.Target.t(),
+          Disown.opts()
+        ) :: {:ok, Disown.result()} | {:error, term()}
   def disown(conn, handles, target, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
     connection_mod.execute(conn, struct!(Disown, [{:handles, handles}, {:target, target}]), [])
@@ -47,8 +51,13 @@ defmodule Bibbidi.Commands.Script do
 
   #{Zoi.describe(CallFunction.opts_schema())}
   """
-  @spec call_function(GenServer.server(), String.t(), boolean(), term(), CallFunction.opts()) ::
-          {:ok, CallFunction.result()} | {:error, term()}
+  @spec call_function(
+          GenServer.server(),
+          String.t(),
+          boolean(),
+          Bibbidi.Types.Script.Target.t(),
+          CallFunction.opts()
+        ) :: {:ok, CallFunction.result()} | {:error, term()}
   def call_function(conn, function_declaration, await_promise, target, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(CallFunction.opts_schema(), opts)
@@ -71,8 +80,13 @@ defmodule Bibbidi.Commands.Script do
 
   #{Zoi.describe(Evaluate.opts_schema())}
   """
-  @spec evaluate(GenServer.server(), String.t(), term(), boolean(), Evaluate.opts()) ::
-          {:ok, Evaluate.result()} | {:error, term()}
+  @spec evaluate(
+          GenServer.server(),
+          String.t(),
+          Bibbidi.Types.Script.Target.t(),
+          boolean(),
+          Evaluate.opts()
+        ) :: {:ok, Evaluate.result()} | {:error, term()}
   def evaluate(conn, expression, target, await_promise, opts \\ []) do
     {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(Evaluate.opts_schema(), opts)
@@ -104,8 +118,11 @@ defmodule Bibbidi.Commands.Script do
   end
 
   @doc "Executes the `script.removePreloadScript` command."
-  @spec remove_preload_script(GenServer.server(), term(), RemovePreloadScript.opts()) ::
-          {:ok, RemovePreloadScript.result()} | {:error, term()}
+  @spec remove_preload_script(
+          GenServer.server(),
+          Bibbidi.Types.Script.PreloadScript.t(),
+          RemovePreloadScript.opts()
+        ) :: {:ok, RemovePreloadScript.result()} | {:error, term()}
   def remove_preload_script(conn, script, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
     connection_mod.execute(conn, struct!(RemovePreloadScript, [{:script, script}]), [])

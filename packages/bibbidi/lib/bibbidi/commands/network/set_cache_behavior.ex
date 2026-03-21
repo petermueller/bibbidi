@@ -2,12 +2,19 @@
 defmodule Bibbidi.Commands.Network.SetCacheBehavior do
   @moduledoc """
   Command struct for `network.setCacheBehavior`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-network-setCacheBehavior)
+  ## Fields
+
+  - `cache_behavior` - `"default"` or `"bypass"` (required)
+  - `contexts` - list of `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             cache_behavior: Zoi.union([Zoi.string(), Zoi.string()]),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(contexts: Zoi.list(Zoi.any()) |> Zoi.optional())

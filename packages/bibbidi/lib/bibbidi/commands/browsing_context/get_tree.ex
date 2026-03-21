@@ -2,19 +2,26 @@
 defmodule Bibbidi.Commands.BrowsingContext.GetTree do
   @moduledoc """
   Command struct for `browsingContext.getTree`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-browsingContext-getTree)
+  ## Fields
+
+  - `max_depth` - `t:Bibbidi.Types.JsUint.t/0` (optional)
+  - `root` - `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            max_depth: Zoi.any() |> Zoi.optional(),
-            root: Zoi.any() |> Zoi.optional(),
+            max_depth: Bibbidi.Types.JsUint.schema() |> Zoi.optional(),
+            root: Bibbidi.Types.BrowsingContext.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  max_depth: Zoi.any() |> Zoi.optional(),
                  root: Zoi.any() |> Zoi.optional()
                )
-  @result_schema Zoi.map(%{contexts: Zoi.any()})
+  @result_schema Zoi.map(%{contexts: Bibbidi.Types.BrowsingContext.InfoList.schema()})
 
   @type t :: unquote(Zoi.type_spec(@schema))
   @type opts :: unquote(Zoi.type_spec(@opts_schema))

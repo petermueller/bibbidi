@@ -21,7 +21,8 @@ defmodule Bibbidi.Commands.Session do
   end
 
   @doc "Executes the `session.new` command."
-  @spec new(GenServer.server(), term(), New.opts()) :: {:ok, New.result()} | {:error, term()}
+  @spec new(GenServer.server(), Bibbidi.Types.Session.CapabilitiesRequest.t(), New.opts()) ::
+          {:ok, New.result()} | {:error, term()}
   def new(conn, capabilities, opts \\ []) do
     {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
     connection_mod.execute(conn, struct!(New, [{:capabilities, capabilities}]), [])

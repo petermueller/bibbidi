@@ -2,12 +2,20 @@
 defmodule Bibbidi.Commands.Input.SetFiles do
   @moduledoc """
   Command struct for `input.setFiles`.
+
+  [WebDriver BiDi Spec](https://w3c.github.io/webdriver-bidi/#command-input-setFiles)
+  ## Fields
+
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (required)
+  - `element` - `t:Bibbidi.Types.Script.SharedReference.t/0` (required)
+  - `files` - list of `String.t()` (required)
+
   """
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            context: Zoi.any(),
-            element: Zoi.any(),
+            context: Bibbidi.Types.BrowsingContext.schema(),
+            element: Bibbidi.Types.Script.SharedReference.schema(),
             files: Zoi.list(Zoi.string()),
             meta: Zoi.any() |> Zoi.optional()
           })

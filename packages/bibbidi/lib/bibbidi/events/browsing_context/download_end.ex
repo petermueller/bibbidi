@@ -4,6 +4,16 @@ defmodule Bibbidi.Events.BrowsingContext.DownloadEnd do
   Event struct for `browsingContext.downloadEnd`.
 
   Params type: `browsingContext.DownloadEndParams`
+
+  ## Fields
+
+  - `status` - `"canceled"` (optional)
+  - `context` - `t:Bibbidi.Types.BrowsingContext.t/0` (optional)
+  - `navigation` - `t:Bibbidi.Types.BrowsingContext.Navigation.t/0` or `nil` (optional)
+  - `timestamp` - `t:Bibbidi.Types.JsUint.t/0` (optional)
+  - `url` - `String.t()` (optional)
+  - `user_context` - `t:Bibbidi.Types.Browser.UserContext.t/0` (optional)
+  - `filepath` - `String.t()` or `nil` (optional)
   """
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context, :navigation]}
