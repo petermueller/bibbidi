@@ -5,8 +5,9 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
       # Show all rule names
       mix bibbidi.cddl.inspect
 
-      # Show a specific rule by exact name
+      # Show one or more rules by exact name
       mix bibbidi.cddl.inspect session.UnsubscribeParameters
+      mix bibbidi.cddl.inspect input.SourceActions session.UnsubscribeParameters
 
       # Search rule names by substring (case-insensitive)
       mix bibbidi.cddl.inspect --search unsubscribe
@@ -15,11 +16,13 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
       mix bibbidi.cddl.inspect --file remote
       mix bibbidi.cddl.inspect --file local
 
-      # Show resolved command fields (what the generator would produce)
-      mix bibbidi.cddl.inspect --fields session.UnsubscribeParameters
+      # Show resolved command fields for one or more param types
+      mix bibbidi.cddl.inspect --fields input.PerformActionsParameters
+      mix bibbidi.cddl.inspect --fields input.PerformActionsParameters --fields session.UnsubscribeParameters
 
-      # Show all commands the generator extracts for a module
+      # Show all commands for one or more modules
       mix bibbidi.cddl.inspect --commands session
+      mix bibbidi.cddl.inspect --commands input --commands session
   """
 
   @shortdoc "Inspect parsed CDDL rules"
@@ -33,7 +36,7 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
   def run(argv) do
     {opts, args, _} =
       OptionParser.parse(argv,
-        strict: [search: :string, file: :string, fields: :string, commands: :string],
+        strict: [search: :string, file: :string, fields: :keep, commands: :keep],
         aliases: [s: :search, f: :file]
       )
 
@@ -47,18 +50,28 @@ defmodule Mix.Tasks.Bibbidi.Cddl.Inspect do
         _ -> remote ++ local
       end
 
-    cond do
-      opts[:commands] ->
-        show_commands(opts[:commands], remote, remote ++ local)
+    commands = Keyword.get_values(opts, :commands)
+    fields = Keyword.get_values(opts, :fields)
 
-      opts[:fields] ->
-        show_fields(opts[:fields], remote ++ local)
+    cond do
+      commands != [] ->
+        Enum.each(commands, &show_commands(&1, remote, remote ++ local))
+
+      fields != [] ->
+        refs = fields ++ args
+        Enum.intersperse(refs, :separator) |> Enum.each(fn
+          :separator -> Mix.shell().info("\n---\n")
+          ref -> show_fields(ref, remote ++ local)
+        end)
 
       opts[:search] ->
         search_rules(rules, opts[:search])
 
       args != [] ->
-        show_rule(rules, hd(args))
+        Enum.intersperse(args, :separator) |> Enum.each(fn
+          :separator -> Mix.shell().info("\n---\n")
+          name -> show_rule(rules, name)
+        end)
 
       true ->
         list_rules(rules)
