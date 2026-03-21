@@ -4,7 +4,12 @@ defmodule Bibbidi.Commands.BrowsingContext.TraverseHistory do
   Command struct for `browsingContext.traverseHistory`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{context: Zoi.any(), delta: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{
+            context: Zoi.any(),
+            delta: Zoi.any(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

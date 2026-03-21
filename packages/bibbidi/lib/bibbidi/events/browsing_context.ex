@@ -4,6 +4,20 @@ defmodule Bibbidi.Events.BrowsingContext do
   Events for the `browsingContext` module of the WebDriver BiDi protocol.
   """
 
+  alias __MODULE__.ContextCreated
+  alias __MODULE__.ContextDestroyed
+  alias __MODULE__.NavigationStarted
+  alias __MODULE__.FragmentNavigated
+  alias __MODULE__.HistoryUpdated
+  alias __MODULE__.DomContentLoaded
+  alias __MODULE__.Load
+  alias __MODULE__.DownloadWillBegin
+  alias __MODULE__.DownloadEnd
+  alias __MODULE__.NavigationAborted
+  alias __MODULE__.NavigationCommitted
+  alias __MODULE__.NavigationFailed
+  alias __MODULE__.UserPromptClosed
+  alias __MODULE__.UserPromptOpened
   @doc "Returns all event method names for this module."
   @spec events() :: [String.t()]
   def events do
@@ -122,4 +136,155 @@ defmodule Bibbidi.Events.BrowsingContext do
   Params type: `browsingContext.UserPromptOpenedParameters`
   """
   def user_prompt_opened, do: "browsingContext.userPromptOpened"
+
+  @doc "Parses a raw event params map into a typed struct."
+  @spec parse(String.t(), map()) :: struct() | map()
+  def parse("browsingContext.contextCreated", params) do
+    %ContextCreated{
+      children: params["children"],
+      client_window: params["clientWindow"],
+      context: params["context"],
+      original_opener: params["originalOpener"],
+      url: params["url"],
+      user_context: params["userContext"],
+      parent: params["parent"]
+    }
+  end
+
+  def parse("browsingContext.contextDestroyed", params) do
+    %ContextDestroyed{
+      children: params["children"],
+      client_window: params["clientWindow"],
+      context: params["context"],
+      original_opener: params["originalOpener"],
+      url: params["url"],
+      user_context: params["userContext"],
+      parent: params["parent"]
+    }
+  end
+
+  def parse("browsingContext.navigationStarted", params) do
+    %NavigationStarted{
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.fragmentNavigated", params) do
+    %FragmentNavigated{
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.historyUpdated", params) do
+    %HistoryUpdated{
+      context: params["context"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.domContentLoaded", params) do
+    %DomContentLoaded{
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.load", params) do
+    %Load{
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.downloadWillBegin", params) do
+    %DownloadWillBegin{
+      suggested_filename: params["suggestedFilename"],
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.downloadEnd", params) do
+    %DownloadEnd{
+      status: params["status"],
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"],
+      filepath: params["filepath"]
+    }
+  end
+
+  def parse("browsingContext.navigationAborted", params) do
+    %NavigationAborted{
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.navigationCommitted", params) do
+    %NavigationCommitted{
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.navigationFailed", params) do
+    %NavigationFailed{
+      context: params["context"],
+      navigation: params["navigation"],
+      timestamp: params["timestamp"],
+      url: params["url"],
+      user_context: params["userContext"]
+    }
+  end
+
+  def parse("browsingContext.userPromptClosed", params) do
+    %UserPromptClosed{
+      context: params["context"],
+      accepted: params["accepted"],
+      type: params["type"],
+      user_context: params["userContext"],
+      user_text: params["userText"]
+    }
+  end
+
+  def parse("browsingContext.userPromptOpened", params) do
+    %UserPromptOpened{
+      context: params["context"],
+      handler: params["handler"],
+      message: params["message"],
+      type: params["type"],
+      user_context: params["userContext"],
+      default_value: params["defaultValue"]
+    }
+  end
+
+  def parse(_method, params), do: params
 end

@@ -1,118 +1,90 @@
 defmodule Bibbidi.Commands.SessionTest do
-  use ExUnit.Case, async: true
+  use Bibbidi.CommandCase, async: true
 
   alias Bibbidi.Commands.Session
-  alias Bibbidi.Connection
-
-  setup do
-    {:ok, conn} =
-      Connection.start_link(
-        url: "ws://localhost:1234",
-        transport: Bibbidi.MockTransport,
-        transport_opts: [owner: self()]
-      )
-
-    %{conn: conn}
-  end
-
-  defp reply(conn, id, result \\ %{}) do
-    send(conn, {:mock_transport_receive, [{:text, JSON.encode!(%{id: id, result: result})}]})
-  end
 
   describe "new/2" do
-    test "sends session.new command with default capabilities", %{conn: conn} do
-      task = Task.async(fn -> Session.new(conn, %{}) end)
+    test "sends session.new command with default capabilities" do
+      expect_execute(fn _conn, cmd ->
+        assert %Session.New{} = cmd
+        assert Bibbidi.Encodable.method(cmd) == "session.new"
+        assert cmd.capabilities == %{}
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "session.new"
-      assert decoded["params"]["capabilities"] == %{}
-
-      reply(conn, decoded["id"], %{sessionId: "session-1", capabilities: %{}})
-      assert {:ok, %{"sessionId" => "session-1"}} = Task.await(task)
+      assert {:ok, %{}} = Session.new(:conn, %{}, connection_mod: MockConnection)
     end
 
-    test "sends session.new command with custom capabilities", %{conn: conn} do
+    test "sends session.new command with custom capabilities" do
       caps = %{alwaysMatch: %{browserName: "chrome"}}
-      task = Task.async(fn -> Session.new(conn, caps) end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["capabilities"] == %{"alwaysMatch" => %{"browserName" => "chrome"}}
+      expect_execute(fn _conn, cmd ->
+        assert cmd.capabilities == caps
+      end)
 
-      reply(conn, decoded["id"], %{sessionId: "session-1", capabilities: %{}})
-      Task.await(task)
+      Session.new(:conn, caps, connection_mod: MockConnection)
     end
   end
 
   describe "session_end/1" do
-    test "sends session.end command", %{conn: conn} do
-      task = Task.async(fn -> Session.session_end(conn) end)
+    test "sends session.end command" do
+      expect_execute(fn _conn, cmd ->
+        assert %Session.End{} = cmd
+        assert Bibbidi.Encodable.method(cmd) == "session.end"
+        assert Bibbidi.Encodable.params(cmd) == %{}
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "session.end"
-      assert decoded["params"] == %{}
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} = Session.session_end(:conn, connection_mod: MockConnection)
     end
   end
 
   describe "status/1" do
-    test "sends session.status command", %{conn: conn} do
-      task = Task.async(fn -> Session.status(conn) end)
+    test "sends session.status command" do
+      expect_execute(fn _conn, cmd ->
+        assert %Session.Status{} = cmd
+        assert Bibbidi.Encodable.method(cmd) == "session.status"
+        assert Bibbidi.Encodable.params(cmd) == %{}
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "session.status"
-      assert decoded["params"] == %{}
-
-      reply(conn, decoded["id"], %{ready: true, message: "ready"})
-      assert {:ok, %{"ready" => true}} = Task.await(task)
+      assert {:ok, %{}} = Session.status(:conn, connection_mod: MockConnection)
     end
   end
 
   describe "subscribe/3" do
-    test "sends session.subscribe command", %{conn: conn} do
-      task = Task.async(fn -> Session.subscribe(conn, ["browsingContext.load"]) end)
+    test "sends session.subscribe command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "session.subscribe"
+        assert cmd.events == ["browsingContext.load"]
+        assert cmd.contexts == nil
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "session.subscribe"
-      assert decoded["params"]["events"] == ["browsingContext.load"]
-      refute Map.has_key?(decoded["params"], "contexts")
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Session.subscribe(:conn, ["browsingContext.load"], connection_mod: MockConnection)
     end
 
-    test "includes contexts option", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Session.subscribe(conn, ["log.entryAdded"], contexts: ["ctx-1"])
-        end)
+    test "includes contexts option" do
+      expect_execute(fn _conn, cmd ->
+        assert cmd.contexts == ["ctx-1"]
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["contexts"] == ["ctx-1"]
-
-      reply(conn, decoded["id"])
-      Task.await(task)
+      Session.subscribe(:conn, ["log.entryAdded"],
+        contexts: ["ctx-1"],
+        connection_mod: MockConnection
+      )
     end
   end
 
   describe "unsubscribe/3" do
-    test "sends session.unsubscribe command", %{conn: conn} do
-      task = Task.async(fn -> Session.unsubscribe(conn, events: ["browsingContext.load"]) end)
+    test "sends session.unsubscribe command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "session.unsubscribe"
+        assert cmd.events == ["browsingContext.load"]
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "session.unsubscribe"
-      assert decoded["params"]["events"] == ["browsingContext.load"]
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Session.unsubscribe(:conn,
+                 events: ["browsingContext.load"],
+                 connection_mod: MockConnection
+               )
     end
   end
 end

@@ -4,6 +4,9 @@ defmodule Bibbidi.Events.Script do
   Events for the `script` module of the WebDriver BiDi protocol.
   """
 
+  alias __MODULE__.Message
+  alias __MODULE__.RealmCreated
+  alias __MODULE__.RealmDestroyed
   @doc "Returns all event method names for this module."
   @spec events() :: [String.t()]
   def events do
@@ -34,4 +37,28 @@ defmodule Bibbidi.Events.Script do
   Params type: `script.RealmDestroyedParameters`
   """
   def realm_destroyed, do: "script.realmDestroyed"
+
+  @doc "Parses a raw event params map into a typed struct."
+  @spec parse(String.t(), map()) :: struct() | map()
+  def parse("script.message", params) do
+    %Message{channel: params["channel"], data: params["data"], source: params["source"]}
+  end
+
+  def parse("script.realmCreated", params) do
+    %RealmCreated{
+      realm: params["realm"],
+      origin: params["origin"],
+      type: params["type"],
+      context: params["context"],
+      user_context: params["userContext"],
+      sandbox: params["sandbox"],
+      owners: params["owners"]
+    }
+  end
+
+  def parse("script.realmDestroyed", params) do
+    %RealmDestroyed{realm: params["realm"]}
+  end
+
+  def parse(_method, params), do: params
 end

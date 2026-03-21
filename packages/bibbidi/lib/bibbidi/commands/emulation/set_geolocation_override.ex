@@ -4,9 +4,11 @@ defmodule Bibbidi.Commands.Emulation.SetGeolocationOverride do
   Command struct for `emulation.setGeolocationOverride`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),

@@ -1,7 +1,7 @@
 defmodule Bibbidi.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.3.0"
   @source_url "https://github.com/petermueller/bibbidi"
 
   def project do
@@ -15,6 +15,7 @@ defmodule Bibbidi.MixProject do
       homepage_url: @source_url,
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
+      aliases: aliases(),
       deps: deps(),
       docs: docs(),
       package: package(),
@@ -46,17 +47,51 @@ defmodule Bibbidi.MixProject do
           Bibbidi.Browser,
           Bibbidi.Connection,
           Bibbidi.Protocol,
-          Bibbidi.Session
+          Bibbidi.Session,
+          Bibbidi.Encodable,
+          Bibbidi.Keys,
+          Bibbidi.Telemetry,
+          Bibbidi.Telemetry.Metadata
         ],
         Transport: ~r/Bibbidi\.Transport/,
-        Commands: ~r/Bibbidi\.Commands\./,
-        Events: ~r/Bibbidi\.Events\./,
-        Internals: ~r/Bibbidi\.CDDL\./
+        "Commands: Browser": ~r/Bibbidi\.Commands\.Browser/,
+        "Commands: BrowsingContext": ~r/Bibbidi\.Commands\.BrowsingContext/,
+        "Commands: Emulation": ~r/Bibbidi\.Commands\.Emulation/,
+        "Commands: Input": ~r/Bibbidi\.Commands\.Input/,
+        "Commands: Log": ~r/Bibbidi\.Commands\.Log/,
+        "Commands: Network": ~r/Bibbidi\.Commands\.Network/,
+        "Commands: Script": ~r/Bibbidi\.Commands\.Script/,
+        "Commands: Session": ~r/Bibbidi\.Commands\.Session/,
+        "Commands: Storage": ~r/Bibbidi\.Commands\.Storage/,
+        "Commands: WebExtension": ~r/Bibbidi\.Commands\.WebExtension/,
+        "Events: BrowsingContext": ~r/Bibbidi\.Events\.BrowsingContext/,
+        "Events: Input": ~r/Bibbidi\.Events\.Input/,
+        "Events: Log": ~r/Bibbidi\.Events\.Log/,
+        "Events: Network": ~r/Bibbidi\.Events\.Network/,
+        "Events: Script": ~r/Bibbidi\.Events\.Script/,
+        Events: ~r/\ABibbidi\.Events\z/,
+        "Mix Tasks": ~r/Mix\.Tasks\./,
+        Internals: ~r/Bibbidi\.CDDL/
       ],
       nest_modules_by_prefix: [
         Bibbidi.Commands,
+        Bibbidi.Commands.Browser,
+        Bibbidi.Commands.BrowsingContext,
+        Bibbidi.Commands.Emulation,
+        Bibbidi.Commands.Input,
+        Bibbidi.Commands.Network,
+        Bibbidi.Commands.Script,
+        Bibbidi.Commands.Session,
+        Bibbidi.Commands.Storage,
+        Bibbidi.Commands.WebExtension,
         Bibbidi.Events,
-        Bibbidi.Transport
+        Bibbidi.Events.BrowsingContext,
+        Bibbidi.Events.Input,
+        Bibbidi.Events.Log,
+        Bibbidi.Events.Network,
+        Bibbidi.Events.Script,
+        Bibbidi.Transport,
+        Bibbidi.Telemetry
       ]
     ]
   end
@@ -86,6 +121,16 @@ defmodule Bibbidi.MixProject do
     ]
   end
 
+  def cli do
+    [preferred_envs: ["test.all": :test]]
+  end
+
+  defp aliases do
+    [
+      "test.all": ["test --include integration"]
+    ]
+  end
+
   defp elixirc_paths(:test), do: ["lib", "dev", "test/support"]
   defp elixirc_paths(:dev), do: ["lib", "dev"]
   defp elixirc_paths(_), do: ["lib"]
@@ -108,7 +153,9 @@ defmodule Bibbidi.MixProject do
       {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},
       {:usage_rules, "~> 1.0", only: [:dev]},
       {:bandit, "~> 1.0", only: :test},
-      {:plug, "~> 1.14", only: :test}
+      {:mox, "~> 1.0", only: :test},
+      {:plug, "~> 1.14", only: :test},
+      {:benchee, "~> 1.0", only: :dev, runtime: false}
     ]
   end
 end

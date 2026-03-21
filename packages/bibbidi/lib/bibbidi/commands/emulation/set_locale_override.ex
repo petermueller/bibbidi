@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.Emulation.SetLocaleOverride do
   Command struct for `emulation.setLocaleOverride`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             locale: Zoi.union([Zoi.string(), Zoi.null()]),
             contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),

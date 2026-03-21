@@ -4,11 +4,13 @@ defmodule Bibbidi.Commands.Input.FileDialogOpened do
   Command struct for `input.fileDialogOpened`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
             multiple: Zoi.boolean(),
             user_context: Zoi.any() |> Zoi.optional(),
-            element: Zoi.any() |> Zoi.optional()
+            element: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  user_context: Zoi.any() |> Zoi.optional(),

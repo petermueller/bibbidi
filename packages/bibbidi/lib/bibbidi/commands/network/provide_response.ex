@@ -4,13 +4,15 @@ defmodule Bibbidi.Commands.Network.ProvideResponse do
   Command struct for `network.provideResponse`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             request: Zoi.any(),
             body: Zoi.any() |> Zoi.optional(),
             cookies: Zoi.list(Zoi.any()) |> Zoi.optional(),
             headers: Zoi.list(Zoi.any()) |> Zoi.optional(),
             reason_phrase: Zoi.string() |> Zoi.optional(),
-            status_code: Zoi.any() |> Zoi.optional()
+            status_code: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  body: Zoi.any() |> Zoi.optional(),

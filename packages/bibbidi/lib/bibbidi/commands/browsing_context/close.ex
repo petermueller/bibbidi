@@ -4,9 +4,11 @@ defmodule Bibbidi.Commands.BrowsingContext.Close do
   Command struct for `browsingContext.close`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
-            prompt_unload: Zoi.boolean() |> Zoi.optional()
+            prompt_unload: Zoi.boolean() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(prompt_unload: Zoi.boolean() |> Zoi.optional())
   @result_schema Zoi.map(Zoi.string(), Zoi.any())

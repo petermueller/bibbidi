@@ -4,7 +4,12 @@ defmodule Bibbidi.Commands.Script.Disown do
   Command struct for `script.disown`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{handles: Zoi.list(Zoi.any()), target: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{
+            handles: Zoi.list(Zoi.any()),
+            target: Zoi.any(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

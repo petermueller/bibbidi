@@ -177,7 +177,8 @@ defmodule BibbidiPlaywrightTrace.Collector do
       {:noreply, state}
     else
       time = wall_time(measurements)
-      event = Writer.bidi_event(time, metadata.event, metadata.params)
+      params = to_map(metadata.params)
+      event = Writer.bidi_event(time, metadata.event, params)
       {:noreply, %{state | trace_events: state.trace_events ++ [event]}}
     end
   end
@@ -293,6 +294,9 @@ defmodule BibbidiPlaywrightTrace.Collector do
   defp wall_time(_measurements) do
     System.system_time(:millisecond)
   end
+
+  defp to_map(%_{} = struct), do: Map.from_struct(struct)
+  defp to_map(map) when is_map(map), do: map
 
   defp stringify_keys(map) when is_map(map) do
     Map.new(map, fn

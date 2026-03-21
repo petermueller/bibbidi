@@ -17,6 +17,7 @@ defmodule Bibbidi.Telemetry do
   - `:method` — the BiDi method string (e.g., `"browsingContext.navigate"`)
   - `:params` — the encoded params map
   - `:connection` — the connection pid or name
+  - `:meta` — user-supplied correlation data from the command struct (nil if not set)
 
   ### `[:bibbidi, :command, :stop]`
 
@@ -50,7 +51,25 @@ defmodule Bibbidi.Telemetry do
 
   **Metadata:**
   - `:event` — the BiDi event name (e.g., `"browsingContext.load"`)
-  - `:params` — the event params map from the browser
+  - `:params` — parsed event struct (or raw map for unknown events)
   - `:connection` — the connection pid
+  - `:context` — browsing context ID (when present in the event)
+  - `:navigation` — navigation ID (when present in the event)
+  - `:request` — request data (when present in the event)
+
+  ## Correlation
+
+  Command structs carry an optional `:meta` field for user-supplied correlation
+  data. This is included in command telemetry metadata but excluded from the
+  wire params. Event structs derive correlation keys (`:context`, `:navigation`,
+  `:request`) automatically via `Bibbidi.Telemetry.Metadata`.
+
+  This enables correlating commands with the events they trigger:
+
+      # Tag a navigation command
+      cmd = %BrowsingContext.Navigate{url: "https://example.com", context: ctx, meta: %{trace_id: id}}
+
+      # The :start/:stop telemetry will include meta: %{trace_id: id}
+      # The browsingContext.load event telemetry will include context: ctx, navigation: nav_id
   """
 end

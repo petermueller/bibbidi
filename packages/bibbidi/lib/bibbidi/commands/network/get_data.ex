@@ -4,11 +4,13 @@ defmodule Bibbidi.Commands.Network.GetData do
   Command struct for `network.getData`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             data_type: Zoi.any(),
             request: Zoi.any(),
             collector: Zoi.any() |> Zoi.optional(),
-            disown: Zoi.boolean() |> Zoi.optional()
+            disown: Zoi.boolean() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  collector: Zoi.any() |> Zoi.optional(),

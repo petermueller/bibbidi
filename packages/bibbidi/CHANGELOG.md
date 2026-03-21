@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.3.0
+
+### Features
+
+- **Event structs** — BiDi events are parsed into typed structs (one per event method). Subscribers receive `{:bibbidi_event, method, %EventStruct{}}` instead of raw maps. Unknown events still arrive as raw maps.
+- **`Bibbidi.Events.parse/2`** — top-level dispatcher that converts raw event params into typed structs, delegating to per-module parsers (`Events.BrowsingContext.parse/2`, etc.)
+- **`Bibbidi.Telemetry.Metadata` protocol** — extracts correlation metadata from command and event structs for telemetry enrichment. Command structs derive `%{meta: value}`, event structs derive relevant correlation keys (`:context`, `:navigation`, `:request`).
+- **`:meta` field on command structs** — user-supplied correlation data included in command telemetry metadata but excluded from wire params
+- **Telemetry correlation** — command start/stop events include `:meta`, event received includes `:context`/`:navigation`/`:request` when present
+- **`:connection_mod` option on facade functions** — all generated facade functions accept `connection_mod: MyMod` to override the module used for `execute/3`, enabling clean Mox-based testing without GenServer or transport mocks
+- **`Bibbidi.Connection` behaviour** — defines `@callback execute/3` so facade modules can accept alternative implementations via `:connection_mod`
+- **CDDL generator: embedded group resolution** — `resolve_command_fields` now handles `{:embed, ref}` entries, correctly resolving fields from embedded groups like `BaseNavigationInfo` and `network.BaseParameters`
+- **`Bibbidi.Keys`** — maps human-friendly key names (`:enter`, `"ArrowUp"`) to BiDi Unicode codepoints for `input.performActions` keyboard actions
+- **`mix test.all` alias** — runs unit + integration tests (`mix test --include integration`)
+
+### Breaking
+
+- **Event subscribers receive structs** — `{:bibbidi_event, method, params}` where `params` is now a struct (e.g., `%Bibbidi.Events.BrowsingContext.Load{}`) instead of a raw map. Use `event.context` instead of `event["context"]`. Unknown events still arrive as raw maps.
+- **Event telemetry `:params` is a struct** — `[:bibbidi, :event, :received]` metadata `:params` is now a parsed event struct instead of a raw map
+- **All facade functions accept `opts`** — functions that previously took no options (e.g., `Browser.close(conn)`) now accept `opts \\ []` (e.g., `Browser.close(conn, opts \\ [])`). Captures of the old arity (e.g., `&Browser.close/1`) must be updated.
+- **Command structs have a `:meta` field** — defaults to `nil`, excluded from `Encodable.params/1` output
+
+### Changed
+
+- CDDL generator deduplicates fields from group choices and embedded groups
+- Telemetry tests use `async: false` with `on_exit` cleanup for reliable handler detachment
+- Command facade tests use Mox (`Bibbidi.MockConnection`) instead of `Task.async` + mock transport, eliminating timing-dependent flaky tests
+
+### Fixed
+
+- `resolve_command_fields` no longer skips `{:embed, ref}` entries — events like `browsingContext.NavigationInfo` (embeds `BaseNavigationInfo`) and `network.*Parameters` (embed `BaseParameters`) now resolve all fields correctly
+
 ## v0.2.0
 
 ### Features

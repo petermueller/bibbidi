@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.Input.SetFiles do
   Command struct for `input.setFiles`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
             element: Zoi.any(),
-            files: Zoi.list(Zoi.string())
+            files: Zoi.list(Zoi.string()),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())

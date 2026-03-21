@@ -4,13 +4,15 @@ defmodule Bibbidi.Commands.Script.Evaluate do
   Command struct for `script.evaluate`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             expression: Zoi.string(),
             target: Zoi.any(),
             await_promise: Zoi.boolean(),
             result_ownership: Zoi.any() |> Zoi.optional(),
             serialization_options: Zoi.any() |> Zoi.optional(),
-            user_activation: Zoi.boolean() |> Zoi.optional()
+            user_activation: Zoi.boolean() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  result_ownership: Zoi.any() |> Zoi.optional(),

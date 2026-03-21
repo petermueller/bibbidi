@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.Network.AddIntercept do
   Command struct for `network.addIntercept`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             phases: Zoi.list(Zoi.any()),
             contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            url_patterns: Zoi.list(Zoi.any()) |> Zoi.optional()
+            url_patterns: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),

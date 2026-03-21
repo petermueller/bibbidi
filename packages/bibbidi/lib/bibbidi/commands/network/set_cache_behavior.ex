@@ -4,9 +4,11 @@ defmodule Bibbidi.Commands.Network.SetCacheBehavior do
   Command struct for `network.setCacheBehavior`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             cache_behavior: Zoi.union([Zoi.string(), Zoi.string()]),
-            contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(contexts: Zoi.list(Zoi.any()) |> Zoi.optional())
   @result_schema Zoi.map(Zoi.string(), Zoi.any())

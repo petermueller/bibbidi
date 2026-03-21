@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.BrowsingContext.HandleUserPrompt do
   Command struct for `browsingContext.handleUserPrompt`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
             accept: Zoi.boolean() |> Zoi.optional(),
-            user_text: Zoi.string() |> Zoi.optional()
+            user_text: Zoi.string() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  accept: Zoi.boolean() |> Zoi.optional(),

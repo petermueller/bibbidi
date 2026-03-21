@@ -63,7 +63,8 @@ defmodule Bibbidi.ConnectionTest do
 
       send(conn, {:mock_transport_receive, [{:text, event}]})
 
-      assert_receive {:bibbidi_event, "browsingContext.load", %{"context" => "ctx-1"}}
+      assert_receive {:bibbidi_event, "browsingContext.load",
+                      %Bibbidi.Events.BrowsingContext.Load{context: "ctx-1"}}
     end
 
     test "does not dispatch after unsubscribe", %{conn: conn} do

@@ -1,26 +1,10 @@
 defmodule Bibbidi.Commands.InputTest do
-  use ExUnit.Case, async: true
+  use Bibbidi.CommandCase, async: true
 
   alias Bibbidi.Commands.Input
-  alias Bibbidi.Connection
-
-  setup do
-    {:ok, conn} =
-      Connection.start_link(
-        url: "ws://localhost:1234",
-        transport: Bibbidi.MockTransport,
-        transport_opts: [owner: self()]
-      )
-
-    %{conn: conn}
-  end
-
-  defp reply(conn, id, result \\ %{}) do
-    send(conn, {:mock_transport_receive, [{:text, JSON.encode!(%{id: id, result: result})}]})
-  end
 
   describe "perform_actions/3" do
-    test "sends input.performActions command", %{conn: conn} do
+    test "sends input.performActions command" do
       actions = [
         %{
           type: "key",
@@ -32,20 +16,19 @@ defmodule Bibbidi.Commands.InputTest do
         }
       ]
 
-      task = Task.async(fn -> Input.perform_actions(conn, "ctx-1", actions) end)
+      expect_execute(fn _conn, cmd ->
+        assert %Input.PerformActions{} = cmd
+        assert Bibbidi.Encodable.method(cmd) == "input.performActions"
+        assert cmd.context == "ctx-1"
+        assert length(cmd.actions) == 1
+        assert hd(cmd.actions).type == "key"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "input.performActions"
-      assert decoded["params"]["context"] == "ctx-1"
-      assert length(decoded["params"]["actions"]) == 1
-      assert hd(decoded["params"]["actions"])["type"] == "key"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Input.perform_actions(:conn, "ctx-1", actions, connection_mod: MockConnection)
     end
 
-    test "sends pointer actions", %{conn: conn} do
+    test "sends pointer actions" do
       actions = [
         %{
           type: "pointer",
@@ -59,51 +42,43 @@ defmodule Bibbidi.Commands.InputTest do
         }
       ]
 
-      task = Task.async(fn -> Input.perform_actions(conn, "ctx-1", actions) end)
+      expect_execute(fn _conn, cmd ->
+        pointer = hd(cmd.actions)
+        assert pointer.type == "pointer"
+        assert length(pointer.actions) == 3
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      pointer = hd(decoded["params"]["actions"])
-      assert pointer["type"] == "pointer"
-      assert length(pointer["actions"]) == 3
-
-      reply(conn, decoded["id"])
-      Task.await(task)
+      Input.perform_actions(:conn, "ctx-1", actions, connection_mod: MockConnection)
     end
   end
 
   describe "release_actions/2" do
-    test "sends input.releaseActions command", %{conn: conn} do
-      task = Task.async(fn -> Input.release_actions(conn, "ctx-1") end)
+    test "sends input.releaseActions command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "input.releaseActions"
+        assert cmd.context == "ctx-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "input.releaseActions"
-      assert decoded["params"]["context"] == "ctx-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Input.release_actions(:conn, "ctx-1", connection_mod: MockConnection)
     end
   end
 
   describe "set_files/4" do
-    test "sends input.setFiles command", %{conn: conn} do
+    test "sends input.setFiles command" do
       element = %{sharedId: "elem-1"}
 
-      task =
-        Task.async(fn ->
-          Input.set_files(conn, "ctx-1", element, ["/path/to/file.txt"])
-        end)
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "input.setFiles"
+        assert cmd.context == "ctx-1"
+        assert cmd.element == %{sharedId: "elem-1"}
+        assert cmd.files == ["/path/to/file.txt"]
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "input.setFiles"
-      assert decoded["params"]["context"] == "ctx-1"
-      assert decoded["params"]["element"] == %{"sharedId" => "elem-1"}
-      assert decoded["params"]["files"] == ["/path/to/file.txt"]
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Input.set_files(:conn, "ctx-1", element, ["/path/to/file.txt"],
+                 connection_mod: MockConnection
+               )
     end
   end
 end

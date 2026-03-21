@@ -4,12 +4,14 @@ defmodule Bibbidi.Commands.Network.AddDataCollector do
   Command struct for `network.addDataCollector`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             data_types: Zoi.list(Zoi.any()),
             max_encoded_data_size: Zoi.any(),
             collector_type: Zoi.any() |> Zoi.optional(),
             contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  collector_type: Zoi.any() |> Zoi.optional(),

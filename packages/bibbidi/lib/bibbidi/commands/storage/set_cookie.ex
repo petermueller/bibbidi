@@ -4,7 +4,12 @@ defmodule Bibbidi.Commands.Storage.SetCookie do
   Command struct for `storage.setCookie`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{cookie: Zoi.any(), partition: Zoi.any() |> Zoi.optional()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{
+            cookie: Zoi.any(),
+            partition: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword(partition: Zoi.any() |> Zoi.optional())
   @result_schema Zoi.map(%{partition_key: Zoi.any()})
 

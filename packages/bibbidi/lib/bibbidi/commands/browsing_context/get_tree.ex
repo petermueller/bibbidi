@@ -4,9 +4,11 @@ defmodule Bibbidi.Commands.BrowsingContext.GetTree do
   Command struct for `browsingContext.getTree`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             max_depth: Zoi.any() |> Zoi.optional(),
-            root: Zoi.any() |> Zoi.optional()
+            root: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  max_depth: Zoi.any() |> Zoi.optional(),

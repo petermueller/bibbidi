@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.BrowsingContext.Navigate do
   Command struct for `browsingContext.navigate`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
             url: Zoi.string(),
-            wait: Zoi.any() |> Zoi.optional()
+            wait: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(wait: Zoi.any() |> Zoi.optional())
   @result_schema Zoi.map(%{navigation: Zoi.union([Zoi.any(), Zoi.null()]), url: Zoi.string()})

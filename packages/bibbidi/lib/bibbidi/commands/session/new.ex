@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Session.New do
   Command struct for `session.new`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{capabilities: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{capabilities: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(%{
                    session_id: Zoi.string(),

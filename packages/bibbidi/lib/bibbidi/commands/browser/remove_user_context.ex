@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Browser.RemoveUserContext do
   Command struct for `browser.removeUserContext`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{user_context: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{user_context: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

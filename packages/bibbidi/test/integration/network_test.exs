@@ -22,9 +22,9 @@ defmodule Bibbidi.Integration.NetworkTest do
 
       # Wait for the intercept event
       assert_receive {:bibbidi_event, "network.beforeRequestSent", params}, 10_000
-      request_id = params["request"]["request"]
+      request_id = params.request["request"]
       assert is_binary(request_id)
-      assert params["request"]["url"] =~ "/hello"
+      assert params.request["url"] =~ "/hello"
 
       # Continue the request
       {:ok, _} = Network.continue_request(conn, request_id)
@@ -49,7 +49,7 @@ defmodule Bibbidi.Integration.NetworkTest do
         end)
 
       assert_receive {:bibbidi_event, "network.beforeRequestSent", params}, 10_000
-      request_id = params["request"]["request"]
+      request_id = params.request["request"]
 
       # Provide a mock response instead of continuing
       {:ok, _} =
@@ -92,9 +92,9 @@ defmodule Bibbidi.Integration.NetworkTest do
         end)
 
       assert_receive {:bibbidi_event, "network.beforeRequestSent", params}, 10_000
-      request_id = params["request"]["request"]
+      request_id = params.request["request"]
       assert is_binary(request_id)
-      assert params["request"]["url"] =~ "/hello"
+      assert params.request["url"] =~ "/hello"
 
       {:ok, _} = Connection.execute(conn, %ContinueRequest{request: request_id})
 
@@ -122,7 +122,7 @@ defmodule Bibbidi.Integration.NetworkTest do
         end)
 
       assert_receive {:bibbidi_event, "network.beforeRequestSent", params}, 10_000
-      request_id = params["request"]["request"]
+      request_id = params.request["request"]
 
       {:ok, _} =
         Connection.execute(conn, %ProvideResponse{

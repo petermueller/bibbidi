@@ -14,8 +14,8 @@ defmodule Bibbidi.Integration.EventsTest do
         Script.evaluate(conn, ~s[console.log("hello from test")], %{context: context}, true)
 
       assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
-      assert params["type"] == "console"
-      assert is_binary(params["text"])
+      assert params.type == "console"
+      assert is_binary(params.text)
     end
 
     test "unsubscribe stops delivery", %{conn: conn, context: context} do
@@ -48,7 +48,7 @@ defmodule Bibbidi.Integration.EventsTest do
         )
 
       assert_receive {:bibbidi_event, "browsingContext.load", params}, 5_000
-      assert params["context"] == context
+      assert params.context == context
     end
 
     test "multiple event types", %{conn: conn, context: context, base_url: base_url} do
@@ -77,8 +77,8 @@ defmodule Bibbidi.Integration.EventsTest do
         })
 
       assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
-      assert params["type"] == "console"
-      assert is_binary(params["text"])
+      assert params.type == "console"
+      assert is_binary(params.text)
     end
 
     test "unsubscribe stops delivery", %{conn: conn, context: context} do
@@ -119,7 +119,7 @@ defmodule Bibbidi.Integration.EventsTest do
         })
 
       assert_receive {:bibbidi_event, "browsingContext.load", params}, 5_000
-      assert params["context"] == context
+      assert params.context == context
     end
   end
 end

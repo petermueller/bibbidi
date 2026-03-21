@@ -22,8 +22,7 @@ defmodule OpWorkflow.RunnerTest do
 
     send(
       conn,
-      {:mock_transport_receive,
-       [{:text, JSON.encode!(%{id: decoded["id"], result: result})}]}
+      {:mock_transport_receive, [{:text, JSON.encode!(%{id: decoded["id"], result: result})}]}
     )
 
     decoded

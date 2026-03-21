@@ -317,6 +317,33 @@ Bibbidi.Commands.BrowsingContext.get_tree(MyApp.Browser)
 | `Bibbidi.Commands.Session`         | new, end, status, subscribe, unsubscribe                                                                                                  |
 | `Bibbidi.Session`                  | Higher-level session lifecycle (new, end_session, status, subscribe, unsubscribe)                                                         |
 
+## Keyboard Input
+
+`Bibbidi.Keys` maps human-friendly key names to the Unicode values expected by
+BiDi `keyDown`/`keyUp` actions, so you don't need to memorize WebDriver codepoints:
+
+```elixir
+alias Bibbidi.Keys
+alias Bibbidi.Commands.Input
+
+# Build a key action sequence
+actions = [
+  %{
+    type: "key",
+    id: "keyboard",
+    actions: [
+      %{type: "keyDown", value: Keys.key(:enter)},
+      %{type: "keyUp", value: Keys.key(:enter)}
+    ]
+  }
+]
+
+Input.perform_actions(conn, context, actions)
+```
+
+Accepts atoms (`:enter`, `:arrow_up`, `:f1`), PascalCase strings (`"Enter"`,
+`"ArrowUp"`), or single characters that pass through unchanged (`"a"`, `"1"`).
+
 Each command also has a corresponding struct in `Bibbidi.Commands.<Module>.<Command>` (e.g. `Bibbidi.Commands.BrowsingContext.Navigate`) that implements the `Bibbidi.Encodable` protocol for use with `Connection.execute/2`. Every command struct exposes [Zoi](https://hex.pm/packages/zoi) schemas via `schema/0`, `opts_schema/0`, and `result_schema/0` for runtime validation and introspection.
 
 ## Workflow Builder

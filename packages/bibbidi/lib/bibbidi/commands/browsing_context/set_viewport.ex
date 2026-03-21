@@ -4,11 +4,13 @@ defmodule Bibbidi.Commands.BrowsingContext.SetViewport do
   Command struct for `browsingContext.setViewport`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any() |> Zoi.optional(),
             viewport: Zoi.union([Zoi.any(), Zoi.null()]) |> Zoi.optional(),
             device_pixel_ratio: Zoi.union([Zoi.float(), Zoi.null()]) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  context: Zoi.any() |> Zoi.optional(),

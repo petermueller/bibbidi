@@ -1,5 +1,5 @@
 defmodule Bibbidi.TelemetryTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Bibbidi.Connection
   alias Bibbidi.Commands.BrowsingContext
@@ -33,6 +33,8 @@ defmodule Bibbidi.TelemetryTest do
         nil
       )
 
+      on_exit(fn -> :telemetry.detach(id) end)
+
       cmd = %BrowsingContext.Activate{context: "ctx-1"}
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
 
@@ -53,8 +55,6 @@ defmodule Bibbidi.TelemetryTest do
                       %{result: {:ok, _}, command: ^cmd}}
 
       assert is_integer(duration) and duration >= 0
-
-      :telemetry.detach(id)
     end
 
     test "emitted with error result on command failure", %{conn: conn, ref: ref, handler: handler} do
@@ -66,6 +66,8 @@ defmodule Bibbidi.TelemetryTest do
         handler,
         nil
       )
+
+      on_exit(fn -> :telemetry.detach(id) end)
 
       cmd = %BrowsingContext.Activate{context: "ctx-1"}
       task = Task.async(fn -> Connection.execute(conn, cmd) end)
@@ -83,8 +85,6 @@ defmodule Bibbidi.TelemetryTest do
 
       assert_receive {^ref, [:bibbidi, :command, :start], _, _}
       assert_receive {^ref, [:bibbidi, :command, :stop], %{duration: _}, %{result: {:error, _}}}
-
-      :telemetry.detach(id)
     end
   end
 
@@ -98,6 +98,8 @@ defmodule Bibbidi.TelemetryTest do
         handler,
         nil
       )
+
+      on_exit(fn -> :telemetry.detach(id) end)
 
       # Subscribe to receive the event (so dispatch_event is called)
       Connection.subscribe(conn, "browsingContext.load")
@@ -117,8 +119,6 @@ defmodule Bibbidi.TelemetryTest do
       # Verify telemetry was emitted
       assert_receive {^ref, [:bibbidi, :event, :received], %{system_time: _},
                       %{event: "browsingContext.load", params: _, connection: _}}
-
-      :telemetry.detach(id)
     end
   end
 end

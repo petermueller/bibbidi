@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Browser.GetClientWindows do
   Command struct for `browser.getClientWindows`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(%{client_windows: Zoi.list(Zoi.any())})
 

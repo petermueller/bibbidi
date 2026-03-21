@@ -4,9 +4,11 @@ defmodule Bibbidi.Commands.Browser.SetDownloadBehavior do
   Command struct for `browser.setDownloadBehavior`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             download_behavior: Zoi.union([Zoi.any(), Zoi.null()]),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional())
   @result_schema Zoi.map(Zoi.string(), Zoi.any())

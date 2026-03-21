@@ -4,12 +4,14 @@ defmodule Bibbidi.Commands.BrowsingContext.LocateNodes do
   Command struct for `browsingContext.locateNodes`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
             locator: Zoi.any(),
             max_node_count: Zoi.any() |> Zoi.optional(),
             serialization_options: Zoi.any() |> Zoi.optional(),
-            start_nodes: Zoi.list(Zoi.any()) |> Zoi.optional()
+            start_nodes: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  max_node_count: Zoi.any() |> Zoi.optional(),

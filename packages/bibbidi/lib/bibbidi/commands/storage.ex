@@ -19,8 +19,9 @@ defmodule Bibbidi.Commands.Storage do
   @spec get_cookies(GenServer.server(), GetCookies.opts()) ::
           {:ok, GetCookies.result()} | {:error, term()}
   def get_cookies(conn, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(GetCookies.opts_schema(), opts)
-    Connection.execute(conn, struct!(GetCookies, opts))
+    connection_mod.execute(conn, struct!(GetCookies, opts), [])
   end
 
   @doc """
@@ -33,8 +34,9 @@ defmodule Bibbidi.Commands.Storage do
   @spec set_cookie(GenServer.server(), term(), SetCookie.opts()) ::
           {:ok, SetCookie.result()} | {:error, term()}
   def set_cookie(conn, cookie, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetCookie.opts_schema(), opts)
-    Connection.execute(conn, struct!(SetCookie, [{:cookie, cookie} | opts]))
+    connection_mod.execute(conn, struct!(SetCookie, [{:cookie, cookie} | opts]), [])
   end
 
   @doc """
@@ -47,7 +49,8 @@ defmodule Bibbidi.Commands.Storage do
   @spec delete_cookies(GenServer.server(), DeleteCookies.opts()) ::
           {:ok, DeleteCookies.result()} | {:error, term()}
   def delete_cookies(conn, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(DeleteCookies.opts_schema(), opts)
-    Connection.execute(conn, struct!(DeleteCookies, opts))
+    connection_mod.execute(conn, struct!(DeleteCookies, opts), [])
   end
 end

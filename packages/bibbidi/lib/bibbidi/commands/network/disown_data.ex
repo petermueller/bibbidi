@@ -4,7 +4,13 @@ defmodule Bibbidi.Commands.Network.DisownData do
   Command struct for `network.disownData`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{data_type: Zoi.any(), collector: Zoi.any(), request: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{
+            data_type: Zoi.any(),
+            collector: Zoi.any(),
+            request: Zoi.any(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

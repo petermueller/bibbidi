@@ -28,8 +28,7 @@ defmodule OpWorkflow.Op do
           {:send, Bibbidi.Encodable.t()}
           | {:send_fn,
              (results() -> {:send, Bibbidi.Encodable.t()} | {:ok, term()} | {:error, term()})}
-          | {:run,
-             (GenServer.server(), results(), keyword() -> {:ok, term()} | {:error, term()})}
+          | {:run, (GenServer.server(), results(), keyword() -> {:ok, term()} | {:error, term()})}
           | {:branch_fn,
              (results() -> {:send, Bibbidi.Encodable.t()} | {:ok, term()} | {:error, term()})}
 

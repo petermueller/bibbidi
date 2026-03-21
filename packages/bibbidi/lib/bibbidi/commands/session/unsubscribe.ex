@@ -4,9 +4,11 @@ defmodule Bibbidi.Commands.Session.Unsubscribe do
   Command struct for `session.unsubscribe`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             events: Zoi.list(Zoi.string()) |> Zoi.optional(),
-            subscriptions: Zoi.list(Zoi.any()) |> Zoi.optional()
+            subscriptions: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  events: Zoi.list(Zoi.string()) |> Zoi.optional(),

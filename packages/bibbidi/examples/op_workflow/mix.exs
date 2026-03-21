@@ -23,7 +23,7 @@ defmodule OpWorkflow.MixProject do
 
   defp deps do
     [
-      {:bibbidi, "~> 0.2.0"}
+      {:bibbidi, "~> 0.3.0"}
     ]
   end
 end

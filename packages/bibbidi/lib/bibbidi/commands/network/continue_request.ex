@@ -4,13 +4,15 @@ defmodule Bibbidi.Commands.Network.ContinueRequest do
   Command struct for `network.continueRequest`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             request: Zoi.any(),
             body: Zoi.any() |> Zoi.optional(),
             cookies: Zoi.list(Zoi.any()) |> Zoi.optional(),
             headers: Zoi.list(Zoi.any()) |> Zoi.optional(),
             method: Zoi.string() |> Zoi.optional(),
-            url: Zoi.string() |> Zoi.optional()
+            url: Zoi.string() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  body: Zoi.any() |> Zoi.optional(),

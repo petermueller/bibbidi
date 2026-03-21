@@ -4,8 +4,23 @@ defmodule Bibbidi.Commands.Browser.SetClientWindowState do
   Command struct for `browser.setClientWindowState`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{client_window: Zoi.any()})
-  @opts_schema Zoi.keyword([])
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{
+            client_window: Zoi.any(),
+            state: Zoi.union([Zoi.string(), Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+            width: Zoi.any() |> Zoi.optional(),
+            height: Zoi.any() |> Zoi.optional(),
+            x: Zoi.any() |> Zoi.optional(),
+            y: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 state: Zoi.union([Zoi.string(), Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+                 width: Zoi.any() |> Zoi.optional(),
+                 height: Zoi.any() |> Zoi.optional(),
+                 x: Zoi.any() |> Zoi.optional(),
+                 y: Zoi.any() |> Zoi.optional()
+               )
   @result_schema Zoi.map(%{
                    active: Zoi.boolean(),
                    client_window: Zoi.any(),
@@ -35,6 +50,19 @@ defmodule Bibbidi.Commands.Browser.SetClientWindowState do
   defimpl Bibbidi.Encodable do
     def method(_), do: "browser.setClientWindowState"
 
-    def params(cmd), do: %{clientWindow: cmd.client_window}
+    def params(cmd) do
+      optional = [
+        {:state, cmd.state},
+        {:width, cmd.width},
+        {:height, cmd.height},
+        {:x, cmd.x},
+        {:y, cmd.y}
+      ]
+
+      Enum.reduce(optional, %{clientWindow: cmd.client_window}, fn
+        {_key, nil}, acc -> acc
+        {key, value}, acc -> Map.put(acc, key, value)
+      end)
+    end
   end
 end

@@ -4,6 +4,7 @@ defmodule Bibbidi.Commands.BrowsingContext.Print do
   Command struct for `browsingContext.print`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
             background: Zoi.boolean() |> Zoi.optional(),
@@ -12,7 +13,8 @@ defmodule Bibbidi.Commands.BrowsingContext.Print do
             page: Zoi.any() |> Zoi.optional(),
             page_ranges: Zoi.list(Zoi.union([Zoi.any(), Zoi.string()])) |> Zoi.optional(),
             scale: Zoi.any() |> Zoi.optional(),
-            shrink_to_fit: Zoi.boolean() |> Zoi.optional()
+            shrink_to_fit: Zoi.boolean() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  background: Zoi.boolean() |> Zoi.optional(),

@@ -27,3 +27,6 @@ bibbidi-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# A place to stick plans/prompts that won't get committed
+/plans/

@@ -18,6 +18,17 @@ defmodule Bibbidi.Connection do
 
   alias Bibbidi.Protocol
 
+  @doc """
+  Callback for executing an `Encodable` command struct.
+
+  This behaviour is used by generated facade modules via the `:connection_mod`
+  option, defaulting to this module. Override in tests with a Mox mock.
+  """
+  @callback execute(GenServer.server(), Bibbidi.Encodable.t(), keyword()) ::
+              {:ok, map()} | {:error, term()}
+
+  @behaviour __MODULE__
+
   defstruct [
     :transport_mod,
     :transport_state,
@@ -84,13 +95,20 @@ defmodule Bibbidi.Connection do
 
   Returns `{:ok, result}` on success or `{:error, reason}` on failure.
   """
+  @impl true
   @spec execute(GenServer.server(), Bibbidi.Encodable.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
   def execute(conn, command, opts \\ []) do
     method = Bibbidi.Encodable.method(command)
     params = Bibbidi.Encodable.params(command)
 
-    metadata = %{command: command, method: method, params: params, connection: conn}
+    correlation = Bibbidi.Telemetry.Metadata.telemetry_metadata(command)
+
+    metadata =
+      Map.merge(
+        %{command: command, method: method, params: params, connection: conn},
+        correlation
+      )
 
     :telemetry.span([:bibbidi, :command], metadata, fn ->
       result = send_command(conn, method, params, opts)
@@ -300,15 +318,22 @@ defmodule Bibbidi.Connection do
   end
 
   defp dispatch_event(state, method, params) do
+    parsed = Bibbidi.Events.parse(method, params)
+
+    correlation =
+      if is_struct(parsed),
+        do: Bibbidi.Telemetry.Metadata.telemetry_metadata(parsed),
+        else: %{}
+
     :telemetry.execute(
       [:bibbidi, :event, :received],
       %{system_time: System.system_time()},
-      %{event: method, params: params, connection: self()}
+      Map.merge(%{event: method, params: parsed, connection: self()}, correlation)
     )
 
     case Map.get(state.subscribers, method) do
       nil -> :ok
-      pids -> Enum.each(pids, &send(&1, {:bibbidi_event, method, params}))
+      pids -> Enum.each(pids, &send(&1, {:bibbidi_event, method, parsed}))
     end
   end
 end

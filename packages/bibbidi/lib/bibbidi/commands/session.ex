@@ -14,21 +14,24 @@ defmodule Bibbidi.Commands.Session do
   alias __MODULE__.Unsubscribe
 
   @doc "Executes the `session.status` command."
-  @spec status(GenServer.server()) :: {:ok, Status.result()} | {:error, term()}
-  def status(conn) do
-    Connection.execute(conn, %Status{})
+  @spec status(GenServer.server(), Status.opts()) :: {:ok, Status.result()} | {:error, term()}
+  def status(conn, opts \\ []) do
+    {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
+    connection_mod.execute(conn, %Status{}, [])
   end
 
   @doc "Executes the `session.new` command."
-  @spec new(GenServer.server(), term()) :: {:ok, New.result()} | {:error, term()}
-  def new(conn, capabilities) do
-    Connection.execute(conn, struct!(New, [{:capabilities, capabilities}]))
+  @spec new(GenServer.server(), term(), New.opts()) :: {:ok, New.result()} | {:error, term()}
+  def new(conn, capabilities, opts \\ []) do
+    {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
+    connection_mod.execute(conn, struct!(New, [{:capabilities, capabilities}]), [])
   end
 
   @doc "Executes the `session.end` command."
-  @spec session_end(GenServer.server()) :: {:ok, End.result()} | {:error, term()}
-  def session_end(conn) do
-    Connection.execute(conn, %End{})
+  @spec session_end(GenServer.server(), End.opts()) :: {:ok, End.result()} | {:error, term()}
+  def session_end(conn, opts \\ []) do
+    {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
+    connection_mod.execute(conn, %End{}, [])
   end
 
   @doc """
@@ -41,8 +44,9 @@ defmodule Bibbidi.Commands.Session do
   @spec subscribe(GenServer.server(), [String.t()], Subscribe.opts()) ::
           {:ok, Subscribe.result()} | {:error, term()}
   def subscribe(conn, events, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(Subscribe.opts_schema(), opts)
-    Connection.execute(conn, struct!(Subscribe, [{:events, events} | opts]))
+    connection_mod.execute(conn, struct!(Subscribe, [{:events, events} | opts]), [])
   end
 
   @doc """
@@ -55,7 +59,8 @@ defmodule Bibbidi.Commands.Session do
   @spec unsubscribe(GenServer.server(), Unsubscribe.opts()) ::
           {:ok, Unsubscribe.result()} | {:error, term()}
   def unsubscribe(conn, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(Unsubscribe.opts_schema(), opts)
-    Connection.execute(conn, struct!(Unsubscribe, opts))
+    connection_mod.execute(conn, struct!(Unsubscribe, opts), [])
   end
 end

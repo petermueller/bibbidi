@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.WebExtension.Uninstall do
   Command struct for `webExtension.uninstall`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{extension: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{extension: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

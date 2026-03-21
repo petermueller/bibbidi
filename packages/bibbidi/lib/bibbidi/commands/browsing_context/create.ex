@@ -4,11 +4,13 @@ defmodule Bibbidi.Commands.BrowsingContext.Create do
   Command struct for `browsingContext.create`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             type: Zoi.any(),
             reference_context: Zoi.any() |> Zoi.optional(),
             background: Zoi.boolean() |> Zoi.optional(),
-            user_context: Zoi.any() |> Zoi.optional()
+            user_context: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  reference_context: Zoi.any() |> Zoi.optional(),

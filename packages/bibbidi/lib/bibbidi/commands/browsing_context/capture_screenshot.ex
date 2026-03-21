@@ -4,11 +4,13 @@ defmodule Bibbidi.Commands.BrowsingContext.CaptureScreenshot do
   Command struct for `browsingContext.captureScreenshot`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
             origin: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
             format: Zoi.any() |> Zoi.optional(),
-            clip: Zoi.any() |> Zoi.optional()
+            clip: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  origin: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),

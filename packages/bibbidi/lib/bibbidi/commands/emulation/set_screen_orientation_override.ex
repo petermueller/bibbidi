@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.Emulation.SetScreenOrientationOverride do
   Command struct for `emulation.setScreenOrientationOverride`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             screen_orientation: Zoi.union([Zoi.any(), Zoi.null()]),
             contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),

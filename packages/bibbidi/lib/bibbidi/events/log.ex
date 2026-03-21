@@ -4,6 +4,7 @@ defmodule Bibbidi.Events.Log do
   Events for the `log` module of the WebDriver BiDi protocol.
   """
 
+  alias __MODULE__.EntryAdded
   @doc "Returns all event method names for this module."
   @spec events() :: [String.t()]
   def events do
@@ -18,4 +19,21 @@ defmodule Bibbidi.Events.Log do
   Params type: `log.Entry`
   """
   def entry_added, do: "log.entryAdded"
+
+  @doc "Parses a raw event params map into a typed struct."
+  @spec parse(String.t(), map()) :: struct() | map()
+  def parse("log.entryAdded", params) do
+    %EntryAdded{
+      level: params["level"],
+      source: params["source"],
+      text: params["text"],
+      timestamp: params["timestamp"],
+      stack_trace: params["stackTrace"],
+      type: params["type"],
+      method: params["method"],
+      args: params["args"]
+    }
+  end
+
+  def parse(_method, params), do: params
 end

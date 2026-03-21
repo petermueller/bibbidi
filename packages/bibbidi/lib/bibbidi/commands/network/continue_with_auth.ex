@@ -4,8 +4,17 @@ defmodule Bibbidi.Commands.Network.ContinueWithAuth do
   Command struct for `network.continueWithAuth`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{request: Zoi.any()})
-  @opts_schema Zoi.keyword([])
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{
+            request: Zoi.any(),
+            action: Zoi.string() |> Zoi.optional(),
+            credentials: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
+          })
+  @opts_schema Zoi.keyword(
+                 action: Zoi.string() |> Zoi.optional(),
+                 credentials: Zoi.any() |> Zoi.optional()
+               )
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 
   @type t :: unquote(Zoi.type_spec(@schema))
@@ -27,6 +36,16 @@ defmodule Bibbidi.Commands.Network.ContinueWithAuth do
   defimpl Bibbidi.Encodable do
     def method(_), do: "network.continueWithAuth"
 
-    def params(cmd), do: %{request: cmd.request}
+    def params(cmd) do
+      optional = [
+        {:action, cmd.action},
+        {:credentials, cmd.credentials}
+      ]
+
+      Enum.reduce(optional, %{request: cmd.request}, fn
+        {_key, nil}, acc -> acc
+        {key, value}, acc -> Map.put(acc, key, value)
+      end)
+    end
   end
 end

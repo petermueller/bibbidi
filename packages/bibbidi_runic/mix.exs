@@ -32,7 +32,7 @@ defmodule BibbidiRunic.MixProject do
     if System.get_env("BBD_DEV") do
       {:bibbidi, path: "../bibbidi"}
     else
-      {:bibbidi, "~> 0.2.0"}
+      {:bibbidi, "~> 0.3.0"}
     end
   end
 end

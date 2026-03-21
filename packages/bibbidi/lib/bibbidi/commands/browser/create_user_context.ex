@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.Browser.CreateUserContext do
   Command struct for `browser.createUserContext`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             accept_insecure_certs: Zoi.boolean() |> Zoi.optional(),
             proxy: Zoi.any() |> Zoi.optional(),
-            unhandled_prompt_behavior: Zoi.any() |> Zoi.optional()
+            unhandled_prompt_behavior: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  accept_insecure_certs: Zoi.boolean() |> Zoi.optional(),

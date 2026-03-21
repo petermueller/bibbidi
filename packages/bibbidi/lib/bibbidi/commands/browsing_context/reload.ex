@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.BrowsingContext.Reload do
   Command struct for `browsingContext.reload`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any(),
             ignore_cache: Zoi.boolean() |> Zoi.optional(),
-            wait: Zoi.any() |> Zoi.optional()
+            wait: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  ignore_cache: Zoi.boolean() |> Zoi.optional(),

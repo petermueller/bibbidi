@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Script.RemovePreloadScript do
   Command struct for `script.removePreloadScript`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{script: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{script: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

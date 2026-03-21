@@ -4,6 +4,7 @@ defmodule Bibbidi.Events.Input do
   Events for the `input` module of the WebDriver BiDi protocol.
   """
 
+  alias __MODULE__.FileDialogOpened
   @doc "Returns all event method names for this module."
   @spec events() :: [String.t()]
   def events do
@@ -18,4 +19,17 @@ defmodule Bibbidi.Events.Input do
   Params type: `input.FileDialogInfo`
   """
   def file_dialog_opened, do: "input.fileDialogOpened"
+
+  @doc "Parses a raw event params map into a typed struct."
+  @spec parse(String.t(), map()) :: struct() | map()
+  def parse("input.fileDialogOpened", params) do
+    %FileDialogOpened{
+      context: params["context"],
+      user_context: params["userContext"],
+      element: params["element"],
+      multiple: params["multiple"]
+    }
+  end
+
+  def parse(_method, params), do: params
 end

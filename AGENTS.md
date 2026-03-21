@@ -73,10 +73,12 @@ All project env vars use the `BBD_` prefix:
 Run from `packages/bibbidi/`:
 
 - `mix test` — Unit tests only (integration excluded by default)
-- `mix test --include integration` — Runs integration tests (needs Firefox)
+- `mix test.all` — Unit + integration tests (needs Firefox)
+- `mix test --include integration` — Same as `mix test.all`
 - Set `BBD_BROWSER_URL` to skip browser launch and connect to an existing instance
 - Set `BBD_DEBUG=1` to run headed (visible browser window)
 - Integration tests are tagged `@moduletag :integration`
+- **Before finishing work, always run `mix test.all` as a final check.**
 
 Run example project tests from `packages/bibbidi/examples/op_workflow/`:
 

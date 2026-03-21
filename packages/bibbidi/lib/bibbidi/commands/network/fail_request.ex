@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Network.FailRequest do
   Command struct for `network.failRequest`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{request: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{request: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

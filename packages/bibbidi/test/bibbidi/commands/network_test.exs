@@ -1,360 +1,279 @@
 defmodule Bibbidi.Commands.NetworkTest do
-  use ExUnit.Case, async: true
+  use Bibbidi.CommandCase, async: true
 
   alias Bibbidi.Commands.Network
-  alias Bibbidi.Connection
-
-  setup do
-    {:ok, conn} =
-      Connection.start_link(
-        url: "ws://localhost:1234",
-        transport: Bibbidi.MockTransport,
-        transport_opts: [owner: self()]
-      )
-
-    %{conn: conn}
-  end
-
-  defp reply(conn, id, result \\ %{}) do
-    send(conn, {:mock_transport_receive, [{:text, JSON.encode!(%{id: id, result: result})}]})
-  end
 
   describe "add_data_collector/4" do
-    test "sends network.addDataCollector command", %{conn: conn} do
-      task =
-        Task.async(fn -> Network.add_data_collector(conn, ["request", "response"], 1_048_576) end)
+    test "sends network.addDataCollector command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.addDataCollector"
+        assert cmd.data_types == ["request", "response"]
+        assert cmd.max_encoded_data_size == 1_048_576
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.addDataCollector"
-      assert decoded["params"]["dataTypes"] == ["request", "response"]
-      assert decoded["params"]["maxEncodedDataSize"] == 1_048_576
-
-      reply(conn, decoded["id"], %{collector: "collector-1"})
-      assert {:ok, %{"collector" => "collector-1"}} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.add_data_collector(:conn, ["request", "response"], 1_048_576,
+                 connection_mod: MockConnection
+               )
     end
 
-    test "includes options", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.add_data_collector(conn, ["request"], 1024,
-            collector_type: "blob",
-            contexts: ["ctx-1"]
-          )
-        end)
+    test "includes options" do
+      expect_execute(fn _conn, cmd ->
+        assert cmd.collector_type == "blob"
+        assert cmd.contexts == ["ctx-1"]
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["collectorType"] == "blob"
-      assert decoded["params"]["contexts"] == ["ctx-1"]
-
-      reply(conn, decoded["id"], %{collector: "collector-1"})
-      Task.await(task)
+      Network.add_data_collector(:conn, ["request"], 1024,
+        collector_type: "blob",
+        contexts: ["ctx-1"],
+        connection_mod: MockConnection
+      )
     end
   end
 
   describe "add_intercept/3" do
-    test "sends network.addIntercept command", %{conn: conn} do
-      task = Task.async(fn -> Network.add_intercept(conn, ["beforeRequestSent"]) end)
+    test "sends network.addIntercept command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.addIntercept"
+        assert cmd.phases == ["beforeRequestSent"]
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.addIntercept"
-      assert decoded["params"]["phases"] == ["beforeRequestSent"]
-
-      reply(conn, decoded["id"], %{intercept: "intercept-1"})
-      assert {:ok, %{"intercept" => "intercept-1"}} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.add_intercept(:conn, ["beforeRequestSent"], connection_mod: MockConnection)
     end
 
-    test "includes url_patterns option", %{conn: conn} do
+    test "includes url_patterns option" do
       patterns = [%{type: "string", pattern: "https://example.com/*"}]
 
-      task =
-        Task.async(fn ->
-          Network.add_intercept(conn, ["responseStarted"], url_patterns: patterns)
-        end)
+      expect_execute(fn _conn, cmd ->
+        assert cmd.url_patterns == patterns
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-
-      assert decoded["params"]["urlPatterns"] == [
-               %{"type" => "string", "pattern" => "https://example.com/*"}
-             ]
-
-      reply(conn, decoded["id"], %{intercept: "intercept-1"})
-      Task.await(task)
+      Network.add_intercept(:conn, ["responseStarted"],
+        url_patterns: patterns,
+        connection_mod: MockConnection
+      )
     end
   end
 
   describe "continue_request/3" do
-    test "sends network.continueRequest command", %{conn: conn} do
-      task = Task.async(fn -> Network.continue_request(conn, "req-1") end)
+    test "sends network.continueRequest command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.continueRequest"
+        assert cmd.request == "req-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.continueRequest"
-      assert decoded["params"]["request"] == "req-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.continue_request(:conn, "req-1", connection_mod: MockConnection)
     end
 
-    test "includes options", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.continue_request(conn, "req-1",
-            method: "POST",
-            url: "https://example.com/api",
-            headers: [%{name: "X-Custom", value: %{type: "string", value: "test"}}]
-          )
-        end)
+    test "includes options" do
+      expect_execute(fn _conn, cmd ->
+        assert cmd.method == "POST"
+        assert cmd.url == "https://example.com/api"
+        assert length(cmd.headers) == 1
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["method"] == "POST"
-      assert decoded["params"]["url"] == "https://example.com/api"
-      assert length(decoded["params"]["headers"]) == 1
-
-      reply(conn, decoded["id"])
-      Task.await(task)
+      Network.continue_request(:conn, "req-1",
+        method: "POST",
+        url: "https://example.com/api",
+        headers: [%{name: "X-Custom", value: %{type: "string", value: "test"}}],
+        connection_mod: MockConnection
+      )
     end
   end
 
   describe "continue_response/3" do
-    test "sends network.continueResponse command", %{conn: conn} do
-      task = Task.async(fn -> Network.continue_response(conn, "req-1") end)
+    test "sends network.continueResponse command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.continueResponse"
+        assert cmd.request == "req-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.continueResponse"
-      assert decoded["params"]["request"] == "req-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.continue_response(:conn, "req-1", connection_mod: MockConnection)
     end
 
-    test "includes options", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.continue_response(conn, "req-1",
-            status_code: 200,
-            reason_phrase: "OK"
-          )
-        end)
+    test "includes options" do
+      expect_execute(fn _conn, cmd ->
+        assert cmd.status_code == 200
+        assert cmd.reason_phrase == "OK"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["statusCode"] == 200
-      assert decoded["params"]["reasonPhrase"] == "OK"
-
-      reply(conn, decoded["id"])
-      Task.await(task)
+      Network.continue_response(:conn, "req-1",
+        status_code: 200,
+        reason_phrase: "OK",
+        connection_mod: MockConnection
+      )
     end
   end
 
   describe "continue_with_auth/2" do
-    test "sends network.continueWithAuth command", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.continue_with_auth(conn, "req-1")
-        end)
+    test "sends network.continueWithAuth command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.continueWithAuth"
+        assert cmd.request == "req-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.continueWithAuth"
-      assert decoded["params"]["request"] == "req-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.continue_with_auth(:conn, "req-1", connection_mod: MockConnection)
     end
   end
 
   describe "disown_data/4" do
-    test "sends network.disownData command", %{conn: conn} do
-      task =
-        Task.async(fn -> Network.disown_data(conn, "request", "collector-1", "req-1") end)
+    test "sends network.disownData command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.disownData"
+        assert cmd.data_type == "request"
+        assert cmd.collector == "collector-1"
+        assert cmd.request == "req-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.disownData"
-      assert decoded["params"]["dataType"] == "request"
-      assert decoded["params"]["collector"] == "collector-1"
-      assert decoded["params"]["request"] == "req-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.disown_data(:conn, "request", "collector-1", "req-1",
+                 connection_mod: MockConnection
+               )
     end
   end
 
   describe "fail_request/2" do
-    test "sends network.failRequest command", %{conn: conn} do
-      task = Task.async(fn -> Network.fail_request(conn, "req-1") end)
+    test "sends network.failRequest command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.failRequest"
+        assert cmd.request == "req-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.failRequest"
-      assert decoded["params"]["request"] == "req-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.fail_request(:conn, "req-1", connection_mod: MockConnection)
     end
   end
 
   describe "get_data/4" do
-    test "sends network.getData command", %{conn: conn} do
-      task = Task.async(fn -> Network.get_data(conn, "response", "req-1") end)
+    test "sends network.getData command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.getData"
+        assert cmd.data_type == "response"
+        assert cmd.request == "req-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.getData"
-      assert decoded["params"]["dataType"] == "response"
-      assert decoded["params"]["request"] == "req-1"
-
-      reply(conn, decoded["id"], %{data: "base64..."})
-      assert {:ok, %{"data" => "base64..."}} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.get_data(:conn, "response", "req-1", connection_mod: MockConnection)
     end
 
-    test "includes options", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.get_data(conn, "response", "req-1",
-            collector: "collector-1",
-            disown: true
-          )
-        end)
+    test "includes options" do
+      expect_execute(fn _conn, cmd ->
+        assert cmd.collector == "collector-1"
+        assert cmd.disown == true
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["collector"] == "collector-1"
-      assert decoded["params"]["disown"] == true
-
-      reply(conn, decoded["id"], %{data: "base64..."})
-      Task.await(task)
+      Network.get_data(:conn, "response", "req-1",
+        collector: "collector-1",
+        disown: true,
+        connection_mod: MockConnection
+      )
     end
   end
 
   describe "provide_response/3" do
-    test "sends network.provideResponse command", %{conn: conn} do
-      task = Task.async(fn -> Network.provide_response(conn, "req-1") end)
+    test "sends network.provideResponse command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.provideResponse"
+        assert cmd.request == "req-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.provideResponse"
-      assert decoded["params"]["request"] == "req-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.provide_response(:conn, "req-1", connection_mod: MockConnection)
     end
 
-    test "includes options", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.provide_response(conn, "req-1",
-            status_code: 404,
-            reason_phrase: "Not Found",
-            body: %{type: "string", value: "Not found"},
-            headers: [%{name: "Content-Type", value: %{type: "string", value: "text/plain"}}]
-          )
-        end)
+    test "includes options" do
+      expect_execute(fn _conn, cmd ->
+        assert cmd.status_code == 404
+        assert cmd.reason_phrase == "Not Found"
+        assert cmd.body == %{type: "string", value: "Not found"}
+        assert length(cmd.headers) == 1
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["statusCode"] == 404
-      assert decoded["params"]["reasonPhrase"] == "Not Found"
-      assert decoded["params"]["body"]["type"] == "string"
-      assert length(decoded["params"]["headers"]) == 1
-
-      reply(conn, decoded["id"])
-      Task.await(task)
+      Network.provide_response(:conn, "req-1",
+        status_code: 404,
+        reason_phrase: "Not Found",
+        body: %{type: "string", value: "Not found"},
+        headers: [%{name: "Content-Type", value: %{type: "string", value: "text/plain"}}],
+        connection_mod: MockConnection
+      )
     end
   end
 
   describe "remove_data_collector/2" do
-    test "sends network.removeDataCollector command", %{conn: conn} do
-      task = Task.async(fn -> Network.remove_data_collector(conn, "collector-1") end)
+    test "sends network.removeDataCollector command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.removeDataCollector"
+        assert cmd.collector == "collector-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.removeDataCollector"
-      assert decoded["params"]["collector"] == "collector-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.remove_data_collector(:conn, "collector-1", connection_mod: MockConnection)
     end
   end
 
   describe "remove_intercept/2" do
-    test "sends network.removeIntercept command", %{conn: conn} do
-      task = Task.async(fn -> Network.remove_intercept(conn, "intercept-1") end)
+    test "sends network.removeIntercept command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.removeIntercept"
+        assert cmd.intercept == "intercept-1"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.removeIntercept"
-      assert decoded["params"]["intercept"] == "intercept-1"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.remove_intercept(:conn, "intercept-1", connection_mod: MockConnection)
     end
   end
 
   describe "set_cache_behavior/3" do
-    test "sends network.setCacheBehavior command", %{conn: conn} do
-      task = Task.async(fn -> Network.set_cache_behavior(conn, "bypass") end)
+    test "sends network.setCacheBehavior command" do
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.setCacheBehavior"
+        assert cmd.cache_behavior == "bypass"
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.setCacheBehavior"
-      assert decoded["params"]["cacheBehavior"] == "bypass"
-
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.set_cache_behavior(:conn, "bypass", connection_mod: MockConnection)
     end
 
-    test "includes contexts option", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.set_cache_behavior(conn, "default", contexts: ["ctx-1"])
-        end)
+    test "includes contexts option" do
+      expect_execute(fn _conn, cmd ->
+        assert cmd.contexts == ["ctx-1"]
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["contexts"] == ["ctx-1"]
-
-      reply(conn, decoded["id"])
-      Task.await(task)
+      Network.set_cache_behavior(:conn, "default",
+        contexts: ["ctx-1"],
+        connection_mod: MockConnection
+      )
     end
   end
 
   describe "set_extra_headers/3" do
-    test "sends network.setExtraHeaders command", %{conn: conn} do
+    test "sends network.setExtraHeaders command" do
       headers = [%{name: "X-Custom", value: %{type: "string", value: "test"}}]
-      task = Task.async(fn -> Network.set_extra_headers(conn, headers) end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["method"] == "network.setExtraHeaders"
-      assert length(decoded["params"]["headers"]) == 1
+      expect_execute(fn _conn, cmd ->
+        assert Bibbidi.Encodable.method(cmd) == "network.setExtraHeaders"
+        assert length(cmd.headers) == 1
+      end)
 
-      reply(conn, decoded["id"])
-      assert {:ok, _} = Task.await(task)
+      assert {:ok, %{}} =
+               Network.set_extra_headers(:conn, headers, connection_mod: MockConnection)
     end
 
-    test "includes contexts and user_contexts options", %{conn: conn} do
-      task =
-        Task.async(fn ->
-          Network.set_extra_headers(conn, [],
-            contexts: ["ctx-1"],
-            user_contexts: ["user-ctx-1"]
-          )
-        end)
+    test "includes contexts and user_contexts options" do
+      expect_execute(fn _conn, cmd ->
+        assert cmd.contexts == ["ctx-1"]
+        assert cmd.user_contexts == ["user-ctx-1"]
+      end)
 
-      assert_receive {:mock_transport_send, json}
-      decoded = JSON.decode!(json)
-      assert decoded["params"]["contexts"] == ["ctx-1"]
-      assert decoded["params"]["userContexts"] == ["user-ctx-1"]
-
-      reply(conn, decoded["id"])
-      Task.await(task)
+      Network.set_extra_headers(:conn, [],
+        contexts: ["ctx-1"],
+        user_contexts: ["user-ctx-1"],
+        connection_mod: MockConnection
+      )
     end
   end
 end

@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.Emulation.SetScreenSettingsOverride do
   Command struct for `emulation.setScreenSettingsOverride`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             screen_area: Zoi.union([Zoi.any(), Zoi.null()]),
             contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),

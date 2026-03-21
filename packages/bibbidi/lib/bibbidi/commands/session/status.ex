@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Session.Status do
   Command struct for `session.status`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(%{ready: Zoi.boolean(), message: Zoi.string()})
 

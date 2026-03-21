@@ -30,8 +30,14 @@ defmodule Bibbidi.Commands.Emulation do
           SetForcedColorsModeThemeOverride.opts()
         ) :: {:ok, SetForcedColorsModeThemeOverride.result()} | {:error, term()}
   def set_forced_colors_mode_theme_override(conn, theme, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetForcedColorsModeThemeOverride.opts_schema(), opts)
-    Connection.execute(conn, struct!(SetForcedColorsModeThemeOverride, [{:theme, theme} | opts]))
+
+    connection_mod.execute(
+      conn,
+      struct!(SetForcedColorsModeThemeOverride, [{:theme, theme} | opts]),
+      []
+    )
   end
 
   @doc """
@@ -44,8 +50,9 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_geolocation_override(GenServer.server(), SetGeolocationOverride.opts()) ::
           {:ok, SetGeolocationOverride.result()} | {:error, term()}
   def set_geolocation_override(conn, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetGeolocationOverride.opts_schema(), opts)
-    Connection.execute(conn, struct!(SetGeolocationOverride, opts))
+    connection_mod.execute(conn, struct!(SetGeolocationOverride, opts), [])
   end
 
   @doc """
@@ -58,8 +65,9 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_locale_override(GenServer.server(), String.t() | nil, SetLocaleOverride.opts()) ::
           {:ok, SetLocaleOverride.result()} | {:error, term()}
   def set_locale_override(conn, locale, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetLocaleOverride.opts_schema(), opts)
-    Connection.execute(conn, struct!(SetLocaleOverride, [{:locale, locale} | opts]))
+    connection_mod.execute(conn, struct!(SetLocaleOverride, [{:locale, locale} | opts]), [])
   end
 
   @doc """
@@ -72,11 +80,13 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_network_conditions(GenServer.server(), term() | nil, SetNetworkConditions.opts()) ::
           {:ok, SetNetworkConditions.result()} | {:error, term()}
   def set_network_conditions(conn, network_conditions, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetNetworkConditions.opts_schema(), opts)
 
-    Connection.execute(
+    connection_mod.execute(
       conn,
-      struct!(SetNetworkConditions, [{:network_conditions, network_conditions} | opts])
+      struct!(SetNetworkConditions, [{:network_conditions, network_conditions} | opts]),
+      []
     )
   end
 
@@ -93,11 +103,13 @@ defmodule Bibbidi.Commands.Emulation do
           SetScreenSettingsOverride.opts()
         ) :: {:ok, SetScreenSettingsOverride.result()} | {:error, term()}
   def set_screen_settings_override(conn, screen_area, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetScreenSettingsOverride.opts_schema(), opts)
 
-    Connection.execute(
+    connection_mod.execute(
       conn,
-      struct!(SetScreenSettingsOverride, [{:screen_area, screen_area} | opts])
+      struct!(SetScreenSettingsOverride, [{:screen_area, screen_area} | opts]),
+      []
     )
   end
 
@@ -114,11 +126,13 @@ defmodule Bibbidi.Commands.Emulation do
           SetScreenOrientationOverride.opts()
         ) :: {:ok, SetScreenOrientationOverride.result()} | {:error, term()}
   def set_screen_orientation_override(conn, screen_orientation, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetScreenOrientationOverride.opts_schema(), opts)
 
-    Connection.execute(
+    connection_mod.execute(
       conn,
-      struct!(SetScreenOrientationOverride, [{:screen_orientation, screen_orientation} | opts])
+      struct!(SetScreenOrientationOverride, [{:screen_orientation, screen_orientation} | opts]),
+      []
     )
   end
 
@@ -132,8 +146,14 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_user_agent_override(GenServer.server(), String.t() | nil, SetUserAgentOverride.opts()) ::
           {:ok, SetUserAgentOverride.result()} | {:error, term()}
   def set_user_agent_override(conn, user_agent, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetUserAgentOverride.opts_schema(), opts)
-    Connection.execute(conn, struct!(SetUserAgentOverride, [{:user_agent, user_agent} | opts]))
+
+    connection_mod.execute(
+      conn,
+      struct!(SetUserAgentOverride, [{:user_agent, user_agent} | opts]),
+      []
+    )
   end
 
   @doc """
@@ -146,8 +166,9 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_scripting_enabled(GenServer.server(), term() | nil, SetScriptingEnabled.opts()) ::
           {:ok, SetScriptingEnabled.result()} | {:error, term()}
   def set_scripting_enabled(conn, enabled, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetScriptingEnabled.opts_schema(), opts)
-    Connection.execute(conn, struct!(SetScriptingEnabled, [{:enabled, enabled} | opts]))
+    connection_mod.execute(conn, struct!(SetScriptingEnabled, [{:enabled, enabled} | opts]), [])
   end
 
   @doc """
@@ -163,11 +184,13 @@ defmodule Bibbidi.Commands.Emulation do
           SetScrollbarTypeOverride.opts()
         ) :: {:ok, SetScrollbarTypeOverride.result()} | {:error, term()}
   def set_scrollbar_type_override(conn, scrollbar_type, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetScrollbarTypeOverride.opts_schema(), opts)
 
-    Connection.execute(
+    connection_mod.execute(
       conn,
-      struct!(SetScrollbarTypeOverride, [{:scrollbar_type, scrollbar_type} | opts])
+      struct!(SetScrollbarTypeOverride, [{:scrollbar_type, scrollbar_type} | opts]),
+      []
     )
   end
 
@@ -181,8 +204,9 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_timezone_override(GenServer.server(), String.t() | nil, SetTimezoneOverride.opts()) ::
           {:ok, SetTimezoneOverride.result()} | {:error, term()}
   def set_timezone_override(conn, timezone, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetTimezoneOverride.opts_schema(), opts)
-    Connection.execute(conn, struct!(SetTimezoneOverride, [{:timezone, timezone} | opts]))
+    connection_mod.execute(conn, struct!(SetTimezoneOverride, [{:timezone, timezone} | opts]), [])
   end
 
   @doc """
@@ -195,11 +219,13 @@ defmodule Bibbidi.Commands.Emulation do
   @spec set_touch_override(GenServer.server(), term() | nil, SetTouchOverride.opts()) ::
           {:ok, SetTouchOverride.result()} | {:error, term()}
   def set_touch_override(conn, max_touch_points, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(SetTouchOverride.opts_schema(), opts)
 
-    Connection.execute(
+    connection_mod.execute(
       conn,
-      struct!(SetTouchOverride, [{:max_touch_points, max_touch_points} | opts])
+      struct!(SetTouchOverride, [{:max_touch_points, max_touch_points} | opts]),
+      []
     )
   end
 end

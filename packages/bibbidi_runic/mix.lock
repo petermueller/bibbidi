@@ -1,4 +1,5 @@
 %{
+  "bibbidi": {:hex, :bibbidi, "0.2.0", "f7011c00f6220723609a38fb6c8d34304847330a5d426859cf083ab5cb3c2d2a", [:mix], [{:mint_web_socket, "~> 1.0", [hex: :mint_web_socket, repo: "hexpm", optional: false]}, {:telemetry, "~> 1.0", [hex: :telemetry, repo: "hexpm", optional: false]}, {:zoi, "~> 0.17", [hex: :zoi, repo: "hexpm", optional: false]}], "hexpm", "cbe7cc4270b2bfa9e262fd8455361aab33a210e72f38c9e4d6f7389c95f26a7c"},
   "flow": {:hex, :flow, "1.2.4", "1dd58918287eb286656008777cb32714b5123d3855956f29aa141ebae456922d", [:mix], [{:gen_stage, "~> 1.0", [hex: :gen_stage, repo: "hexpm", optional: false]}], "hexpm", "874adde96368e71870f3510b91e35bc31652291858c86c0e75359cbdd35eb211"},
   "gen_stage": {:hex, :gen_stage, "1.3.2", "7c77e5d1e97de2c6c2f78f306f463bca64bf2f4c3cdd606affc0100b89743b7b", [:mix], [], "hexpm", "0ffae547fa777b3ed889a6b9e1e64566217413d018cabd825f786e843ffe63e7"},
   "hpax": {:hex, :hpax, "1.0.3", "ed67ef51ad4df91e75cc6a1494f851850c0bd98ebc0be6e81b026e765ee535aa", [:mix], [], "hexpm", "8eab6e1cfa8d5918c2ce4ba43588e894af35dbd8e91e6e55c817bca5847df34a"},

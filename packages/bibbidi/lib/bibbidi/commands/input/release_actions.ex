@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Input.ReleaseActions do
   Command struct for `input.releaseActions`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{context: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{context: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

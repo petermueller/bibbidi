@@ -4,9 +4,11 @@ defmodule Bibbidi.Commands.Storage.GetCookies do
   Command struct for `storage.getCookies`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             filter: Zoi.any() |> Zoi.optional(),
-            partition: Zoi.any() |> Zoi.optional()
+            partition: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  filter: Zoi.any() |> Zoi.optional(),

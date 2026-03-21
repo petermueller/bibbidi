@@ -4,6 +4,11 @@ defmodule Bibbidi.Events.Network do
   Events for the `network` module of the WebDriver BiDi protocol.
   """
 
+  alias __MODULE__.AuthRequired
+  alias __MODULE__.BeforeRequestSent
+  alias __MODULE__.FetchError
+  alias __MODULE__.ResponseCompleted
+  alias __MODULE__.ResponseStarted
   @doc "Returns all event method names for this module."
   @spec events() :: [String.t()]
   def events do
@@ -50,4 +55,78 @@ defmodule Bibbidi.Events.Network do
   Params type: `network.ResponseStartedParameters`
   """
   def response_started, do: "network.responseStarted"
+
+  @doc "Parses a raw event params map into a typed struct."
+  @spec parse(String.t(), map()) :: struct() | map()
+  def parse("network.authRequired", params) do
+    %AuthRequired{
+      context: params["context"],
+      is_blocked: params["isBlocked"],
+      navigation: params["navigation"],
+      redirect_count: params["redirectCount"],
+      request: params["request"],
+      timestamp: params["timestamp"],
+      user_context: params["userContext"],
+      intercepts: params["intercepts"],
+      response: params["response"]
+    }
+  end
+
+  def parse("network.beforeRequestSent", params) do
+    %BeforeRequestSent{
+      context: params["context"],
+      is_blocked: params["isBlocked"],
+      navigation: params["navigation"],
+      redirect_count: params["redirectCount"],
+      request: params["request"],
+      timestamp: params["timestamp"],
+      user_context: params["userContext"],
+      intercepts: params["intercepts"],
+      initiator: params["initiator"]
+    }
+  end
+
+  def parse("network.fetchError", params) do
+    %FetchError{
+      context: params["context"],
+      is_blocked: params["isBlocked"],
+      navigation: params["navigation"],
+      redirect_count: params["redirectCount"],
+      request: params["request"],
+      timestamp: params["timestamp"],
+      user_context: params["userContext"],
+      intercepts: params["intercepts"],
+      error_text: params["errorText"]
+    }
+  end
+
+  def parse("network.responseCompleted", params) do
+    %ResponseCompleted{
+      context: params["context"],
+      is_blocked: params["isBlocked"],
+      navigation: params["navigation"],
+      redirect_count: params["redirectCount"],
+      request: params["request"],
+      timestamp: params["timestamp"],
+      user_context: params["userContext"],
+      intercepts: params["intercepts"],
+      response: params["response"]
+    }
+  end
+
+  def parse("network.responseStarted", params) do
+    %ResponseStarted{
+      context: params["context"],
+      is_blocked: params["isBlocked"],
+      navigation: params["navigation"],
+      redirect_count: params["redirectCount"],
+      request: params["request"],
+      timestamp: params["timestamp"],
+      user_context: params["userContext"],
+      intercepts: params["intercepts"],
+      response: params["response"]
+    }
+  end
+
+  def parse(_method, params), do: params
 end

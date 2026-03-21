@@ -4,7 +4,12 @@ defmodule Bibbidi.Commands.Input.PerformActions do
   Command struct for `input.performActions`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{context: Zoi.any(), actions: Zoi.list(Zoi.any())})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{
+            context: Zoi.any(),
+            actions: Zoi.list(Zoi.any()),
+            meta: Zoi.any() |> Zoi.optional()
+          })
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

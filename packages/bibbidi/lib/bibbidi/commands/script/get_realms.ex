@@ -4,9 +4,11 @@ defmodule Bibbidi.Commands.Script.GetRealms do
   Command struct for `script.getRealms`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Zoi.any() |> Zoi.optional(),
-            type: Zoi.any() |> Zoi.optional()
+            type: Zoi.any() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  context: Zoi.any() |> Zoi.optional(),

@@ -4,10 +4,12 @@ defmodule Bibbidi.Commands.Emulation.SetScrollbarTypeOverride do
   Command struct for `emulation.setScrollbarTypeOverride`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             scrollbar_type: Zoi.union([Zoi.string(), Zoi.string(), Zoi.null()]),
             contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional()
+            user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),

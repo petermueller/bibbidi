@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.WebExtension.Install do
   Command struct for `webExtension.install`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{extension_data: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{extension_data: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(%{extension: Zoi.any()})
 

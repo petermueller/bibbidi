@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Browser.GetUserContexts do
   Command struct for `browser.getUserContexts`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(%{user_contexts: Zoi.list(Zoi.any())})
 

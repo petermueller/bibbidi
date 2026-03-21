@@ -22,18 +22,22 @@ defmodule Bibbidi.Commands.Script do
   @spec add_preload_script(GenServer.server(), String.t(), AddPreloadScript.opts()) ::
           {:ok, AddPreloadScript.result()} | {:error, term()}
   def add_preload_script(conn, function_declaration, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(AddPreloadScript.opts_schema(), opts)
 
-    Connection.execute(
+    connection_mod.execute(
       conn,
-      struct!(AddPreloadScript, [{:function_declaration, function_declaration} | opts])
+      struct!(AddPreloadScript, [{:function_declaration, function_declaration} | opts]),
+      []
     )
   end
 
   @doc "Executes the `script.disown` command."
-  @spec disown(GenServer.server(), [term()], term()) :: {:ok, Disown.result()} | {:error, term()}
-  def disown(conn, handles, target) do
-    Connection.execute(conn, struct!(Disown, [{:handles, handles}, {:target, target}]))
+  @spec disown(GenServer.server(), [term()], term(), Disown.opts()) ::
+          {:ok, Disown.result()} | {:error, term()}
+  def disown(conn, handles, target, opts \\ []) do
+    {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
+    connection_mod.execute(conn, struct!(Disown, [{:handles, handles}, {:target, target}]), [])
   end
 
   @doc """
@@ -46,15 +50,17 @@ defmodule Bibbidi.Commands.Script do
   @spec call_function(GenServer.server(), String.t(), boolean(), term(), CallFunction.opts()) ::
           {:ok, CallFunction.result()} | {:error, term()}
   def call_function(conn, function_declaration, await_promise, target, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(CallFunction.opts_schema(), opts)
 
-    Connection.execute(
+    connection_mod.execute(
       conn,
       struct!(CallFunction, [
         {:function_declaration, function_declaration},
         {:await_promise, await_promise},
         {:target, target} | opts
-      ])
+      ]),
+      []
     )
   end
 
@@ -68,15 +74,17 @@ defmodule Bibbidi.Commands.Script do
   @spec evaluate(GenServer.server(), String.t(), term(), boolean(), Evaluate.opts()) ::
           {:ok, Evaluate.result()} | {:error, term()}
   def evaluate(conn, expression, target, await_promise, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(Evaluate.opts_schema(), opts)
 
-    Connection.execute(
+    connection_mod.execute(
       conn,
       struct!(Evaluate, [
         {:expression, expression},
         {:target, target},
         {:await_promise, await_promise} | opts
-      ])
+      ]),
+      []
     )
   end
 
@@ -90,14 +98,16 @@ defmodule Bibbidi.Commands.Script do
   @spec get_realms(GenServer.server(), GetRealms.opts()) ::
           {:ok, GetRealms.result()} | {:error, term()}
   def get_realms(conn, opts \\ []) do
+    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)
     opts = Zoi.parse!(GetRealms.opts_schema(), opts)
-    Connection.execute(conn, struct!(GetRealms, opts))
+    connection_mod.execute(conn, struct!(GetRealms, opts), [])
   end
 
   @doc "Executes the `script.removePreloadScript` command."
-  @spec remove_preload_script(GenServer.server(), term()) ::
+  @spec remove_preload_script(GenServer.server(), term(), RemovePreloadScript.opts()) ::
           {:ok, RemovePreloadScript.result()} | {:error, term()}
-  def remove_preload_script(conn, script) do
-    Connection.execute(conn, struct!(RemovePreloadScript, [{:script, script}]))
+  def remove_preload_script(conn, script, opts \\ []) do
+    {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)
+    connection_mod.execute(conn, struct!(RemovePreloadScript, [{:script, script}]), [])
   end
 end

@@ -4,12 +4,14 @@ defmodule Bibbidi.Commands.Script.AddPreloadScript do
   Command struct for `script.addPreloadScript`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             function_declaration: Zoi.string(),
             arguments: Zoi.list(Zoi.any()) |> Zoi.optional(),
             contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
             user_contexts: Zoi.list(Zoi.any()) |> Zoi.optional(),
-            sandbox: Zoi.string() |> Zoi.optional()
+            sandbox: Zoi.string() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  arguments: Zoi.list(Zoi.any()) |> Zoi.optional(),

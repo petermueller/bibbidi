@@ -4,7 +4,8 @@ defmodule Bibbidi.Commands.Network.RemoveDataCollector do
   Command struct for `network.removeDataCollector`.
   """
 
-  @schema Zoi.struct(__MODULE__, %{collector: Zoi.any()})
+  @derive Bibbidi.Telemetry.Metadata
+  @schema Zoi.struct(__MODULE__, %{collector: Zoi.any(), meta: Zoi.any() |> Zoi.optional()})
   @opts_schema Zoi.keyword([])
   @result_schema Zoi.map(Zoi.string(), Zoi.any())
 

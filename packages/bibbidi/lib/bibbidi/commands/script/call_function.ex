@@ -4,6 +4,7 @@ defmodule Bibbidi.Commands.Script.CallFunction do
   Command struct for `script.callFunction`.
   """
 
+  @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             function_declaration: Zoi.string(),
             await_promise: Zoi.boolean(),
@@ -12,7 +13,8 @@ defmodule Bibbidi.Commands.Script.CallFunction do
             result_ownership: Zoi.any() |> Zoi.optional(),
             serialization_options: Zoi.any() |> Zoi.optional(),
             this: Zoi.any() |> Zoi.optional(),
-            user_activation: Zoi.boolean() |> Zoi.optional()
+            user_activation: Zoi.boolean() |> Zoi.optional(),
+            meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
                  arguments: Zoi.list(Zoi.any()) |> Zoi.optional(),
