@@ -5,6 +5,9 @@ defmodule Playbook.Agent do
   alias LangChain.Message
 
   def run(input) do
+    # Save user message to history
+    Playbook.State.add_user_message(input)
+
     agent_id = "playbook-#{:os.system_time(:millisecond)}"
 
     {:ok, agent} = Agent.new(%{
@@ -12,11 +15,19 @@ defmodule Playbook.Agent do
       model:    Playbook.Llm.for_node(:router),
       base_system_prompt: "",
       middleware: [
-        Playbook.Middleware.Router
+        Playbook.Middleware.Router,
+        Playbook.Middleware.ContextPruner
       ]
     })
 
-    state = State.new!(%{messages: [Message.new_user!(input)]})
+    # Build messages from history
+    history = Playbook.State.get_history()
+    messages = Enum.map(history, fn
+      %{role: :user, content: c} -> Message.new_user!(c)
+      %{role: :assistant, content: c} -> Message.new_assistant!(c)
+    end)
+
+    state = State.new!(%{messages: messages})
 
     {:ok, _pid} = AgentServer.start_link(
       agent:              agent,
@@ -45,6 +56,8 @@ defmodule Playbook.Agent do
           _ -> ""
         end
         if String.trim(content) != "" do
+          # Save assistant response to history
+          Playbook.State.add_assistant_message(String.trim(content))
           IO.puts("\n#{String.trim(content)}")
         end
         await(agent_id)

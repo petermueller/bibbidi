@@ -31,6 +31,9 @@ defmodule Autopilot.Browser do
   def scroll(direction, amount \\ 400), do: GenServer.call(__MODULE__, {:scroll, direction, amount}, 10_000)
   def go_back,                do: GenServer.call(__MODULE__, :go_back, 15_000)
   def eval(js, timeout \\ 15_000), do: GenServer.call(__MODULE__, {:eval, js}, timeout)
+  def add_preload_script(js, timeout \\ 15_000), do: GenServer.call(__MODULE__, {:add_preload_script, js}, timeout)
+  def remove_preload_script(script_id, timeout \\ 15_000), do: GenServer.call(__MODULE__, {:remove_preload_script, script_id}, timeout)
+  def subscribe(events, timeout \\ 10_000), do: GenServer.call(__MODULE__, {:subscribe, events}, timeout)
 
   # --- GenServer ---
 
@@ -225,6 +228,28 @@ defmodule Autopilot.Browser do
 
   def handle_call({:eval, js}, _from, %{conn: conn, context: ctx} = state) do
     result = Script.evaluate(conn, js, %{context: ctx}, false)
+    {:reply, result, state}
+  end
+
+    def handle_call({:add_preload_script, js}, _from, %{conn: conn} = state) do
+    result = Script.add_preload_script(conn, js)
+    {:reply, result, state}
+  end
+
+  def handle_call({:remove_preload_script, script_id}, _from, %{conn: conn} = state) do
+    result = Script.remove_preload_script(conn, script_id)
+    {:reply, result, state}
+  end
+
+  def handle_call({:subscribe, events}, {pid, _ref}, %{conn: conn} = state) do
+    # Tell Bibbidi server-side to start emitting these events
+    result = Bibbidi.Commands.Session.subscribe(conn, events)
+
+    # Subscribe the calling process so it receives the event messages
+    Enum.each(events, fn event ->
+      Bibbidi.Connection.subscribe(conn, event, pid)
+    end)
+
     {:reply, result, state}
   end
 end

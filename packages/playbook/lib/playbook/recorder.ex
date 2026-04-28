@@ -2,19 +2,14 @@ defmodule Playbook.Recorder do
   @moduledoc """
   Records browser interactions by injecting JavaScript event listeners.
 
-  Captures clicks, inputs, and navigations automatically while the user
-  interacts with the browser. Uses Autopilot.Browser for browser access.
+  Listeners emit events via `console.log("[PLAYBOOK]" + JSON)`, which arrive
+  here as `log.entryAdded` BiDi events — no polling required.
 
-  ## Usage
+  A preload script ensures listeners are re-injected on every new document,
+  so navigations don't break the recording.
 
-      Playbook.Recorder.start_link()
-      Playbook.Recorder.begin_session("Login Flow")
-
-      # User interacts with the browser...
-      # Events are captured automatically via injected JS
-
-      Playbook.Recorder.annotate("this input is for 2FA")
-      {:ok, name, log} = Playbook.Recorder.end_session()
+  Each event is appended in real time to a `.jsonl` file on disk, so a
+  recording survives crashes and can be re-transcribed later.
   """
 
   use GenServer
@@ -22,9 +17,7 @@ defmodule Playbook.Recorder do
 
   alias Playbook.LogEntry
 
-  defp poll_interval_ms do
-    Application.get_env(:playbook, :poll_interval_ms, 1_000)
-  end
+  @log_marker "[PLAYBOOK]"
 
   # ── Public API ─────────────────────────────────────────────────
 
@@ -47,10 +40,16 @@ defmodule Playbook.Recorder do
     GenServer.call(__MODULE__, :end_session)
   end
 
-  @doc "Get the current log without stopping."
+  @doc "Get the current in-memory log (fast, useful for peek)."
   def get_log do
     GenServer.call(__MODULE__, :get_log)
   end
+
+  @doc "Get the active or last session name."
+  def session_name, do: GenServer.call(__MODULE__, :session_name)
+
+  @doc "Get the path to the active or last raw .jsonl log file."
+  def raw_log_path, do: GenServer.call(__MODULE__, :raw_log_path)
 
   @doc "Check if currently recording."
   def recording? do
@@ -63,28 +62,45 @@ defmodule Playbook.Recorder do
 
   @impl true
   def init(_state) do
-    {:ok, %{
-      recording: false,
-      session_name: nil,
-      log: [],
-      last_poll_index: 0
-    }}
+    {:ok,
+     %{
+       recording: false,
+       session_name: nil,
+       log: [],
+       preload_script_id: nil,
+       last_session_name: nil,
+       raw_log_path: nil,
+       last_raw_log_path: nil
+     }}
   end
 
   @impl true
   def handle_call({:begin_session, name}, _from, state) do
-    case inject_listeners() do
-      :ok ->
-        Logger.info("[Recorder] Started session: #{name}")
-        schedule_poll()
-        {:reply, :ok, %{state |
-          recording: true,
-          session_name: name,
-          log: [],
-          last_poll_index: 0
-        }}
+    js = listener_js()
+    fn_decl = "() => { #{js} }"
 
+    with {:ok, _sub} <- Autopilot.Browser.subscribe(["log.entryAdded"]),
+         {:ok, preload} <- Autopilot.Browser.add_preload_script(fn_decl),
+         :ok <- inject_now(js) do
+      script_id = extract_script_id(preload)
+      raw_path = open_raw_log(name)
+
+      Logger.info(
+        "[Recorder] Started session: #{name} (preload=#{script_id}, raw=#{raw_path})"
+      )
+
+      {:reply, :ok,
+       %{
+         state
+         | recording: true,
+           session_name: name,
+           log: [],
+           preload_script_id: script_id,
+           raw_log_path: raw_path
+       }}
+    else
       {:error, reason} ->
+        Logger.error("[Recorder] Failed to start session: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
     end
   end
@@ -92,6 +108,15 @@ defmodule Playbook.Recorder do
   def handle_call({:annotate, text}, _from, %{recording: true} = state) do
     entry = LogEntry.annotation(text)
     Logger.info("[Recorder] #{LogEntry.to_log_line(entry)}")
+
+    raw_event = %{
+      "type" => "annotation",
+      "text" => text,
+      "ts" => System.system_time(:millisecond)
+    }
+
+    append_raw_event(state.raw_log_path, raw_event)
+
     {:reply, :ok, %{state | log: state.log ++ [entry]}}
   end
 
@@ -100,16 +125,32 @@ defmodule Playbook.Recorder do
   end
 
   def handle_call(:end_session, _from, %{recording: true} = state) do
-    state = poll_events(state)
+    if state.preload_script_id do
+      case Autopilot.Browser.remove_preload_script(state.preload_script_id) do
+        {:ok, _} ->
+          :ok
+
+        err ->
+          Logger.warning("[Recorder] Could not remove preload script: #{inspect(err)}")
+      end
+    end
+
     remove_listeners()
 
-    Logger.info("[Recorder] Session ended: #{state.session_name} (#{length(state.log)} events)")
-    log = state.log
+    Logger.info(
+      "[Recorder] Session ended: #{state.session_name} (#{length(state.log)} events, raw=#{state.raw_log_path})"
+    )
 
-    {:reply, {:ok, state.session_name, log}, %{state |
-      recording: false,
-      session_name: nil
-    }}
+    {:reply, {:ok, state.session_name, state.log},
+      %{
+        state
+        | recording: false,
+          last_session_name: state.session_name,
+          last_raw_log_path: state.raw_log_path,
+          session_name: nil,
+          preload_script_id: nil,
+          raw_log_path: nil
+      }}
   end
 
   def handle_call(:end_session, _from, %{recording: false} = state) do
@@ -124,143 +165,57 @@ defmodule Playbook.Recorder do
     {:reply, state.recording, state}
   end
 
+  def handle_call(:session_name, _from, state) do
+    {:reply, state.session_name || state.last_session_name, state}
+  end
+
+  def handle_call(:raw_log_path, _from, state) do
+    {:reply, state.raw_log_path || state.last_raw_log_path, state}
+  end
+
+  # ── BiDi event handler ─────────────────────────────────────────
+
   @impl true
-  def handle_info(:poll, %{recording: true} = state) do
-    state = poll_events(state)
-    schedule_poll()
-    {:noreply, state}
+  def handle_info(
+        {:bibbidi_event, "log.entryAdded", %Bibbidi.Events.Log.EntryAdded{text: text}},
+        state
+      )
+      when is_binary(text) do
+    process_log_text(text, state)
   end
 
-  def handle_info(:poll, %{recording: false} = state) do
-    {:noreply, state}
+  def handle_info({:bibbidi_event, "log.entryAdded", %{"text" => text}}, state)
+      when is_binary(text) do
+    process_log_text(text, state)
   end
 
-  # ── JavaScript injection ───────────────────────────────────────
+  def handle_info(_msg, state), do: {:noreply, state}
 
-  defp inject_listeners do
-    js = """
-    (function() {
-      if (window.__playbook_recorder) return 'already_injected';
+  # ── Log entry processing ───────────────────────────────────────
 
-      window.__playbook_events = [];
-      window.__playbook_recorder = true;
-
-      // Track clicks
-      document.addEventListener('click', function(e) {
-        var el = e.target;
-        var selector = '';
-        try {
-          if (el.id) selector = '#' + el.id;
-          else if (el.name) selector = el.tagName.toLowerCase() + '[name="' + el.name + '"]';
-          else if (el.className && typeof el.className === 'string')
-            selector = el.tagName.toLowerCase() + '.' + el.className.trim().split(/\\s+/).join('.');
-          else selector = el.tagName.toLowerCase();
-        } catch(err) { selector = el.tagName || 'unknown'; }
-
-        window.__playbook_events.push({
-          type: 'click',
-          ts: Date.now(),
-          x: Math.round(e.clientX),
-          y: Math.round(e.clientY),
-          selector: selector,
-          tag: (el.tagName || '').toLowerCase(),
-          text: (el.textContent || '').trim().slice(0, 80)
-        });
-      }, true);
-
-      // Track input changes
-      document.addEventListener('change', function(e) {
-        var el = e.target;
-        if (!el.tagName || !['INPUT','TEXTAREA','SELECT'].includes(el.tagName)) return;
-
-        var selector = '';
-        try {
-          if (el.id) selector = '#' + el.id;
-          else if (el.name) selector = el.tagName.toLowerCase() + '[name="' + el.name + '"]';
-          else selector = el.tagName.toLowerCase();
-        } catch(err) { selector = el.tagName || 'unknown'; }
-
-        var sensitive = (el.type === 'password');
-
-        window.__playbook_events.push({
-          type: 'input',
-          ts: Date.now(),
-          selector: selector,
-          value: sensitive ? '***' : el.value,
-          sensitive: sensitive
-        });
-      }, true);
-
-      // Track navigation via History API
-      var origPush = history.pushState;
-      var origReplace = history.replaceState;
-      history.pushState = function() {
-        origPush.apply(this, arguments);
-        window.__playbook_events.push({
-          type: 'navigation', ts: Date.now(), url: window.location.href, title: document.title
-        });
-      };
-      history.replaceState = function() {
-        origReplace.apply(this, arguments);
-        window.__playbook_events.push({
-          type: 'navigation', ts: Date.now(), url: window.location.href, title: document.title
-        });
-      };
-      window.addEventListener('popstate', function() {
-        window.__playbook_events.push({
-          type: 'navigation', ts: Date.now(), url: window.location.href, title: document.title
-        });
-      });
-
-      return 'injected';
-    })()
-    """
-
-    case Autopilot.Browser.eval(js) do
-      {:ok, _} -> :ok
-      error -> error
-    end
-  end
-
-  defp remove_listeners do
-    js = """
-    (function() {
-      window.__playbook_recorder = false;
-      window.__playbook_events = [];
-      return 'removed';
-    })()
-    """
-    Autopilot.Browser.eval(js)
-  end
-
-  # ── Event polling ──────────────────────────────────────────────
-
-  defp poll_events(state) do
-    js = """
-    (function() {
-      var events = window.__playbook_events || [];
-      var fromIndex = #{state.last_poll_index};
-      var newEvents = events.slice(fromIndex);
-      return JSON.stringify({count: events.length, events: newEvents});
-    })()
-    """
-
-    case Autopilot.Browser.eval(js) do
-      {:ok, json} when is_binary(json) ->
+  defp process_log_text(text, %{recording: true} = state) do
+    case String.split(text, @log_marker, parts: 2) do
+      [_prefix, json] ->
         case Jason.decode(json) do
-          {:ok, %{"count" => count, "events" => events}} ->
-            entries = Enum.map(events, &parse_event/1)
-            Enum.each(entries, fn e -> Logger.info("[Recorder] #{LogEntry.to_log_line(e)}") end)
-            %{state | log: state.log ++ entries, last_poll_index: count}
+          {:ok, event} ->
+            entry = parse_event(event)
+            Logger.info("[Recorder] #{LogEntry.to_log_line(entry)}")
+            append_raw_event(state.raw_log_path, event)
+            {:noreply, %{state | log: state.log ++ [entry]}}
 
-          _ ->
-            state
+          {:error, reason} ->
+            Logger.debug("[Recorder] Failed to decode event JSON: #{inspect(reason)}")
+            {:noreply, state}
         end
 
       _ ->
-        state
+        {:noreply, state}
     end
   end
+
+  defp process_log_text(_text, state), do: {:noreply, state}
+
+  # ── Event parsing ──────────────────────────────────────────────
 
   defp parse_event(%{"type" => "click"} = e) do
     LogEntry.click(e["x"], e["y"], e["selector"], e["tag"], e["text"])
@@ -278,9 +233,172 @@ defmodule Playbook.Recorder do
     LogEntry.annotation("Unknown event: #{inspect(e)}")
   end
 
-  # ── Helpers ────────────────────────────────────────────────────
+  # ── Raw log persistence ────────────────────────────────────────
 
-  defp schedule_poll do
-    Process.send_after(self(), :poll, poll_interval_ms())
+  defp open_raw_log(name) do
+    dir = Application.get_env(:playbook, :playbook_output_dir, "./playbooks")
+    File.mkdir_p!(dir)
+
+    timestamp = format_timestamp(:calendar.local_time())
+    base = sanitize(name)
+    path = Path.join(dir, "#{base}_#{timestamp}_raw.jsonl")
+
+    # Touch the file so it exists from the start
+    File.write!(path, "")
+
+    # Write a header line with metadata
+    header = %{
+      "type" => "session_header",
+      "session_name" => name,
+      "started_at" => timestamp
+    }
+
+    append_raw_event(path, header)
+    path
   end
+
+  defp append_raw_event(nil, _event), do: :ok
+
+  defp append_raw_event(path, event) do
+    line = Jason.encode!(event) <> "\n"
+    File.write!(path, line, [:append])
+  rescue
+    e ->
+      Logger.error("[Recorder] Failed to append event to #{path}: #{Exception.message(e)}")
+      :ok
+  end
+
+  defp sanitize(name) do
+    name
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9]+/, "_")
+    |> String.trim("_")
+  end
+
+  defp format_timestamp({{y, mo, d}, {h, mi, s}}) do
+    :io_lib.format("~4..0B~2..0B~2..0B_~2..0B~2..0B~2..0B", [y, mo, d, h, mi, s])
+    |> IO.iodata_to_binary()
+  end
+
+  # ── JavaScript injection ───────────────────────────────────────
+
+  defp listener_js do
+    """
+    (function() {
+      if (window.__playbook_recorder) return 'already_injected';
+      window.__playbook_recorder = true;
+
+      function emit(evt) {
+        try { console.log('#{@log_marker}' + JSON.stringify(evt)); } catch(e) {}
+      }
+
+      function buildSelector(el) {
+        try {
+          if (el.id) return '#' + el.id;
+          if (el.name) return el.tagName.toLowerCase() + '[name="' + el.name + '"]';
+          if (el.className && typeof el.className === 'string')
+            return el.tagName.toLowerCase() + '.' + el.className.trim().split(/\\s+/).join('.');
+          return el.tagName.toLowerCase();
+        } catch(err) { return el.tagName || 'unknown'; }
+      }
+
+      function emitInput(el) {
+        var sensitive = (el.type === 'password');
+        emit({
+          type: 'input',
+          ts: Date.now(),
+          selector: buildSelector(el),
+          value: sensitive ? '***' : el.value,
+          sensitive: sensitive
+        });
+      }
+
+      function emitNav() {
+        var url = window.location.href;
+        if (!url || url === 'about:blank' || url === 'about:home') return;
+        emit({ type: 'navigation', ts: Date.now(), url: url, title: document.title });
+      }
+
+      document.addEventListener('click', function(e) {
+        var el = e.target;
+        emit({
+          type: 'click',
+          ts: Date.now(),
+          x: Math.round(e.clientX),
+          y: Math.round(e.clientY),
+          selector: buildSelector(el),
+          tag: (el.tagName || '').toLowerCase(),
+          text: (el.textContent || '').trim().slice(0, 80)
+        });
+      }, true);
+
+      var inputTimers = new WeakMap();
+      var DEBOUNCE_MS = 500;
+
+      document.addEventListener('input', function(e) {
+        var el = e.target;
+        if (!el.tagName || !['INPUT','TEXTAREA','SELECT'].includes(el.tagName)) return;
+
+        var existing = inputTimers.get(el);
+        if (existing) clearTimeout(existing);
+
+        var timer = setTimeout(function() {
+          inputTimers.delete(el);
+          emitInput(el);
+        }, DEBOUNCE_MS);
+
+        inputTimers.set(el, timer);
+      }, true);
+
+      document.addEventListener('blur', function(e) {
+        var el = e.target;
+        if (!el.tagName || !['INPUT','TEXTAREA','SELECT'].includes(el.tagName)) return;
+        var timer = inputTimers.get(el);
+        if (timer) {
+          clearTimeout(timer);
+          inputTimers.delete(el);
+          emitInput(el);
+        }
+      }, true);
+
+      var origPush = history.pushState;
+      var origReplace = history.replaceState;
+      history.pushState = function() {
+        origPush.apply(this, arguments);
+        emitNav();
+      };
+      history.replaceState = function() {
+        origReplace.apply(this, arguments);
+        emitNav();
+      };
+      window.addEventListener('popstate', emitNav);
+
+      emitNav();
+
+      return 'injected';
+    })()
+    """
+  end
+
+  defp inject_now(js) do
+    case Autopilot.Browser.eval(js) do
+      {:ok, _} -> :ok
+      error -> error
+    end
+  end
+
+  defp remove_listeners do
+    js = """
+    (function() {
+      window.__playbook_recorder = false;
+      return 'removed';
+    })()
+    """
+
+    Autopilot.Browser.eval(js)
+  end
+
+  defp extract_script_id(%{"script" => id}), do: id
+  defp extract_script_id(id) when is_binary(id), do: id
+  defp extract_script_id(other), do: inspect(other)
 end

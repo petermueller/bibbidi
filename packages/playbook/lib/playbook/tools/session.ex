@@ -24,7 +24,12 @@ defmodule Playbook.Tools.Session do
   def stop_recording do
     Function.new!(%{
       name: "stop_recording",
-      description: "Stop recording without generating a playbook. Returns the raw event count.",
+      description: """
+      Stop the current recording session without generating a playbook.
+      Use this if the user explicitly wants to pause/stop. If they want to
+      generate a playbook, call generate_playbook directly — it stops recording
+      on its own.
+      """,
       parameters: [],
       function: fn _args, _context ->
         case Playbook.Recorder.end_session() do

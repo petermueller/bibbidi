@@ -308,6 +308,38 @@ defmodule Playbook.Runner do
     end
   end
 
+  defp execute_step(%{"action" => "extract"} = step, _vars) do
+    selector = step["selector"]
+    var_name = step["variable"] || "result"
+
+    js = """
+    (function() {
+      var el = document.querySelector('#{escape_js(selector)}');
+      if (!el) return JSON.stringify({error: 'not_found'});
+      return JSON.stringify({value: (el.innerText || el.textContent || '').trim()});
+    })()
+    """
+
+    case Autopilot.Browser.eval(js) do
+      {:ok, result} ->
+        case Jason.decode(result) do
+          {:ok, %{"value" => value}} ->
+            Logger.info("[Runner] Extracted #{var_name} = #{inspect(value)}")
+            IO.puts("  📤 #{var_name}: #{value}")
+            :ok
+
+          {:ok, %{"error" => _}} ->
+            {:error, "Extract: element not found: #{selector}"}
+
+          _ ->
+            {:error, "Extract: could not parse result"}
+        end
+
+      error ->
+        {:error, error}
+    end
+  end
+
   defp execute_step(%{"action" => action}, _vars) do
     {:error, "Unknown action: #{action}"}
   end

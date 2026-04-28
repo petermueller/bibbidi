@@ -7,9 +7,21 @@ defmodule Playbook.Middleware.Router do
 
   @impl true
   def system_prompt(_config) do
+    # Dynamic state context
+    recording = Playbook.Recorder.recording?()
+    log_count = if recording, do: length(Playbook.Recorder.get_log()), else: 0
+
+    state_line = if recording do
+      "CURRENT STATE: Recording in progress — #{log_count} events captured."
+    else
+      "CURRENT STATE: Not recording."
+    end
+
     """
     You are a playbook recorder assistant. You help users record browser
     interactions and generate structured playbooks for RPA automation.
+
+    #{state_line}
 
     ## What you do:
     - Start/stop recording sessions
@@ -40,6 +52,9 @@ defmodule Playbook.Middleware.Router do
     - Respond in the user's language.
     - Keep responses short and helpful.
     - If the user just says hi, respond conversationally — no tool call needed.
+    - You have conversation history — use it. Don't ask for info the user already gave.
+    - generate_playbook works whether the recording is active or already stopped.
+      Don't tell the user to record again if they already did.
     """
   end
 
@@ -50,8 +65,8 @@ defmodule Playbook.Middleware.Router do
       Playbook.Tools.Session.stop_recording(),
       Playbook.Tools.Session.annotate(),
       Playbook.Tools.Session.peek(),
+      Playbook.Tools.Transcribe.list_sessions(),
       Playbook.Tools.Transcribe.generate_playbook(),
-      Playbook.Tools.Persistence.save_playbook(),
       Playbook.Tools.Persistence.load_playbook(),
       Playbook.Tools.Persistence.run_playbook()
     ]

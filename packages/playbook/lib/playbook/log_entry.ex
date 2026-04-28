@@ -109,5 +109,28 @@ defmodule Playbook.LogEntry do
     end
   end
 
+
+  @doc """
+    Build a LogEntry struct from a raw map (the JSON-decoded form from .jsonl files).
+    Returns the struct, or nil for unrecognized types.
+    """
+  def from_raw_map(%{"type" => "navigation"} = e),
+    do: navigation(e["url"], e["title"])
+
+  def from_raw_map(%{"type" => "click"} = e),
+    do: click(e["x"], e["y"], e["selector"], e["tag"], e["text"])
+
+  def from_raw_map(%{"type" => "input"} = e),
+    do: input(e["selector"], e["value"], e["sensitive"] || false)
+
+  def from_raw_map(%{"type" => "pick"} = e),
+    do: pick(e["selector"], e["tag"], e["text"], e["x"], e["y"])
+
+  def from_raw_map(%{"type" => "annotation"} = e),
+    do: annotation(e["text"])
+
+  def from_raw_map(_), do: nil
+
+
   defp now, do: System.system_time(:millisecond)
 end

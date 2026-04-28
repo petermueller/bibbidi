@@ -2,12 +2,9 @@ defmodule Playbook.Transcriber do
   @moduledoc """
   Converts a raw session log into a structured playbook JSON.
 
-  Takes the full text log from the Recorder, sends it to an LLM
-  with instructions to analyze the session, infer the goal, discard
-  noise, and produce a clean playbook with proper step types.
-
-  The transcriber is conversational — it can ask the user questions
-  if something is ambiguous before generating the final JSON.
+  Single-shot: sends the log to the LLM and expects a JSON response.
+  No questions, no interaction — uses sensible defaults to handle
+  ambiguity automatically.
 
   ## Usage
 
@@ -25,71 +22,19 @@ defmodule Playbook.Transcriber do
   Generate a playbook from a session log.
 
   The `llm_fn` receives (system_prompt, user_message) and returns {:ok, response}.
-  This keeps the transformer independent of any specific LLM library.
-
-  Options:
-    - :interactive - if true, asks user for clarification via IO (default: true)
-    - :max_questions - max clarification rounds (default: 3)
   """
   @spec generate(String.t(), [LogEntry.t()], llm_fn(), keyword()) ::
-    {:ok, map()} | {:error, term()}
-  def generate(session_name, log, llm_fn, opts \\ []) do
-    interactive = Keyword.get(opts, :interactive, true)
-    max_questions = Keyword.get(opts, :max_questions, 3)
-
+          {:ok, map()} | {:error, term()}
+  def generate(session_name, log, llm_fn, _opts \\ []) do
     log_text = format_log(log)
     system = system_prompt()
-    user_msg = initial_prompt(session_name, log_text)
+    user_msg = user_prompt(session_name, log_text)
 
     Logger.info("[Transcriber] Analyzing #{length(log)} events for \"#{session_name}\"")
 
     case llm_fn.(system, user_msg) do
-      {:ok, response} ->
-        handle_response(response, system, llm_fn, interactive, max_questions, 0)
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  # ── Response handling ──────────────────────────────────────────
-
-  defp handle_response(response, system, llm_fn, interactive, max_questions, question_count) do
-    cond do
-      # LLM produced valid JSON — done
-      json_playbook?(response) ->
-        parse_playbook(response)
-
-      # LLM is asking a question and we can interact
-      interactive && question_count < max_questions ->
-        IO.puts("\n[Transcriber] #{response}")
-        answer = IO.gets("\n> Answer: ") |> String.trim()
-
-        if answer == "" || answer == "skip" do
-          # Re-prompt asking for best guess
-          followup = "The user skipped this question. Use your best judgment and generate the playbook JSON now."
-          case llm_fn.(system, followup) do
-            {:ok, new_response} ->
-              handle_response(new_response, system, llm_fn, interactive, max_questions, question_count + 1)
-            {:error, reason} ->
-              {:error, reason}
-          end
-        else
-          case llm_fn.(system, answer) do
-            {:ok, new_response} ->
-              handle_response(new_response, system, llm_fn, interactive, max_questions, question_count + 1)
-            {:error, reason} ->
-              {:error, reason}
-          end
-        end
-
-      # Non-interactive or max questions reached — force JSON
-      true ->
-        force_msg = "Generate the playbook JSON now. Output ONLY the JSON, no explanation."
-        case llm_fn.(system, force_msg) do
-          {:ok, new_response} -> parse_playbook(new_response)
-          {:error, reason} -> {:error, reason}
-        end
+      {:ok, response} -> parse_playbook(response)
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -97,71 +42,103 @@ defmodule Playbook.Transcriber do
 
   defp system_prompt do
     """
-    You are a Playbook Transformer. You analyze a raw browser session log
-    and convert it into a clean, structured playbook JSON.
+    You are a Playbook Transformer. You convert a raw browser session log
+    into a clean, structured playbook JSON for RPA automation.
 
-    YOUR RESPONSIBILITIES:
-    1. Infer the overall GOAL of the session from the sequence of actions
-    2. DISCARD noise: accidental clicks, scrolls that led nowhere, repeated actions
-    3. Identify which steps are CONDITIONAL (popups, 2FA, optional dialogs)
-    4. Identify which steps need HUMAN INPUT (passwords, MFA codes, CAPTCHAs)
-    5. Convert sensitive values to template variables: {{username}}, {{password}}, {{mfa_code}}
-    6. Generate clean CSS selectors — prefer #id > [name=x] > tag.class
-    7. Add clear labels to each step
+    YOU MUST OUTPUT ONLY VALID JSON. NO QUESTIONS. NO COMMENTARY. NO MARKDOWN.
+    NO PREAMBLE. NO EXPLANATION. Start your output with `{` and end with `}`.
 
-    STEP TYPES:
-    - goto:        Navigate to a URL
-    - click:       Click an element by selector
-    - type:        Type text into an input
-    - press_key:   Press a keyboard key (Enter, Tab, etc.)
-    - wait_url:    Wait for URL to contain a string (after redirects)
-    - wait_element: Wait for an element to appear
-    - assert_url:  Verify current URL (fail if wrong)
-    - human:       Pause for human action (password, MFA, CAPTCHA)
+    ANY non-JSON output is a CRITICAL ERROR. Use sensible defaults instead of asking.
 
-    STEP PROPERTIES:
-    - action:     (required) step type from above
-    - selector:   CSS selector for the target element
-    - value:      text to type or URL to navigate to
-    - label:      human-readable description of the step
-    - condition:  "element_visible" | "url_contains" | "text_on_page" (makes step conditional)
-    - condition_value: the selector/url/text to check for the condition
-    - human:      true if this step requires human interaction
-    - variable:   template variable name like "username" (replaces hardcoded value)
+    ## Default rules (apply automatically — never ask)
 
-    OUTPUT FORMAT:
+    1. **Modals/popups/cookie banners** → emit as conditional steps with
+       `condition: "element_visible"` and `condition_value: <selector>`.
+       Treat ANY annotation containing "popup", "modal", "optional",
+       "conditional", "dialog" as a strong signal for `condition`.
+
+    2. **Incremental typing on the same selector** → collapse into ONE `type`
+       step with the FINAL value typed. Discard intermediate inputs.
+
+    3. **Duplicate consecutive navigations to the same URL** → keep only the
+       first one.
+
+    4. **Background / tracking navigations** → DISCARD entirely. This includes
+       URLs containing: googletagmanager, doubleclick, googlesyndication,
+       google-analytics, googleadservices, googletagservices, recaptcha,
+       cloudflareinsights, hotjar, segment.io, fullstory, /pixel, /tracking,
+       /ads/, /analytics/, /collect, /beacon, fbcq, fbevents.
+
+    5. **iframe / embed navigations** (youtube embed, ad iframes) → DISCARD.
+
+    6. **Accidental clicks** (clicks with no resulting action, clicks on
+       `<body>`, `<html>`, `<main>` with no interactive child) → DISCARD
+       unless followed by an immediate observable change.
+
+    7. **Final state** → playbook should end at the last MEANINGFUL action
+       (the one that fulfills the goal). Trailing modal closes / cleanup
+       should be conditional optional steps after the goal completes.
+
+    8. **Password / sensitive fields** → ALWAYS use `human: true` and
+       `variable: "password"` (or appropriate name). Never include the
+       captured value.
+
+    9. **Login fields** (username, email, etc.) → use `variable` template
+       like `{username}`, `{email}` rather than hardcoded values when the
+       value looks like a credential.
+
+    10. **Search queries / free-form user input** → KEEP the typed value
+        verbatim, no variable.
+
+    Prefer FEWER, cleaner steps. The output should be the minimum set of
+    actions needed to reproduce the user's goal reliably.
+
+    ## Step types
+
+    - goto:         Navigate to a URL (use `value`)
+    - click:        Click an element (use `selector`)
+    - type:         Type text into an input (use `selector` + `value` or `variable`)
+    - press_key:    Press a key like Enter or Tab (use `value`)
+    - wait_url:     Wait for URL to contain string (use `value`)
+    - wait_element: Wait for element to appear (use `selector`)
+    - assert_url:   Verify current URL (use `value`)
+    - human:        Pause for human action (use `label`)
+    - extract:      Read text content from an element and save it (use `selector` + `variable`)
+
+    ## Step properties
+
+    - action            (required)
+    - selector          (CSS selector)
+    - value             (text to type, URL, or string to wait for)
+    - variable          (template variable name, e.g. "password")
+    - label             (short human description, REQUIRED)
+    - condition         ("element_visible" | "url_contains" | "text_on_page")
+    - condition_value   (selector/url/text checked by the condition)
+    - human             (boolean, true if step requires human interaction)
+
+    ## Output schema (THIS EXACT SHAPE)
+
     {
-      "name": "Session Name",
-      "goal": "What this playbook accomplishes",
+      "name": "<session name>",
+      "goal": "<one-sentence description of what the playbook does>",
       "steps": [
-        {"action": "goto", "value": "https://...", "label": "Open login page"},
-        {"action": "type", "selector": "#email", "variable": "username", "label": "Enter username"},
-        {"action": "type", "selector": "#password", "variable": "password", "human": true, "label": "Enter password"},
-        {"action": "click", "selector": "button[type=submit]", "label": "Submit login form"},
-        {"action": "wait_url", "value": "dashboard", "label": "Wait for dashboard"},
-        {"action": "click", "selector": ".cookie-accept", "label": "Accept cookies", "condition": "element_visible", "condition_value": ".cookie-accept"}
+        { "action": "...", "label": "...", ... }
       ]
     }
 
-    RULES:
-    - If something is unclear, ASK the user before generating. Keep questions short and specific.
-    - If the user provides annotations ([NOTE] entries), use them as context for your decisions.
-    - Password fields are ALWAYS human steps with {{password}} variable.
-    - Login-related inputs should use template variables.
-    - Output ONLY valid JSON when generating the playbook. No markdown, no explanation.
-    - Prefer fewer, cleaner steps over many granular ones.
+    REMEMBER: Output ONLY the JSON object. Nothing before. Nothing after.
     """
   end
 
-  defp initial_prompt(session_name, log_text) do
+  defp user_prompt(session_name, log_text) do
     """
-    Session: "#{session_name}"
+    Session name: "#{session_name}"
 
-    RAW SESSION LOG:
+    Raw event log (numbered):
     #{log_text}
 
-    Analyze this session log. If anything is unclear or ambiguous, ask me
-    a specific question. Otherwise, generate the playbook JSON.
+    Generate the playbook JSON now. Apply all default rules. Do not ask
+    questions. Do not include explanations. Output ONLY the JSON object.
     """
   end
 
@@ -178,26 +155,23 @@ defmodule Playbook.Transcriber do
 
   # ── JSON parsing ───────────────────────────────────────────────
 
-  defp json_playbook?(text) do
-    cleaned = clean_json(text)
-    case Jason.decode(cleaned) do
-      {:ok, %{"steps" => steps}} when is_list(steps) -> true
-      _ -> false
-    end
-  end
-
   defp parse_playbook(text) do
     cleaned = clean_json(text)
+
     case Jason.decode(cleaned) do
-      {:ok, %{"steps" => _} = playbook} ->
-        Logger.info("[Transcriber] Generated playbook with #{length(playbook["steps"])} steps")
+      {:ok, %{"steps" => steps} = playbook} when is_list(steps) ->
+        Logger.info("[Transcriber] Generated playbook with #{length(steps)} steps")
         {:ok, playbook}
 
       {:ok, _} ->
+        Logger.warning("[Transcriber] Response had no `steps` key. Raw: #{String.slice(text, 0, 500)}")
         {:error, :missing_steps_key}
 
       {:error, reason} ->
-        Logger.warning("[Transcriber] Failed to parse JSON: #{inspect(reason)}")
+        Logger.warning(
+          "[Transcriber] Failed to parse JSON: #{inspect(reason)}. Raw response: #{String.slice(text, 0, 1000)}"
+        )
+
         {:error, {:json_parse, reason, text}}
     end
   end
