@@ -91,6 +91,7 @@ Run example project tests from `packages/bibbidi/examples/op_workflow/`:
 3. Add unit tests in `test/bibbidi/commands/<module>_test.exs` using `Bibbidi.MockTransport`
 4. Add integration tests in `test/integration/<module>_test.exs` tagged `:integration`
 5. Reference the CDDL spec in `priv/cddl/remote.cddl` (what client sends) and `priv/cddl/local.cddl` (what client receives)
+6. (Optional) Drop usage examples into `priv/examples/<FullyQualifiedElixirName>.md`. `mix bibbidi.gen` will splice their contents into the generated `@moduledoc` / `@doc` under a `## Examples` heading. See `priv/examples/README.md` for the naming convention and the four supported emission points (command struct, facade builder, event struct, event helper).
 
 ## CDDL Spec
 
