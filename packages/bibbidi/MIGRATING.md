@@ -1,4 +1,4 @@
-# Migrating between Bibbidi versions
+# MIGRATING
 
 ## 0.3.x → 0.4.0
 
@@ -42,11 +42,11 @@ if you need full 0.3 parity (see `Bibbidi.Events.method_for/1`).
 
 Generated aliases picked up canonical acronym casing:
 
-| 0.3 | 0.4 |
-|---|---|
-| `Bibbidi.Types.Network.Base64value` | `Bibbidi.Types.Network.Base64Value` |
-| `Bibbidi.Types.BrowsingContext.XpathLocator` | `Bibbidi.Types.BrowsingContext.XPathLocator` |
-| `Bibbidi.Types.Script.HtmlcollectionRemoteValue` | `Bibbidi.Types.Script.HTMLCollectionRemoteValue` |
+| 0.3                                                 | 0.4                                                 |
+| --------------------------------------------------- | --------------------------------------------------- |
+| `Bibbidi.Types.Network.Base64value`                 | `Bibbidi.Types.Network.Base64Value`                 |
+| `Bibbidi.Types.BrowsingContext.XpathLocator`        | `Bibbidi.Types.BrowsingContext.XPathLocator`        |
+| `Bibbidi.Types.Script.HtmlcollectionRemoteValue`    | `Bibbidi.Types.Script.HTMLCollectionRemoteValue`    |
 | `Bibbidi.Types.WebExtension.ExtensionBase64encoded` | `Bibbidi.Types.WebExtension.ExtensionBase64Encoded` |
 
 ### `Bibbidi.Events.parse/2`

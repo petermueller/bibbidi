@@ -19,7 +19,7 @@ needs to talk BiDi to a browser.
 ```elixir
 def deps do
   [
-    {:bibbidi, "~> 0.3.0"}
+    {:bibbidi, "~> 0.4.0"}
   ]
 end
 ```
@@ -239,6 +239,7 @@ end
 alias Bibbidi.Connection
 alias Bibbidi.Commands.BrowsingContext.{GetTree, Navigate}
 alias Bibbidi.Commands.Session.Subscribe
+alias Bibbidi.Events.BrowsingContext.Load
 
 {:ok, conn} = Connection.start_link(url: "ws://localhost:9222/session")
 {:ok, _} = Bibbidi.Session.new(conn)
@@ -255,10 +256,11 @@ context = hd(tree["contexts"])["context"]
 # Navigate — this will trigger a load event
 {:ok, _} = Connection.execute(conn, %Navigate{context: context, url: "https://example.com"})
 
-# Receive the event
+# Receive the parsed event struct directly. See `Bibbidi.Events.Guards` for
+# category guards like `is_bibbidi_event/1` and `is_bibbidi_browsing_context_event/1`,
+# or `Bibbidi.Connection.subscribe/4`'s `:wrap` opt to re-shape the message.
 receive do
-  {:bibbidi_event, "browsingContext.load", params} ->
-    IO.puts("Page loaded: #{params["url"]}")
+  %Load{url: url} -> IO.puts("Page loaded: #{url}")
 after
   10_000 -> IO.puts("Timeout waiting for load event")
 end
@@ -282,10 +284,9 @@ context = hd(tree["contexts"])["context"]
 # Navigate — this will trigger a load event
 {:ok, _} = Bibbidi.Commands.BrowsingContext.navigate(conn, context, "https://example.com")
 
-# Receive the event
+# Receive the parsed event struct directly.
 receive do
-  {:bibbidi_event, "browsingContext.load", params} ->
-    IO.puts("Page loaded: #{params["url"]}")
+  %Bibbidi.Events.BrowsingContext.Load{url: url} -> IO.puts("Page loaded: #{url}")
 after
   10_000 -> IO.puts("Timeout waiting for load event")
 end
