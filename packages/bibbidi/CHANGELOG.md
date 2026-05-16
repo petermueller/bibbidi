@@ -9,11 +9,17 @@
 - **`method/0` on every generated event struct** — each `Bibbidi.Events.<Namespace>.<Event>` module now exposes a `method/0` returning its BiDi method string.
 - **`Bibbidi.Events.event_modules/0`** — enumerates all generated event struct modules.
 - **`Bibbidi.Events.Guards`** — generated `defguard`s for matching event structs in `handle_info` and `with` clauses: `is_bibbidi_event/1` (matches any generated struct + `%Unknown{}`), plus per-namespace `is_bibbidi_log_event/1`, `is_bibbidi_browsing_context_event/1`, etc. Import with `import Bibbidi.Events.Guards`.
+- **Per-subscribe `:wrap` option on `Bibbidi.Connection.subscribe/4`** — re-shape each event before delivery. Accepts either a 1-arity function or an `{module, function, args}` tuple where the event is prepended to `args` (`apply(mod, fun, [event | args])`). Application-wide default via `config :bibbidi, default_event_wrapper: {Mod, :fun, []}` (MFA-only because function captures don't survive `config.exs` / `runtime.exs`).
+
+### Breaking
+
+- **Event subscribers receive parsed event structs directly** — the legacy `{:bibbidi_event, method, params}` tuple is gone. The default `:wrap` is `Function.identity/1`. Pattern-match on the struct (`%Bibbidi.Events.BrowsingContext.Load{} = ev`), use `import Bibbidi.Events.Guards`, or restore the old shape with `wrap: fn ev -> {:bibbidi_event, Bibbidi.Events.method_for(ev), ev} end`.
 
 ### Changed
 
 - **`Bibbidi.Events.parse/2` return type is now `struct()`** — previously returned the raw `params` map for unknown events. Now returns `%Bibbidi.Events.Unknown{}` for those cases. Code that pattern-matched on a raw map fallback must update.
 - **`Bibbidi.Connection` event dispatch unconditionally extracts telemetry correlation** — the `is_struct(parsed)` branch is removed since `parse/2` always returns a struct now. `Bibbidi.Telemetry.Metadata.telemetry_metadata/1` handles non-derived structs (e.g. `%Unknown{}`) via the `Any` fallback returning `%{}`.
+- **`Bibbidi.CDDL.Utils.to_module_name/1` and `to_snake/1`** delegate to `Macro.camelize`/`Macro.underscore` (with hyphens pre-normalised), matching Elixir's idiomatic round-trip. Multi-letter acronyms (`XPath`, `HTML`) get explicit clauses since `Macro.camelize` can't recover them from snake_case. Side effect: a few generated type modules pick up the canonical acronym spelling — `Base64Value` (was `Base64value`), `XPathLocator` (was `XpathLocator`), `HTMLCollectionRemoteValue` (was `HtmlcollectionRemoteValue`), `ExtensionBase64Encoded` (was `ExtensionBase64encoded`) — and their file paths follow suit.
 
 ### Codegen
 

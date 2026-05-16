@@ -51,8 +51,8 @@ defmodule Bibbidi.ConnectionTest do
     end
   end
 
-  describe "subscribe/3 and events" do
-    test "dispatches events to subscribers", %{conn: conn} do
+  describe "subscribe/4 and events" do
+    test "delivers parsed event struct directly (default wrap is identity)", %{conn: conn} do
       :ok = Connection.subscribe(conn, "browsingContext.load")
 
       event =
@@ -63,8 +63,74 @@ defmodule Bibbidi.ConnectionTest do
 
       send(conn, {:mock_transport_receive, [{:text, event}]})
 
-      assert_receive {:bibbidi_event, "browsingContext.load",
-                      %Bibbidi.Events.BrowsingContext.Load{context: "ctx-1"}}
+      assert_receive %Bibbidi.Events.BrowsingContext.Load{context: "ctx-1", url: "https://example.com"}
+    end
+
+    test "per-subscribe wrap: fn re-shapes the message", %{conn: conn} do
+      :ok =
+        Connection.subscribe(conn, "browsingContext.load", self(),
+          wrap: fn ev -> {:my_tag, ev} end
+        )
+
+      event =
+        JSON.encode!(%{method: "browsingContext.load", params: %{context: "ctx-1"}})
+
+      send(conn, {:mock_transport_receive, [{:text, event}]})
+
+      assert_receive {:my_tag, %Bibbidi.Events.BrowsingContext.Load{context: "ctx-1"}}
+    end
+
+    test "per-subscribe wrap: {m, f, args} prepends event to args", %{conn: conn} do
+      :ok =
+        Connection.subscribe(conn, "browsingContext.load", self(),
+          wrap: {__MODULE__.WrapHelper, :tag, [:from_mfa, :extra]}
+        )
+
+      event =
+        JSON.encode!(%{method: "browsingContext.load", params: %{context: "ctx-1"}})
+
+      send(conn, {:mock_transport_receive, [{:text, event}]})
+
+      # WrapHelper.tag/3 is called as: tag(event, :from_mfa, :extra)
+      assert_receive {:from_mfa, %Bibbidi.Events.BrowsingContext.Load{}, :extra}
+    end
+
+    test "Application :default_event_wrapper applies when no per-subscribe wrap", %{conn: conn} do
+      Application.put_env(:bibbidi, :default_event_wrapper,
+        {__MODULE__.WrapHelper, :tag, [:app_default]}
+      )
+
+      on_exit(fn -> Application.delete_env(:bibbidi, :default_event_wrapper) end)
+
+      :ok = Connection.subscribe(conn, "browsingContext.load")
+
+      event =
+        JSON.encode!(%{method: "browsingContext.load", params: %{context: "ctx-1"}})
+
+      send(conn, {:mock_transport_receive, [{:text, event}]})
+
+      assert_receive {:app_default, %Bibbidi.Events.BrowsingContext.Load{}}
+    end
+
+    test "per-subscribe wrap overrides Application :default_event_wrapper", %{conn: conn} do
+      Application.put_env(:bibbidi, :default_event_wrapper,
+        {__MODULE__.WrapHelper, :tag, [:app_default]}
+      )
+
+      on_exit(fn -> Application.delete_env(:bibbidi, :default_event_wrapper) end)
+
+      :ok =
+        Connection.subscribe(conn, "browsingContext.load", self(),
+          wrap: fn ev -> {:per_subscribe, ev} end
+        )
+
+      event =
+        JSON.encode!(%{method: "browsingContext.load", params: %{context: "ctx-1"}})
+
+      send(conn, {:mock_transport_receive, [{:text, event}]})
+
+      assert_receive {:per_subscribe, %Bibbidi.Events.BrowsingContext.Load{}}
+      refute_receive {:app_default, _}, 50
     end
 
     test "does not dispatch after unsubscribe", %{conn: conn} do
@@ -79,7 +145,7 @@ defmodule Bibbidi.ConnectionTest do
 
       send(conn, {:mock_transport_receive, [{:text, event}]})
 
-      refute_receive {:bibbidi_event, _, _}, 100
+      refute_receive %Bibbidi.Events.BrowsingContext.Load{}, 100
     end
   end
 
@@ -106,10 +172,10 @@ defmodule Bibbidi.ConnectionTest do
         })
 
       send(conn, {:mock_transport_receive, [{:text, event1}]})
-      assert_receive {:bibbidi_event, "browsingContext.load", _}
+      assert_receive %Bibbidi.Events.BrowsingContext.Load{}
 
       send(conn, {:mock_transport_receive, [{:text, event2}]})
-      assert_receive {:bibbidi_event, "browsingContext.domContentLoaded", _}
+      assert_receive %Bibbidi.Events.BrowsingContext.DomContentLoaded{}
     end
 
     test "subscriber DOWN cleans up all method subscriptions", %{conn: conn} do
@@ -126,7 +192,7 @@ defmodule Bibbidi.ConnectionTest do
         JSON.encode!(%{method: "browsingContext.load", params: %{context: "ctx-1"}})
 
       send(conn, {:mock_transport_receive, [{:text, event}]})
-      refute_receive {:bibbidi_event, _, _}, 100
+      refute_receive %Bibbidi.Events.BrowsingContext.Load{}, 100
     end
   end
 
@@ -153,5 +219,13 @@ defmodule Bibbidi.ConnectionTest do
       assert_receive {:DOWN, ^ref, :process, ^conn, :normal}
       assert_receive :mock_transport_closed
     end
+  end
+
+  defmodule WrapHelper do
+    @moduledoc false
+    # Helper used by the wrap: {m, f, args} tests above. Lives in the test
+    # module's namespace so it doesn't pollute the public surface.
+    def tag(event, label), do: {label, event}
+    def tag(event, label, extra), do: {label, event, extra}
   end
 end
