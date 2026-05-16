@@ -63,7 +63,10 @@ defmodule Bibbidi.ConnectionTest do
 
       send(conn, {:mock_transport_receive, [{:text, event}]})
 
-      assert_receive %Bibbidi.Events.BrowsingContext.Load{context: "ctx-1", url: "https://example.com"}
+      assert_receive %Bibbidi.Events.BrowsingContext.Load{
+        context: "ctx-1",
+        url: "https://example.com"
+      }
     end
 
     test "per-subscribe wrap: fn re-shapes the message", %{conn: conn} do
@@ -96,7 +99,9 @@ defmodule Bibbidi.ConnectionTest do
     end
 
     test "Application :default_event_wrapper applies when no per-subscribe wrap", %{conn: conn} do
-      Application.put_env(:bibbidi, :default_event_wrapper,
+      Application.put_env(
+        :bibbidi,
+        :default_event_wrapper,
         {__MODULE__.WrapHelper, :tag, [:app_default]}
       )
 
@@ -113,7 +118,9 @@ defmodule Bibbidi.ConnectionTest do
     end
 
     test "per-subscribe wrap overrides Application :default_event_wrapper", %{conn: conn} do
-      Application.put_env(:bibbidi, :default_event_wrapper,
+      Application.put_env(
+        :bibbidi,
+        :default_event_wrapper,
         {__MODULE__.WrapHelper, :tag, [:app_default]}
       )
 

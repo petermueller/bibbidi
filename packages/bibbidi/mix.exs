@@ -106,7 +106,8 @@ defmodule Bibbidi.MixProject do
 
   defp package do
     [
-      files: ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* MIGRATING* usage-rules.md),
+      files:
+        ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* MIGRATING* usage-rules.md),
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,
