@@ -318,12 +318,11 @@ defmodule Bibbidi.Connection do
   end
 
   defp dispatch_event(state, method, params) do
+    # Bibbidi.Events.parse/2 always returns a struct (either a typed
+    # event or %Bibbidi.Events.Unknown{}); telemetry_metadata/1 handles
+    # non-derived structs (like Unknown) gracefully by returning %{}.
     parsed = Bibbidi.Events.parse(method, params)
-
-    correlation =
-      if is_struct(parsed),
-        do: Bibbidi.Telemetry.Metadata.telemetry_metadata(parsed),
-        else: %{}
+    correlation = Bibbidi.Telemetry.Metadata.telemetry_metadata(parsed)
 
     :telemetry.execute(
       [:bibbidi, :event, :received],

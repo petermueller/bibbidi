@@ -76,14 +76,85 @@ defmodule Bibbidi.EventsTest do
       assert result.method == "log"
     end
 
-    test "returns raw map for unknown events" do
+    test "wraps unknown top-level namespace events in %Unknown{}" do
       params = %{"foo" => "bar"}
-      assert Events.parse("vendor.customEvent", params) == params
+
+      assert %Events.Unknown{method: "vendor.customEvent", params: ^params} =
+               Events.parse("vendor.customEvent", params)
     end
 
-    test "returns raw map for unknown events within known module" do
+    test "wraps unknown events within a known namespace in %Unknown{}" do
       params = %{"foo" => "bar"}
-      assert Events.parse("browsingContext.unknownEvent", params) == params
+
+      assert %Events.Unknown{method: "browsingContext.unknownEvent", params: ^params} =
+               Events.parse("browsingContext.unknownEvent", params)
+    end
+  end
+
+  describe "method_for/1" do
+    test "returns the method string for a typed event struct" do
+      ev = %Events.Log.EntryAdded{}
+      assert Events.method_for(ev) == "log.entryAdded"
+    end
+
+    test "returns the carried method string for %Unknown{}" do
+      ev = %Events.Unknown{method: "vendor.custom", params: %{}}
+      assert Events.method_for(ev) == "vendor.custom"
+    end
+
+    test "works for every generated event struct" do
+      for mod <- Events.event_modules() do
+        assert is_binary(mod.method()), "expected #{inspect(mod)}.method/0 to return a string"
+        assert Events.method_for(struct(mod)) == mod.method()
+      end
+    end
+  end
+
+  describe "event_modules/0" do
+    test "returns a non-empty list of generated event struct modules" do
+      mods = Events.event_modules()
+      assert is_list(mods)
+      assert length(mods) > 0
+      assert Events.Log.EntryAdded in mods
+      assert Events.BrowsingContext.Load in mods
+      assert Events.Script.Message in mods
+    end
+  end
+
+  describe "guards" do
+    require Bibbidi.Events.Guards
+    import Bibbidi.Events.Guards
+
+    test "is_bibbidi_event/1 matches typed event structs" do
+      assert is_bibbidi_event(%Events.Log.EntryAdded{})
+      assert is_bibbidi_event(%Events.BrowsingContext.Load{})
+      assert is_bibbidi_event(%Events.Script.Message{})
+    end
+
+    test "is_bibbidi_event/1 matches %Unknown{}" do
+      assert is_bibbidi_event(%Events.Unknown{method: "vendor.x"})
+    end
+
+    test "is_bibbidi_event/1 rejects non-event terms" do
+      refute is_bibbidi_event(:not_an_event)
+      refute is_bibbidi_event(%{not: :a_struct})
+      refute is_bibbidi_event(123)
+      refute is_bibbidi_event(nil)
+    end
+
+    test "namespace-specific guards match only their namespace" do
+      assert is_bibbidi_log_event(%Events.Log.EntryAdded{})
+      refute is_bibbidi_log_event(%Events.BrowsingContext.Load{})
+      refute is_bibbidi_log_event(%Events.Unknown{method: "log.foo"})
+
+      assert is_bibbidi_browsing_context_event(%Events.BrowsingContext.Load{})
+      refute is_bibbidi_browsing_context_event(%Events.Log.EntryAdded{})
+    end
+
+    test "namespace-specific guards reject %Unknown{} even when method matches namespace" do
+      # Unknown is namespace-agnostic by design — the dispatch couldn't confirm
+      # a typed struct, so we don't pretend to know which namespace it belongs to.
+      refute is_bibbidi_log_event(%Events.Unknown{method: "log.entryAddedV2"})
     end
   end
 end

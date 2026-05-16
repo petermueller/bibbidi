@@ -16,4 +16,8 @@ defmodule Bibbidi.Events.BrowsingContext.UserPromptClosed do
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}
   defstruct [:context, :accepted, :type, :user_context, :user_text]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "browsingContext.userPromptClosed"
 end

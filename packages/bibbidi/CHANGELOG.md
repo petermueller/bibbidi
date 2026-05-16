@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.4.0 (unreleased)
+
+### Features
+
+- **`Bibbidi.Events.Unknown`** — fallback event struct for BiDi events outside the generated typed structs (vendor extensions, future spec versions, codegen drift). `Bibbidi.Events.parse/2` now always returns a struct: a typed one when the method is known, `%Bibbidi.Events.Unknown{method, params}` otherwise.
+- **`Bibbidi.Events.method_for/1`** — returns the BiDi method string for any parsed event struct. Generic 2-clause dispatch via per-struct `method/0`.
+- **`method/0` on every generated event struct** — each `Bibbidi.Events.<Namespace>.<Event>` module now exposes a `method/0` returning its BiDi method string.
+- **`Bibbidi.Events.event_modules/0`** — enumerates all generated event struct modules.
+- **`Bibbidi.Events.Guards`** — generated `defguard`s for matching event structs in `handle_info` and `with` clauses: `is_bibbidi_event/1` (matches any generated struct + `%Unknown{}`), plus per-namespace `is_bibbidi_log_event/1`, `is_bibbidi_browsing_context_event/1`, etc. Import with `import Bibbidi.Events.Guards`.
+
+### Changed
+
+- **`Bibbidi.Events.parse/2` return type is now `struct()`** — previously returned the raw `params` map for unknown events. Now returns `%Bibbidi.Events.Unknown{}` for those cases. Code that pattern-matched on a raw map fallback must update.
+- **`Bibbidi.Connection` event dispatch unconditionally extracts telemetry correlation** — the `is_struct(parsed)` branch is removed since `parse/2` always returns a struct now. `Bibbidi.Telemetry.Metadata.telemetry_metadata/1` handles non-derived structs (e.g. `%Unknown{}`) via the `Any` fallback returning `%{}`.
+
+### Codegen
+
+- `Bibbidi.CDDL.Generator` now emits `Bibbidi.Events` (top-level dispatcher), `Bibbidi.Events.Guards` (defguards), and `method/0` on every event struct. The previously hand-written `Bibbidi.Events` is replaced.
+
 ## v0.3.0
 
 ### Features

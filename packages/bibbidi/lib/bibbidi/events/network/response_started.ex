@@ -30,4 +30,8 @@ defmodule Bibbidi.Events.Network.ResponseStarted do
     :intercepts,
     :response
   ]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "network.responseStarted"
 end

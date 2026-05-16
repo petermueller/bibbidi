@@ -13,4 +13,8 @@ defmodule Bibbidi.Events.Script.Message do
   """
 
   defstruct [:channel, :data, :source]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "script.message"
 end

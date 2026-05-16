@@ -51,7 +51,9 @@ defmodule Bibbidi.Telemetry do
 
   **Metadata:**
   - `:event` — the BiDi event name (e.g., `"browsingContext.load"`)
-  - `:params` — parsed event struct (or raw map for unknown events)
+  - `:params` — parsed event struct. Always a struct: either a generated
+    `Bibbidi.Events.<Namespace>.<Event>` struct, or `%Bibbidi.Events.Unknown{}`
+    for events outside the codegen (vendor extensions, future spec versions).
   - `:connection` — the connection pid
   - `:context` — browsing context ID (when present in the event)
   - `:navigation` — navigation ID (when present in the event)
