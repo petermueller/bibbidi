@@ -13,7 +13,7 @@
 
 ### Breaking
 
-- **Event subscribers receive parsed event structs directly** — the legacy `{:bibbidi_event, method, params}` tuple is gone. The default `:wrap` is `Function.identity/1`. Pattern-match on the struct (`%Bibbidi.Events.BrowsingContext.Load{} = ev`), use `import Bibbidi.Events.Guards`, or restore the old shape with `wrap: fn ev -> {:bibbidi_event, Bibbidi.Events.method_for(ev), ev} end`.
+- **Event subscribers receive parsed event structs directly** — the legacy `{:bibbidi_event, method, params}` tuple is gone. Default `:wrap` is `Function.identity/1`. See [MIGRATING.md](MIGRATING.md) for upgrade patterns and the drop-in legacy-tuple wrapper.
 
 ### Changed
 
