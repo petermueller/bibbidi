@@ -154,7 +154,7 @@ defmodule Bibbidi.EventsTest do
     test "namespace-specific guards reject %Unknown{} even when method matches namespace" do
       # Unknown is namespace-agnostic by design — the dispatch couldn't confirm
       # a typed struct, so we don't pretend to know which namespace it belongs to.
-      refute is_bibbidi_log_event(%Events.Unknown{method: "log.entryAddedV2"})
+      refute is_bibbidi_log_event(%Events.Unknown{method: "log.entryAdded"})
     end
   end
 end
