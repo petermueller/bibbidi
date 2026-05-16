@@ -8,7 +8,7 @@ defmodule Bibbidi.Types.BrowsingContext.Locator do
   - `t:Bibbidi.Types.BrowsingContext.CssLocator.t/0`
   - `t:Bibbidi.Types.BrowsingContext.ContextLocator.t/0`
   - `t:Bibbidi.Types.BrowsingContext.InnerTextLocator.t/0`
-  - `t:Bibbidi.Types.BrowsingContext.XpathLocator.t/0`
+  - `t:Bibbidi.Types.BrowsingContext.XPathLocator.t/0`
   """
 
   @schema Zoi.union([
@@ -16,14 +16,14 @@ defmodule Bibbidi.Types.BrowsingContext.Locator do
             Zoi.lazy({Bibbidi.Types.BrowsingContext.CssLocator, :schema, []}),
             Zoi.lazy({Bibbidi.Types.BrowsingContext.ContextLocator, :schema, []}),
             Zoi.lazy({Bibbidi.Types.BrowsingContext.InnerTextLocator, :schema, []}),
-            Zoi.lazy({Bibbidi.Types.BrowsingContext.XpathLocator, :schema, []})
+            Zoi.lazy({Bibbidi.Types.BrowsingContext.XPathLocator, :schema, []})
           ])
   @type t ::
           Bibbidi.Types.BrowsingContext.AccessibilityLocator.t()
           | Bibbidi.Types.BrowsingContext.CssLocator.t()
           | Bibbidi.Types.BrowsingContext.ContextLocator.t()
           | Bibbidi.Types.BrowsingContext.InnerTextLocator.t()
-          | Bibbidi.Types.BrowsingContext.XpathLocator.t()
+          | Bibbidi.Types.BrowsingContext.XPathLocator.t()
 
   @doc "Returns the Zoi schema for this type."
   def schema, do: @schema
