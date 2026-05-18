@@ -362,18 +362,13 @@ Command struct moduledocs cross-reference these types with ExDoc links, so you c
 
 ## Workflow Builder
 
-Bibbidi includes an Igniter generator that scaffolds a Multi-style pipeline
-builder into your project:
-
-```bash
-mix bibbidi.gen.workflow
-```
-
-This generates an `Op` module for composing commands, an `Operation` record
-for tracking execution, and a sequential `Runner` — all yours to own and modify.
+If you want to compose multiple BiDi commands into a single pipeline with
+named results, error short-circuiting, and an audit trail, the
+[Op Workflow example](examples/op_workflow/op_workflow.md) is a standalone
+Mix project demonstrating one shape:
 
 ```elixir
-alias MyApp.Bibbidi.{Op, Runner}
+alias OpWorkflow.{Op, Runner}
 alias Bibbidi.Commands.BrowsingContext
 
 op =
@@ -386,8 +381,8 @@ op =
 {:ok, results, operation} = Runner.execute(conn, op)
 ```
 
-See the [Op Workflow example](examples/op_workflow/op_workflow.md) for a standalone
-Mix project demonstrating the pattern.
+It's copy-paste code (under ~250 lines), not a maintained module — own it,
+modify it, drop it for Runic/Reactor/your-own when you outgrow it.
 
 ## Livebook
 
