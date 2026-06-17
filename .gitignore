@@ -30,3 +30,6 @@ bibbidi-*.tar
 
 # A place to stick plans/prompts that won't get committed
 /plans/
+
+# Local escape hatch for the .claude/ Stop verification hook (per-checkout, not shared)
+.claude/.skip-verify
