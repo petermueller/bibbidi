@@ -25,7 +25,11 @@ defmodule Bibbidi.CDDL.Generator.DocsTest do
   # Writes a fixture into the kind subfolder the generator will look in:
   # PascalCase last segment → module/, snake_case → function/.
   defp write_example(tmp, name, body) do
-    sub = if String.match?(List.last(String.split(name, ".")), ~r/^[A-Z]/), do: "module", else: "function"
+    sub =
+      if String.match?(List.last(String.split(name, ".")), ~r/^[A-Z]/),
+        do: "module",
+        else: "function"
+
     dir = Path.join(tmp, sub)
     File.mkdir_p!(dir)
     File.write!(Path.join(dir, name <> ".md"), body)
