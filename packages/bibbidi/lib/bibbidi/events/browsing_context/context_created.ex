@@ -18,4 +18,8 @@ defmodule Bibbidi.Events.BrowsingContext.ContextCreated do
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}
   defstruct [:children, :client_window, :context, :original_opener, :url, :user_context, :parent]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "browsingContext.contextCreated"
 end

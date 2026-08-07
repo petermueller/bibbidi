@@ -32,6 +32,7 @@ defmodule Bibbidi.MixProject do
       extras: [
         "README.md",
         "CHANGELOG.md",
+        "MIGRATING.md",
         "examples/interactive_browser.livemd",
         {"examples/op_workflow/op_workflow.md", title: "Op Workflow Example"}
       ],
@@ -105,7 +106,8 @@ defmodule Bibbidi.MixProject do
 
   defp package do
     [
-      files: ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* usage-rules.md),
+      files:
+        ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* MIGRATING* usage-rules.md),
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,

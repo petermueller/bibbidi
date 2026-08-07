@@ -5,14 +5,14 @@ defmodule Bibbidi.Types.Network.BytesValue do
 
   One of:
   - `t:Bibbidi.Types.Network.StringValue.t/0`
-  - `t:Bibbidi.Types.Network.Base64value.t/0`
+  - `t:Bibbidi.Types.Network.Base64Value.t/0`
   """
 
   @schema Zoi.union([
             Zoi.lazy({Bibbidi.Types.Network.StringValue, :schema, []}),
-            Zoi.lazy({Bibbidi.Types.Network.Base64value, :schema, []})
+            Zoi.lazy({Bibbidi.Types.Network.Base64Value, :schema, []})
           ])
-  @type t :: Bibbidi.Types.Network.StringValue.t() | Bibbidi.Types.Network.Base64value.t()
+  @type t :: Bibbidi.Types.Network.StringValue.t() | Bibbidi.Types.Network.Base64Value.t()
 
   @doc "Returns the Zoi schema for this type."
   def schema, do: @schema

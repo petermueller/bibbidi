@@ -19,7 +19,7 @@ needs to talk BiDi to a browser.
 ```elixir
 def deps do
   [
-    {:bibbidi, "~> 0.3.0"}
+    {:bibbidi, "~> 0.4.0"}
   ]
 end
 ```
@@ -239,6 +239,7 @@ end
 alias Bibbidi.Connection
 alias Bibbidi.Commands.BrowsingContext.{GetTree, Navigate}
 alias Bibbidi.Commands.Session.Subscribe
+alias Bibbidi.Events.BrowsingContext.Load
 
 {:ok, conn} = Connection.start_link(url: "ws://localhost:9222/session")
 {:ok, _} = Bibbidi.Session.new(conn)
@@ -255,10 +256,11 @@ context = hd(tree["contexts"])["context"]
 # Navigate — this will trigger a load event
 {:ok, _} = Connection.execute(conn, %Navigate{context: context, url: "https://example.com"})
 
-# Receive the event
+# Receive the parsed event struct directly. See `Bibbidi.Events.Guards` for
+# category guards like `is_bibbidi_event/1` and `is_bibbidi_browsing_context_event/1`,
+# or `Bibbidi.Connection.subscribe/4`'s `:wrap` opt to re-shape the message.
 receive do
-  {:bibbidi_event, "browsingContext.load", params} ->
-    IO.puts("Page loaded: #{params["url"]}")
+  %Load{url: url} -> IO.puts("Page loaded: #{url}")
 after
   10_000 -> IO.puts("Timeout waiting for load event")
 end
@@ -282,10 +284,9 @@ context = hd(tree["contexts"])["context"]
 # Navigate — this will trigger a load event
 {:ok, _} = Bibbidi.Commands.BrowsingContext.navigate(conn, context, "https://example.com")
 
-# Receive the event
+# Receive the parsed event struct directly.
 receive do
-  {:bibbidi_event, "browsingContext.load", params} ->
-    IO.puts("Page loaded: #{params["url"]}")
+  %Bibbidi.Events.BrowsingContext.Load{url: url} -> IO.puts("Page loaded: #{url}")
 after
   10_000 -> IO.puts("Timeout waiting for load event")
 end
@@ -361,18 +362,13 @@ Command struct moduledocs cross-reference these types with ExDoc links, so you c
 
 ## Workflow Builder
 
-Bibbidi includes an Igniter generator that scaffolds a Multi-style pipeline
-builder into your project:
-
-```bash
-mix bibbidi.gen.workflow
-```
-
-This generates an `Op` module for composing commands, an `Operation` record
-for tracking execution, and a sequential `Runner` — all yours to own and modify.
+If you want to compose multiple BiDi commands into a single pipeline with
+named results, error short-circuiting, and an audit trail, the
+[Op Workflow example](examples/op_workflow/op_workflow.md) is a standalone
+Mix project demonstrating one shape:
 
 ```elixir
-alias MyApp.Bibbidi.{Op, Runner}
+alias OpWorkflow.{Op, Runner}
 alias Bibbidi.Commands.BrowsingContext
 
 op =
@@ -385,8 +381,8 @@ op =
 {:ok, results, operation} = Runner.execute(conn, op)
 ```
 
-See the [Op Workflow example](examples/op_workflow/op_workflow.md) for a standalone
-Mix project demonstrating the pattern.
+It's copy-paste code (under ~250 lines), not a maintained module — own it,
+modify it, drop it for Runic/Reactor/your-own when you outgrow it.
 
 ## Livebook
 

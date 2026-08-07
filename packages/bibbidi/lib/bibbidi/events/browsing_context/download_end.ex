@@ -18,4 +18,8 @@ defmodule Bibbidi.Events.BrowsingContext.DownloadEnd do
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context, :navigation]}
   defstruct [:status, :context, :navigation, :timestamp, :url, :user_context, :filepath]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "browsingContext.downloadEnd"
 end

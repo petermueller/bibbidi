@@ -11,7 +11,37 @@ defmodule Bibbidi.Connection do
       {:ok, result} = Bibbidi.Connection.send_command(conn, "session.status", %{})
 
       :ok = Bibbidi.Connection.subscribe(conn, "browsingContext.load")
-      # Caller receives: {:bibbidi_event, "browsingContext.load", params}
+      # Caller receives the parsed event struct directly:
+      #   %Bibbidi.Events.BrowsingContext.Load{context: ..., url: ...}
+
+  ## Event-message shape
+
+  By default subscribers receive the raw parsed struct (see `Bibbidi.Events.parse/2`).
+  Pattern-match on the struct directly or use `Bibbidi.Events.Guards` for category
+  predicates (`is_bibbidi_event/1`, `is_bibbidi_log_event/1`, ...).
+
+  Override per-subscribe with `wrap:` to re-shape each event before delivery.
+  Both a 1-arity function and an `{module, function, extra_args}` tuple are
+  accepted; the tuple form prepends the event as the first argument before
+  the configured extras:
+
+      Bibbidi.Connection.subscribe(conn, "log.entryAdded", self(),
+        wrap: fn ev -> {:my_app, ev} end)
+      # Receives: {:my_app, %Bibbidi.Events.Log.EntryAdded{...}}
+
+      Bibbidi.Connection.subscribe(conn, "log.entryAdded", self(),
+        wrap: {MyApp.Events, :wrap, [:my_app]})
+      # Calls MyApp.Events.wrap(event, :my_app); receives that return value.
+
+  Or set an app-wide default in your config. Because function captures don't
+  survive serialisation through `config.exs` / `runtime.exs`, this must be an
+  MFA tuple:
+
+      config :bibbidi, default_event_wrapper: {MyApp.Events, :wrap, []}
+
+  Resolution order: per-subscribe `:wrap` -> `:default_event_wrapper` env ->
+  `{Function, :identity, []}`. The wrap is applied in this GenServer's process
+  before `send/2`, so keep it cheap.
   """
 
   use GenServer
@@ -116,14 +146,31 @@ defmodule Bibbidi.Connection do
     end)
   end
 
+  @typedoc """
+  Shape accepted for the `:wrap` subscribe option (and the
+  `:default_event_wrapper` application env).
+
+  Either a 1-arity function, or an `{module, function, args}` tuple invoked
+  with the event prepended to `args` — i.e. `apply(mod, fun, [event | args])`.
+  """
+  @type wrap_spec :: (struct() -> term()) | {module(), atom(), [term()]}
+
   @doc """
   Subscribes the given process (default: caller) to events matching `method`.
 
-  The subscriber receives messages as `{:bibbidi_event, method, params}`.
+  The subscriber receives the parsed event struct (see `Bibbidi.Events.parse/2`),
+  optionally re-shaped by a wrap. See module doc for the resolution order and
+  trade-offs.
+
+  ## Options
+
+  - `:wrap` — a `t:wrap_spec/0`. Defaults to the `:default_event_wrapper`
+    Application env or `{Function, :identity, []}`.
   """
-  @spec subscribe(GenServer.server(), String.t(), pid()) :: :ok
-  def subscribe(conn, method, pid \\ self()) do
-    GenServer.call(conn, {:subscribe, method, pid})
+  @spec subscribe(GenServer.server(), String.t(), pid(), [{:wrap, wrap_spec()}]) :: :ok
+  def subscribe(conn, method, pid \\ self(), opts \\ []) do
+    wrap = resolve_wrap(opts)
+    GenServer.call(conn, {:subscribe, method, pid, wrap})
   end
 
   @doc """
@@ -132,6 +179,27 @@ defmodule Bibbidi.Connection do
   @spec unsubscribe(GenServer.server(), String.t(), pid()) :: :ok
   def unsubscribe(conn, method, pid \\ self()) do
     GenServer.call(conn, {:unsubscribe, method, pid})
+  end
+
+  # Resolves the wrap function for a subscribe call.
+  # Per-subscribe `:wrap` > `:default_event_wrapper` env > {Function, :identity, []}.
+  defp resolve_wrap(opts) do
+    case Keyword.get(opts, :wrap) do
+      nil ->
+        :bibbidi
+        |> Application.get_env(:default_event_wrapper, {Function, :identity, []})
+        |> to_wrap_fn()
+
+      spec ->
+        to_wrap_fn(spec)
+    end
+  end
+
+  defp to_wrap_fn(fun) when is_function(fun, 1), do: fun
+
+  defp to_wrap_fn({mod, fun, args})
+       when is_atom(mod) and is_atom(fun) and is_list(args) do
+    fn event -> apply(mod, fun, [event | args]) end
   end
 
   @doc """
@@ -193,7 +261,7 @@ defmodule Bibbidi.Connection do
     end
   end
 
-  def handle_call({:subscribe, method, pid}, _from, state) do
+  def handle_call({:subscribe, method, pid, wrap}, _from, state) do
     monitored =
       if MapSet.member?(state.monitored, pid) do
         state.monitored
@@ -202,7 +270,11 @@ defmodule Bibbidi.Connection do
         MapSet.put(state.monitored, pid)
       end
 
-    subs = Map.update(state.subscribers, method, MapSet.new([pid]), &MapSet.put(&1, pid))
+    # A re-subscribe with a different wrap fn replaces the previous one for
+    # this (method, pid) pair.
+    subs =
+      Map.update(state.subscribers, method, %{pid => wrap}, &Map.put(&1, pid, wrap))
+
     {:reply, :ok, %{state | subscribers: subs, monitored: monitored}}
   end
 
@@ -212,12 +284,12 @@ defmodule Bibbidi.Connection do
         nil ->
           state.subscribers
 
-        set ->
-          new_set = MapSet.delete(set, pid)
+        pid_to_wrap ->
+          new_map = Map.delete(pid_to_wrap, pid)
 
-          if MapSet.size(new_set) == 0,
+          if map_size(new_map) == 0,
             do: Map.delete(state.subscribers, method),
-            else: Map.put(state.subscribers, method, new_set)
+            else: Map.put(state.subscribers, method, new_map)
       end
 
     {:reply, :ok, %{state | subscribers: subs}}
@@ -237,8 +309,8 @@ defmodule Bibbidi.Connection do
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     subs =
       state.subscribers
-      |> Enum.map(fn {method, set} -> {method, MapSet.delete(set, pid)} end)
-      |> Enum.reject(fn {_method, set} -> MapSet.size(set) == 0 end)
+      |> Enum.map(fn {method, pid_to_wrap} -> {method, Map.delete(pid_to_wrap, pid)} end)
+      |> Enum.reject(fn {_method, pid_to_wrap} -> map_size(pid_to_wrap) == 0 end)
       |> Map.new()
 
     {:noreply, %{state | subscribers: subs, monitored: MapSet.delete(state.monitored, pid)}}
@@ -318,12 +390,11 @@ defmodule Bibbidi.Connection do
   end
 
   defp dispatch_event(state, method, params) do
+    # Bibbidi.Events.parse/2 always returns a struct (either a typed
+    # event or %Bibbidi.Events.Unknown{}); telemetry_metadata/1 handles
+    # non-derived structs (like Unknown) gracefully by returning %{}.
     parsed = Bibbidi.Events.parse(method, params)
-
-    correlation =
-      if is_struct(parsed),
-        do: Bibbidi.Telemetry.Metadata.telemetry_metadata(parsed),
-        else: %{}
+    correlation = Bibbidi.Telemetry.Metadata.telemetry_metadata(parsed)
 
     :telemetry.execute(
       [:bibbidi, :event, :received],
@@ -332,8 +403,11 @@ defmodule Bibbidi.Connection do
     )
 
     case Map.get(state.subscribers, method) do
-      nil -> :ok
-      pids -> Enum.each(pids, &send(&1, {:bibbidi_event, method, parsed}))
+      nil ->
+        :ok
+
+      pid_to_wrap ->
+        Enum.each(pid_to_wrap, fn {pid, wrap} -> send(pid, wrap.(parsed)) end)
     end
   end
 end
