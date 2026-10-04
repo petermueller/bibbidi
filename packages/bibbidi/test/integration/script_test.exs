@@ -20,9 +20,12 @@ defmodule Bibbidi.Integration.ScriptTest do
       assert result["result"]["value"] == 7
     end
 
-    test "get realms", %{conn: conn} do
-      {:ok, result} = Script.get_realms(conn)
+    # Scoped to the test's own context: Firefox 157's unfiltered script.getRealms
+    # throws "TypeError: realm is null" when any open context has no realm yet.
+    test "get realms", %{conn: conn, context: context} do
+      {:ok, result} = Script.get_realms(conn, context: context)
       assert is_list(result["realms"])
+      assert result["realms"] != []
     end
   end
 
@@ -76,9 +79,10 @@ defmodule Bibbidi.Integration.ScriptTest do
       assert result["result"]["value"] == 99
     end
 
-    test "get realms", %{conn: conn} do
-      {:ok, result} = Connection.execute(conn, %GetRealms{})
+    test "get realms", %{conn: conn, context: context} do
+      {:ok, result} = Connection.execute(conn, %GetRealms{context: context})
       assert is_list(result["realms"])
+      assert result["realms"] != []
     end
   end
 end
