@@ -35,16 +35,18 @@ Adjacent work that also landed: `Macro.underscore/camelize` codegen naming with 
 
 ### Remaining work for 0.4
 
-1. **`mix bibbidi.events.verify_guards` task** — codegen-drift catcher (test plan #7). Not built. See "Remaining: verify_guards" below.
+1. ~~**`mix bibbidi.events.verify_guards` task**~~ — shipped as an ExUnit test instead (`test/bibbidi/events/guards_test.exs`). See "Done: verify_guards" below.
 2. **`RemoteValue.unwrap/1` helper** — placement undecided. See "Remaining: RemoteValue.unwrap/1" below.
 3. **Incorporate `claude/gen-examples-registry`** — a parallel branch off `main` adding a codegen example registry. See "Remaining: incorporate gen-examples-registry" below.
 4. **Version bump** `mix.exs` `0.3.0` → `0.4.0` — trivial, lands at release time.
 
-### Remaining: verify_guards
+### Done: verify_guards (as an ExUnit test)
 
-Ship `mix bibbidi.events.verify_guards` (under `dev/mix/tasks/`, maintainer-only like the rest of `dev/`). It loads `Bibbidi.Events.event_modules/0` and asserts every module is matched by `Bibbidi.Events.Guards.is_bibbidi_event/1` AND by exactly one per-namespace guard. Fails loudly (non-zero exit) if a generated event slips through — catches the case where someone adds an event namespace but the `Guards` generator wasn't re-run. Should be runnable in CI and called out in the `regen-codegen` skill as a post-regen check.
+Shipped as `test/bibbidi/events/guards_test.exs` rather than a Mix task — it runs with every `mix test`, so it needs no separate CI wiring and the `regen-codegen` skill's existing "run `mix test`" step covers it.
 
-Open detail: pure runtime check (build a struct per module, test the guard) vs. static check (compare the `event_modules/0` list against parsed `Guards` clauses). Runtime is simpler and catches real breakage; prefer it unless struct construction has surprises.
+It does NOT trust `Bibbidi.Events.event_modules/0` as the source of truth (that list is itself generated and could drift). Instead it discovers event struct modules from the compiled app (`:application.get_key(:bibbidi, :modules)`, filtered to `Bibbidi.Events.*` modules that export both `__struct__/0` and `method/0`) and the namespace guards from `Guards.__info__(:macros)`. It then asserts, for every discovered struct: it appears in `event_modules/0`; `Events.parse/2` dispatches its `method/0` to it; `is_bibbidi_event/1` matches it; exactly one namespace guard matches it, and that guard is the one derived from the module's namespace segment. Plus: every namespace guard matches at least one struct (stale-namespace check), and no namespace guard matches `%Unknown{}`.
+
+Verified by mutation: dropping an un-generated `Bibbidi.Events.Vendor.ZzzDriftProbe` into `lib/` fails 4 of the 7 tests with messages naming the module and the missing `is_bibbidi_vendor_event/1`.
 
 ### Remaining: RemoteValue.unwrap/1 — where/how
 

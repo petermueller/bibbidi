@@ -24,7 +24,7 @@ mix bibbidi.gen --yes
 # 3. Eyeball the diff
 git status
 
-# 4. Verify nothing broke
+# 4. Verify nothing broke (test/bibbidi/events/guards_test.exs catches event/guard drift)
 mix test
 ```
 
