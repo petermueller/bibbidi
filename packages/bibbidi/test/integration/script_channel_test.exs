@@ -75,7 +75,7 @@ defmodule Bibbidi.Integration.ScriptChannelTest do
       assert data["type"] == "object"
       assert is_binary(data["handle"]), "expected a stable handle on the RemoteValue"
       assert RemoteValue.handle(data) == data["handle"]
-      assert RemoteValue.ref(data) == %{"handle" => data["handle"]}
+      assert RemoteValue.ref!(data) == %{"handle" => data["handle"]}
     end
   end
 end

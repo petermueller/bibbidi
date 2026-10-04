@@ -131,26 +131,77 @@ defmodule Bibbidi.RemoteValueTest do
     end
   end
 
-  describe "ref/1, handle/1, shared_id/1" do
+  describe "ref!/1, fetch_ref/1, handle/1, shared_id/1" do
     test "node prefers sharedId" do
       node = %{"type" => "node", "sharedId" => "n1", "handle" => "h1"}
-      assert RemoteValue.ref(node) == %{"sharedId" => "n1"}
+      assert RemoteValue.ref!(node) == %{"sharedId" => "n1"}
+      assert RemoteValue.fetch_ref(node) == {:ok, %{"sharedId" => "n1"}}
       assert RemoteValue.shared_id(node) == "n1"
       assert RemoteValue.handle(node) == "h1"
     end
 
     test "object with a handle" do
       obj = %{"type" => "object", "handle" => "h1", "value" => []}
-      assert RemoteValue.ref(obj) == %{"handle" => "h1"}
+      assert RemoteValue.ref!(obj) == %{"handle" => "h1"}
+      assert RemoteValue.fetch_ref(obj) == {:ok, %{"handle" => "h1"}}
       assert RemoteValue.handle(obj) == "h1"
       assert RemoteValue.shared_id(obj) == nil
     end
 
-    test "no identity yields nil everywhere" do
+    test "no identity: ref! raises naming the fix, fetch_ref returns :error, accessors nil" do
       obj = %{"type" => "object", "value" => []}
-      assert RemoteValue.ref(obj) == nil
+
+      assert_raise ArgumentError, ~r/result_ownership: "root"/, fn -> RemoteValue.ref!(obj) end
+      assert RemoteValue.fetch_ref(obj) == :error
       assert RemoteValue.handle(obj) == nil
       assert RemoteValue.shared_id(obj) == nil
+    end
+
+    test "a nil handle does not count as identity" do
+      obj = %{"type" => "object", "handle" => nil, "value" => []}
+      assert RemoteValue.fetch_ref(obj) == :error
+      assert RemoteValue.handle(obj) == nil
+    end
+
+    test "ref! on a non-map raises" do
+      assert_raise ArgumentError, ~r/expected a RemoteValue map/, fn ->
+        RemoteValue.ref!(:nope)
+      end
+    end
+  end
+
+  describe "Guards" do
+    import Bibbidi.RemoteValue.Guards
+
+    test "is_shared_id/1 and is_handle/1 require a string value" do
+      assert is_shared_id(%{"sharedId" => "n1"})
+      refute is_shared_id(%{"sharedId" => nil})
+      refute is_shared_id(%{"handle" => "h1"})
+
+      assert is_handle(%{"handle" => "h1"})
+      refute is_handle(%{"handle" => 1})
+      refute is_handle(%{"sharedId" => "n1"})
+    end
+
+    test "is_ref/1 is the union, and rejects non-maps" do
+      assert is_ref(%{"sharedId" => "n1"})
+      assert is_ref(%{"handle" => "h1"})
+      refute is_ref(%{"type" => "object", "value" => []})
+      refute is_ref(nil)
+      refute is_ref("h1")
+      refute is_ref([])
+    end
+
+    test "guards work in function heads" do
+      classify = fn
+        v when is_shared_id(v) -> :node
+        v when is_handle(v) -> :object
+        _ -> :plain
+      end
+
+      assert classify.(%{"type" => "node", "sharedId" => "n1"}) == :node
+      assert classify.(%{"type" => "object", "handle" => "h1"}) == :object
+      assert classify.(%{"type" => "string", "value" => "x"}) == :plain
     end
   end
 end

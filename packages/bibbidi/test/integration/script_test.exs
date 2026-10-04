@@ -118,7 +118,7 @@ defmodule Bibbidi.Integration.ScriptTest do
 
       assert node["type"] == "node"
       assert is_binary(RemoteValue.shared_id(node))
-      assert RemoteValue.ref(node) == %{"sharedId" => RemoteValue.shared_id(node)}
+      assert RemoteValue.ref!(node) == %{"sharedId" => RemoteValue.shared_id(node)}
       # to_term/1 does not flatten nodes
       assert RemoteValue.to_term(node) == node
 
@@ -128,7 +128,7 @@ defmodule Bibbidi.Integration.ScriptTest do
           "function(el) { return el.textContent }",
           false,
           %{context: context},
-          arguments: [RemoteValue.ref(node)]
+          arguments: [RemoteValue.ref!(node)]
         )
 
       assert RemoteValue.to_term(text) == "hello"
@@ -142,7 +142,7 @@ defmodule Bibbidi.Integration.ScriptTest do
         )
 
       assert is_binary(RemoteValue.handle(counter))
-      assert RemoteValue.ref(counter) == %{"handle" => RemoteValue.handle(counter)}
+      assert RemoteValue.ref!(counter) == %{"handle" => RemoteValue.handle(counter)}
 
       for expected <- [1, 2] do
         {:ok, %{"result" => n}} =
@@ -151,7 +151,7 @@ defmodule Bibbidi.Integration.ScriptTest do
             "function() { return this.bump() }",
             false,
             %{context: context},
-            this: RemoteValue.ref(counter)
+            this: RemoteValue.ref!(counter)
           )
 
         assert RemoteValue.to_term(n) == expected

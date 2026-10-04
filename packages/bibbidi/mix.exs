@@ -52,6 +52,7 @@ defmodule Bibbidi.MixProject do
           Bibbidi.Encodable,
           Bibbidi.Keys,
           Bibbidi.RemoteValue,
+          Bibbidi.RemoteValue.Guards,
           Bibbidi.Telemetry,
           Bibbidi.Telemetry.Metadata
         ],

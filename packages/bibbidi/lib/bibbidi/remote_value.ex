@@ -13,8 +13,10 @@ defmodule Bibbidi.RemoteValue do
 
   `to_term/1` converts the data half into plain Elixir terms. It is lossy by
   design: handles and shared ids are dropped, so keep the original map when
-  you need to send the value back to the browser. `ref/1`, `handle/1` and
-  `shared_id/1` read the identity half.
+  you need to send the value back to the browser. `ref!/1` and `fetch_ref/1`
+  turn the identity half into the reference the browser accepts back;
+  `handle/1` and `shared_id/1` read the bare ids. `Bibbidi.RemoteValue.Guards`
+  has `is_ref/1`, `is_handle/1` and `is_shared_id/1` for function heads.
 
   ## Conversions performed by `to_term/1`
 
@@ -51,6 +53,8 @@ defmodule Bibbidi.RemoteValue do
   for nodes, `script.RemoteObjectReference` otherwise.
   """
   @type reference_map :: %{String.t() => String.t()}
+
+  import Bibbidi.RemoteValue.Guards
 
   @doc """
   Converts a RemoteValue's data into an Elixir term. See the module doc for the
@@ -97,37 +101,59 @@ defmodule Bibbidi.RemoteValue do
   @doc """
   Returns the reference the browser accepts in place of this value — as a
   `script.callFunction` argument or `this`, or as an `input.performActions`
-  pointer origin element — or `nil` when the value carries no identity.
+  pointer origin element. Prefers `"sharedId"` (nodes; valid across realms)
+  over `"handle"`.
 
-  Prefers `"sharedId"` (nodes; valid across realms) over `"handle"`.
+  Raises `ArgumentError` when the value carries no identity. A RemoteValue
+  without a handle is still a valid `script.LocalValue`, so passing the raw
+  map back would silently deserialise as a *copy*; raising here surfaces the
+  usual cause — the producing call did not ask for `result_ownership: "root"`
+  (or the channel for `ownership: "root"`).
 
-      iex> Bibbidi.RemoteValue.ref(%{"type" => "node", "sharedId" => "n1", "value" => %{}})
+      iex> Bibbidi.RemoteValue.ref!(%{"type" => "node", "sharedId" => "n1", "value" => %{}})
       %{"sharedId" => "n1"}
-      iex> Bibbidi.RemoteValue.ref(%{"type" => "object", "handle" => "h1"})
+      iex> Bibbidi.RemoteValue.ref!(%{"type" => "object", "handle" => "h1"})
       %{"handle" => "h1"}
-      iex> Bibbidi.RemoteValue.ref(%{"type" => "object", "value" => []})
-      nil
-
-  A `nil` from a value you expected to reference usually means the call that
-  produced it did not ask for `result_ownership: "root"`.
   """
-  @spec ref(t()) :: reference_map() | nil
-  def ref(%{"sharedId" => shared_id}) when is_binary(shared_id), do: %{"sharedId" => shared_id}
-  def ref(%{"handle" => handle}) when is_binary(handle), do: %{"handle" => handle}
-  def ref(%{}), do: nil
+  @spec ref!(t()) :: reference_map()
+  def ref!(value) when is_shared_id(value), do: %{"sharedId" => value["sharedId"]}
+  def ref!(value) when is_handle(value), do: %{"handle" => value["handle"]}
+
+  def ref!(%{"type" => type}) do
+    raise ArgumentError,
+          "#{type} RemoteValue carries no handle or sharedId, so there is nothing to " <>
+            "reference. Request result_ownership: \"root\" on script.evaluate/callFunction " <>
+            "(or ownership: \"root\" on the channel) to receive a handle."
+  end
+
+  def ref!(other) do
+    raise ArgumentError, "expected a RemoteValue map, got: #{inspect(other)}"
+  end
+
+  @doc """
+  Like `ref!/1`, returning `{:ok, reference}` or `:error` instead of raising.
+
+      iex> Bibbidi.RemoteValue.fetch_ref(%{"type" => "object", "handle" => "h1"})
+      {:ok, %{"handle" => "h1"}}
+      iex> Bibbidi.RemoteValue.fetch_ref(%{"type" => "object", "value" => []})
+      :error
+  """
+  @spec fetch_ref(t()) :: {:ok, reference_map()} | :error
+  def fetch_ref(value) when is_ref(value), do: {:ok, ref!(value)}
+  def fetch_ref(_value), do: :error
 
   @doc """
   Returns the bare `script.Handle` string, or `nil`.
 
   This is the form `script.disown` takes (`handles: [handle]`); everywhere
-  else the browser wants the map form from `ref/1`.
+  else the browser wants the map form from `ref!/1`.
   """
   @spec handle(t()) :: String.t() | nil
-  def handle(%{"handle" => handle}) when is_binary(handle), do: handle
-  def handle(%{}), do: nil
+  def handle(value) when is_handle(value), do: value["handle"]
+  def handle(value) when is_map(value), do: nil
 
   @doc "Returns the bare `script.SharedId` string of a node value, or `nil`."
   @spec shared_id(t()) :: String.t() | nil
-  def shared_id(%{"sharedId" => shared_id}) when is_binary(shared_id), do: shared_id
-  def shared_id(%{}), do: nil
+  def shared_id(value) when is_shared_id(value), do: value["sharedId"]
+  def shared_id(value) when is_map(value), do: nil
 end

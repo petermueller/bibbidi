@@ -53,7 +53,7 @@ Verified by mutation: dropping an un-generated `Bibbidi.Events.Vendor.ZzzDriftPr
 Shipped as `Bibbidi.RemoteValue` (option A below), renamed to avoid the `wrap`/`unwrap` clash with the subscriber `:wrap` option:
 
 - `to_term/1` — data half → Elixir term. Lossy by design (identity dropped). Nodes, windows, value-less types, depth-truncated values and cyclic back-references are returned as the raw map so a handle/sharedId stays reachable.
-- `ref/1` — identity half → the reference map the browser accepts back (`%{"sharedId" => _}` for nodes, else `%{"handle" => _}`, else `nil`).
+- `ref!/1` / `fetch_ref/1` — identity half → the reference map the browser accepts back (`%{"sharedId" => _}` for nodes, else `%{"handle" => _}`). `ref!/1` raises on a value with no identity: a handle-less RemoteValue is a valid LocalValue and would otherwise deserialise as a silent copy. `Bibbidi.RemoteValue.Guards` exposes `is_ref/1`, `is_handle/1`, `is_shared_id/1`.
 - `handle/1`, `shared_id/1` — bare ids. Needed because `script.disown` takes `handles: [Handle]` (bare strings) while every other site takes the map form.
 
 Channel test (Slice E) now asserts the primitive case through `to_term/1` and keeps the raw-map assertion for the handle case. `script_test.exs` adds end-to-end coverage: nested `to_term`, a node `ref` passed back as a `callFunction` argument, and a root-owned object driven via `this:` then disowned.
