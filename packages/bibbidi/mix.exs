@@ -51,6 +51,7 @@ defmodule Bibbidi.MixProject do
           Bibbidi.Session,
           Bibbidi.Encodable,
           Bibbidi.Keys,
+          Bibbidi.RemoteValue,
           Bibbidi.Telemetry,
           Bibbidi.Telemetry.Metadata
         ],

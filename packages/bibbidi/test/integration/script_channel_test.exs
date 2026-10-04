@@ -3,6 +3,7 @@ defmodule Bibbidi.Integration.ScriptChannelTest do
 
   alias Bibbidi.Commands.Script.AddPreloadScript
   alias Bibbidi.Events.Script.Message
+  alias Bibbidi.RemoteValue
 
   describe "script.message channel mechanism" do
     test "preload script can emit to a registered channel", %{conn: conn, context: context} do
@@ -33,12 +34,7 @@ defmodule Bibbidi.Integration.ScriptChannelTest do
       # `data` is a RemoteValue; for the primitive object literal above this
       # serialises as {type: "object", value: [["hello", {...}], ["n", {...}]]}.
       assert data["type"] == "object"
-
-      pairs = Map.new(data["value"], fn [k, v] -> {k, v} end)
-      assert pairs["hello"]["type"] == "string"
-      assert pairs["hello"]["value"] == "world"
-      assert pairs["n"]["type"] == "number"
-      assert pairs["n"]["value"] == 42
+      assert RemoteValue.to_term(data) == %{"hello" => "world", "n" => 42}
 
       # `source` carries the realm/context the message came from.
       assert source["context"] == context
@@ -75,8 +71,11 @@ defmodule Bibbidi.Integration.ScriptChannelTest do
       assert_receive %Message{channel: ^channel_id, data: data}, 5_000
 
       # With ownership: "root", the emitted object carries a server-side handle.
+      # Keep the raw-map assertion: to_term/1 drops identity by design.
       assert data["type"] == "object"
       assert is_binary(data["handle"]), "expected a stable handle on the RemoteValue"
+      assert RemoteValue.handle(data) == data["handle"]
+      assert RemoteValue.ref(data) == %{"handle" => data["handle"]}
     end
   end
 end

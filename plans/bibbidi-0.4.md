@@ -36,7 +36,7 @@ Adjacent work that also landed: `Macro.underscore/camelize` codegen naming with 
 ### Remaining work for 0.4
 
 1. ~~**`mix bibbidi.events.verify_guards` task**~~ — shipped as an ExUnit test instead (`test/bibbidi/events/guards_test.exs`). See "Done: verify_guards" below.
-2. **`RemoteValue.unwrap/1` helper** — placement undecided. See "Remaining: RemoteValue.unwrap/1" below.
+2. ~~**`RemoteValue.unwrap/1` helper**~~ — shipped as `Bibbidi.RemoteValue` (option A) with `to_term/1`, `ref/1`, `handle/1`, `shared_id/1`. See "Done: RemoteValue" below.
 3. **Incorporate `claude/gen-examples-registry`** — a parallel branch off `main` adding a codegen example registry. See "Remaining: incorporate gen-examples-registry" below.
 4. **Version bump** `mix.exs` `0.3.0` → `0.4.0` — trivial, lands at release time.
 
@@ -48,7 +48,18 @@ It does NOT trust `Bibbidi.Events.event_modules/0` as the source of truth (that 
 
 Verified by mutation: dropping an un-generated `Bibbidi.Events.Vendor.ZzzDriftProbe` into `lib/` fails 4 of the 7 tests with messages naming the module and the missing `is_bibbidi_vendor_event/1`.
 
-### Remaining: RemoteValue.unwrap/1 — where/how
+### Done: RemoteValue (was "unwrap/1 — where/how")
+
+Shipped as `Bibbidi.RemoteValue` (option A below), renamed to avoid the `wrap`/`unwrap` clash with the subscriber `:wrap` option:
+
+- `to_term/1` — data half → Elixir term. Lossy by design (identity dropped). Nodes, windows, value-less types, depth-truncated values and cyclic back-references are returned as the raw map so a handle/sharedId stays reachable.
+- `ref/1` — identity half → the reference map the browser accepts back (`%{"sharedId" => _}` for nodes, else `%{"handle" => _}`, else `nil`).
+- `handle/1`, `shared_id/1` — bare ids. Needed because `script.disown` takes `handles: [Handle]` (bare strings) while every other site takes the map form.
+
+Channel test (Slice E) now asserts the primitive case through `to_term/1` and keeps the raw-map assertion for the handle case. `script_test.exs` adds end-to-end coverage: nested `to_term`, a node `ref` passed back as a `callFunction` argument, and a root-owned object driven via `this:` then disowned.
+
+Original discussion follows.
+
 
 Decision deferred to discussion. The Slice E integration test currently reads the raw RemoteValue map directly (`data["type"]`, `data["value"]`, `data["handle"]`) — no helper exists yet. Options for where the unwrap logic lives:
 
