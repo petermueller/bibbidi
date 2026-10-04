@@ -10,7 +10,7 @@ defmodule Bibbidi.Types.BrowsingContext.AccessibilityLocator do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("accessibility"),
             value:
               Zoi.map(%{
                 name: Zoi.string() |> Zoi.optional(),

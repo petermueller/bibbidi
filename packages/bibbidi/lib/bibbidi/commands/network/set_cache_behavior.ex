@@ -13,7 +13,7 @@ defmodule Bibbidi.Commands.Network.SetCacheBehavior do
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            cache_behavior: Zoi.union([Zoi.string(), Zoi.string()]),
+            cache_behavior: Zoi.union([Zoi.literal("default"), Zoi.literal("bypass")]),
             contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })

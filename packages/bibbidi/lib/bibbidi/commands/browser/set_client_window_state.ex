@@ -18,7 +18,13 @@ defmodule Bibbidi.Commands.Browser.SetClientWindowState do
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             client_window: Bibbidi.Types.Browser.ClientWindow.schema(),
-            state: Zoi.union([Zoi.string(), Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+            state:
+              Zoi.union([
+                Zoi.literal("fullscreen"),
+                Zoi.literal("maximized"),
+                Zoi.literal("minimized")
+              ])
+              |> Zoi.optional(),
             width: Bibbidi.Types.JsUint.schema() |> Zoi.optional(),
             height: Bibbidi.Types.JsUint.schema() |> Zoi.optional(),
             x: Bibbidi.Types.JsInt.schema() |> Zoi.optional(),
@@ -26,7 +32,13 @@ defmodule Bibbidi.Commands.Browser.SetClientWindowState do
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
-                 state: Zoi.union([Zoi.string(), Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+                 state:
+                   Zoi.union([
+                     Zoi.literal("fullscreen"),
+                     Zoi.literal("maximized"),
+                     Zoi.literal("minimized")
+                   ])
+                   |> Zoi.optional(),
                  width: Zoi.any() |> Zoi.optional(),
                  height: Zoi.any() |> Zoi.optional(),
                  x: Zoi.any() |> Zoi.optional(),
@@ -36,7 +48,13 @@ defmodule Bibbidi.Commands.Browser.SetClientWindowState do
                    active: Zoi.boolean(),
                    client_window: Bibbidi.Types.Browser.ClientWindow.schema(),
                    height: Bibbidi.Types.JsUint.schema(),
-                   state: Zoi.union([Zoi.string(), Zoi.string(), Zoi.string(), Zoi.string()]),
+                   state:
+                     Zoi.union([
+                       Zoi.literal("fullscreen"),
+                       Zoi.literal("maximized"),
+                       Zoi.literal("minimized"),
+                       Zoi.literal("normal")
+                     ]),
                    width: Bibbidi.Types.JsUint.schema(),
                    x: Bibbidi.Types.JsInt.schema(),
                    y: Bibbidi.Types.JsInt.schema()

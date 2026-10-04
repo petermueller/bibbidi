@@ -18,4 +18,8 @@ defmodule Bibbidi.Events.Log.EntryAdded do
   """
 
   defstruct [:level, :source, :text, :timestamp, :stack_trace, :type, :method, :args]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "log.entryAdded"
 end

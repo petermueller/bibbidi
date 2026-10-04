@@ -15,10 +15,11 @@ defmodule Bibbidi do
       # Send commands
       {:ok, result} = Bibbidi.Commands.BrowsingContext.get_tree(conn)
 
-      # Subscribe to events
+      # Subscribe to events — the subscriber receives the parsed event struct
+      # directly. See `Bibbidi.Connection` for `:wrap` overrides.
       Bibbidi.Connection.subscribe(conn, "browsingContext.load")
       receive do
-        {:bibbidi_event, "browsingContext.load", params} -> params
+        %Bibbidi.Events.BrowsingContext.Load{} = event -> event
       end
 
   ## Modules

@@ -15,4 +15,8 @@ defmodule Bibbidi.Events.BrowsingContext.HistoryUpdated do
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}
   defstruct [:context, :timestamp, :url, :user_context]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "browsingContext.historyUpdated"
 end

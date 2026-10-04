@@ -13,10 +13,11 @@ defmodule Bibbidi.Types.BrowsingContext.InnerTextLocator do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("innerText"),
             value: Zoi.string(),
             ignore_case: Zoi.boolean() |> Zoi.optional(),
-            match_type: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+            match_type:
+              Zoi.union([Zoi.literal("full"), Zoi.literal("partial")]) |> Zoi.optional(),
             max_depth: Zoi.lazy({Bibbidi.Types.JsUint, :schema, []}) |> Zoi.optional()
           })
   @type t :: %{

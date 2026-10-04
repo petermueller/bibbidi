@@ -9,7 +9,7 @@ defmodule Bibbidi.Types.Input.KeyUpAction do
   - `value` - `String.t()` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string(), value: Zoi.string()})
+  @schema Zoi.map(%{type: Zoi.literal("keyUp"), value: Zoi.string()})
   @type t :: %{type: String.t(), value: String.t()}
 
   @doc "Returns the Zoi schema for this type."

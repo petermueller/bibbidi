@@ -5,7 +5,7 @@ bibbidi_dep =
   if path = System.get_env("LB_BBD_PATH") do
     {:bibbidi, path: path}
   else
-    {:bibbidi, "~> 0.3.0"}
+    {:bibbidi, "~> 0.4.0"}
   end
 
 Mix.install([
@@ -442,25 +442,25 @@ defmodule UI do
 
   defp log_loop(frame) do
     receive do
-      {:bibbidi_event, "log.entryAdded", %EntryAdded{level: level, text: text}} ->
+      %EntryAdded{level: level, text: text} ->
         Kino.Frame.append(frame, Kino.Markdown.new("`[#{level || "info"}]` #{text}"))
 
-      {:bibbidi_event, "browsingContext.navigationStarted", %NavigationStarted{url: url}} ->
+      %NavigationStarted{url: url} ->
         Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` started: #{url}"))
 
-      {:bibbidi_event, "browsingContext.domContentLoaded", %DomContentLoaded{url: url}} ->
+      %DomContentLoaded{url: url} ->
         Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` DOM ready: #{url}"))
 
-      {:bibbidi_event, "browsingContext.load", %Load{url: url}} ->
+      %Load{url: url} ->
         Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` loaded: #{url}"))
 
-      {:bibbidi_event, "browsingContext.fragmentNavigated", %FragmentNavigated{url: url}} ->
+      %FragmentNavigated{url: url} ->
         Kino.Frame.append(frame, Kino.Markdown.new("`[nav]` fragment: #{url}"))
 
-      {:bibbidi_event, "browsingContext.userPromptOpened", %UserPromptOpened{type: type, message: msg}} ->
+      %UserPromptOpened{type: type, message: msg} ->
         Kino.Frame.append(frame, Kino.Markdown.new("`[prompt]` #{type || "dialog"} opened: #{msg}"))
 
-      {:bibbidi_event, "browsingContext.userPromptClosed", %UserPromptClosed{accepted: accepted}} ->
+      %UserPromptClosed{accepted: accepted} ->
         status = if accepted, do: "accepted", else: "dismissed"
         Kino.Frame.append(frame, Kino.Markdown.new("`[prompt]` #{status}"))
     end

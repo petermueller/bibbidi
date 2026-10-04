@@ -5,16 +5,22 @@ defmodule Bibbidi.Types.Script.RegExpRemoteValue do
 
   ## Fields
 
+  - `type` - `"regexp"` (required)
+  - `value` - `t:Bibbidi.Types.Script.RegExpValue.t/0` (required)
   - `handle` - `t:Bibbidi.Types.Script.Handle.t/0` (optional)
   - `internal_id` - `t:Bibbidi.Types.Script.InternalId.t/0` (optional)
   """
 
   @schema Zoi.map(%{
+            type: Zoi.literal("regexp"),
+            value: Zoi.lazy({Bibbidi.Types.Script.RegExpValue, :schema, []}),
             handle: Zoi.lazy({Bibbidi.Types.Script.Handle, :schema, []}) |> Zoi.optional(),
             internal_id:
               Zoi.lazy({Bibbidi.Types.Script.InternalId, :schema, []}) |> Zoi.optional()
           })
   @type t :: %{
+          type: String.t(),
+          value: Bibbidi.Types.Script.RegExpValue.t(),
           handle: Bibbidi.Types.Script.Handle.t() | nil,
           internal_id: Bibbidi.Types.Script.InternalId.t() | nil
         }

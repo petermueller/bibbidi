@@ -9,7 +9,7 @@ defmodule Bibbidi.Types.Script.BooleanValue do
   - `value` - `boolean()` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string(), value: Zoi.boolean()})
+  @schema Zoi.map(%{type: Zoi.literal("boolean"), value: Zoi.boolean()})
   @type t :: %{type: String.t(), value: boolean()}
 
   @doc "Returns the Zoi schema for this type."

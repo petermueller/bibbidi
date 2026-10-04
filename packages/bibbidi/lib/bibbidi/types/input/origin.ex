@@ -5,8 +5,8 @@ defmodule Bibbidi.Types.Input.Origin do
   """
 
   @schema Zoi.union([
-            Zoi.string(),
-            Zoi.string(),
+            Zoi.literal("viewport"),
+            Zoi.literal("pointer"),
             Zoi.lazy({Bibbidi.Types.Input.ElementOrigin, :schema, []})
           ])
   @type t :: String.t() | Bibbidi.Types.Input.ElementOrigin.t()

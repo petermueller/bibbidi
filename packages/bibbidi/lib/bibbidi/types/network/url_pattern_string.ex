@@ -9,7 +9,7 @@ defmodule Bibbidi.Types.Network.UrlPatternString do
   - `pattern` - `String.t()` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string(), pattern: Zoi.string()})
+  @schema Zoi.map(%{type: Zoi.literal("string"), pattern: Zoi.string()})
   @type t :: %{type: String.t(), pattern: String.t()}
 
   @doc "Returns the Zoi schema for this type."

@@ -16,4 +16,8 @@ defmodule Bibbidi.Events.BrowsingContext.NavigationStarted do
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context, :navigation]}
   defstruct [:context, :navigation, :timestamp, :url, :user_context]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "browsingContext.navigationStarted"
 end

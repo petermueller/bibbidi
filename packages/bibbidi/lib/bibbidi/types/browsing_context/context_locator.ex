@@ -10,7 +10,7 @@ defmodule Bibbidi.Types.BrowsingContext.ContextLocator do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("context"),
             value: Zoi.map(%{context: Zoi.lazy({Bibbidi.Types.BrowsingContext, :schema, []})})
           })
   @type t :: %{type: String.t(), value: map()}

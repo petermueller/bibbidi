@@ -5,18 +5,18 @@ defmodule Bibbidi.Types.WebExtension.ExtensionData do
 
   One of:
   - `t:Bibbidi.Types.WebExtension.ExtensionArchivePath.t/0`
-  - `t:Bibbidi.Types.WebExtension.ExtensionBase64encoded.t/0`
+  - `t:Bibbidi.Types.WebExtension.ExtensionBase64Encoded.t/0`
   - `t:Bibbidi.Types.WebExtension.ExtensionPath.t/0`
   """
 
   @schema Zoi.union([
             Zoi.lazy({Bibbidi.Types.WebExtension.ExtensionArchivePath, :schema, []}),
-            Zoi.lazy({Bibbidi.Types.WebExtension.ExtensionBase64encoded, :schema, []}),
+            Zoi.lazy({Bibbidi.Types.WebExtension.ExtensionBase64Encoded, :schema, []}),
             Zoi.lazy({Bibbidi.Types.WebExtension.ExtensionPath, :schema, []})
           ])
   @type t ::
           Bibbidi.Types.WebExtension.ExtensionArchivePath.t()
-          | Bibbidi.Types.WebExtension.ExtensionBase64encoded.t()
+          | Bibbidi.Types.WebExtension.ExtensionBase64Encoded.t()
           | Bibbidi.Types.WebExtension.ExtensionPath.t()
 
   @doc "Returns the Zoi schema for this type."

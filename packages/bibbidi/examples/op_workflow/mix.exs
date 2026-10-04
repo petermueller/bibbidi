@@ -23,7 +23,11 @@ defmodule OpWorkflow.MixProject do
 
   defp deps do
     [
-      {:bibbidi, "~> 0.3.0"}
+      bibbidi_dep()
     ]
+  end
+
+  defp bibbidi_dep do
+    if System.get_env("BBD_DEV"), do: {:bibbidi, path: "../.."}, else: {:bibbidi, "~> 0.4.0"}
   end
 end

@@ -183,7 +183,7 @@ defmodule BibbidiPlaywrightTrace.CollectorTest do
         })
 
       send(conn, {:mock_transport_receive, [{:text, event_json}]})
-      assert_receive {:bibbidi_event, "browsingContext.load", _}
+      assert_receive %Bibbidi.Events.BrowsingContext.Load{}
 
       Process.sleep(50)
 

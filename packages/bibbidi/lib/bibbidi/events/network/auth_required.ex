@@ -30,4 +30,8 @@ defmodule Bibbidi.Events.Network.AuthRequired do
     :intercepts,
     :response
   ]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "network.authRequired"
 end

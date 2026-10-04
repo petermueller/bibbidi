@@ -11,7 +11,7 @@ defmodule Bibbidi.Types.Storage.StorageKeyPartitionDescriptor do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("storageKey"),
             user_context: Zoi.string() |> Zoi.optional(),
             source_origin: Zoi.string() |> Zoi.optional()
           })
