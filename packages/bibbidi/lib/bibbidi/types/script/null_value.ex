@@ -8,7 +8,7 @@ defmodule Bibbidi.Types.Script.NullValue do
   - `type` - `"null"` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string()})
+  @schema Zoi.map(%{type: Zoi.literal("null")})
   @type t :: %{type: String.t()}
 
   @doc "Returns the Zoi schema for this type."

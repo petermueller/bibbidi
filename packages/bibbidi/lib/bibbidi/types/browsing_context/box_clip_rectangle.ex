@@ -13,7 +13,7 @@ defmodule Bibbidi.Types.BrowsingContext.BoxClipRectangle do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("box"),
             x: Zoi.float(),
             y: Zoi.float(),
             width: Zoi.float(),

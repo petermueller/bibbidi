@@ -23,7 +23,8 @@ defmodule Bibbidi.Commands.BrowsingContext.Print do
             background: Zoi.boolean() |> Zoi.optional(),
             margin:
               Bibbidi.Types.BrowsingContext.PrintMarginParameters.schema() |> Zoi.optional(),
-            orientation: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+            orientation:
+              Zoi.union([Zoi.literal("portrait"), Zoi.literal("landscape")]) |> Zoi.optional(),
             page: Bibbidi.Types.BrowsingContext.PrintPageParameters.schema() |> Zoi.optional(),
             page_ranges:
               Zoi.list(Zoi.union([Bibbidi.Types.JsUint.schema(), Zoi.string()])) |> Zoi.optional(),
@@ -34,7 +35,9 @@ defmodule Bibbidi.Commands.BrowsingContext.Print do
   @opts_schema Zoi.keyword(
                  background: Zoi.boolean() |> Zoi.optional(),
                  margin: Zoi.any() |> Zoi.optional(),
-                 orientation: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+                 orientation:
+                   Zoi.union([Zoi.literal("portrait"), Zoi.literal("landscape")])
+                   |> Zoi.optional(),
                  page: Zoi.any() |> Zoi.optional(),
                  page_ranges: Zoi.list(Zoi.union([Zoi.any(), Zoi.string()])) |> Zoi.optional(),
                  scale: Zoi.any() |> Zoi.optional(),

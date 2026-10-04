@@ -24,6 +24,8 @@
 
 ### Codegen
 
+- Type modules now include the fields of embedded groups (e.g. `script.RegExpRemoteValue` embeds `script.RegExpLocalValue`); previously `{:embed, _}` entries were dropped, leaving `RegExpRemoteValue`/`DateRemoteValue` schemas with only `handle`/`internalId`.
+- CDDL literal strings (e.g. `type: "node"`) are emitted as `Zoi.literal/1` instead of `Zoi.string/0`, so generated type schemas carry their discriminator and choice types like `Bibbidi.Types.Script.RemoteValue.schema()` now reject input whose `type` does not match any branch. Zoi bumped to 0.18 (string literals resolve to `binary()` in generated typespecs).
 - `Bibbidi.CDDL.Generator` now emits `Bibbidi.Events` (top-level dispatcher), `Bibbidi.Events.Guards` (defguards), and `method/0` on every event struct. The previously hand-written `Bibbidi.Events` is replaced.
 
 ## v0.3.0

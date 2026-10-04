@@ -9,7 +9,7 @@ defmodule Bibbidi.Types.WebExtension.ExtensionPath do
   - `path` - `String.t()` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string(), path: Zoi.string()})
+  @schema Zoi.map(%{type: Zoi.literal("path"), path: Zoi.string()})
   @type t :: %{type: String.t(), path: String.t()}
 
   @doc "Returns the Zoi schema for this type."

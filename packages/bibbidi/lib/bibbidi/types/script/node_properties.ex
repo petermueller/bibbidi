@@ -24,7 +24,7 @@ defmodule Bibbidi.Types.Script.NodeProperties do
               Zoi.list(Zoi.lazy({Bibbidi.Types.Script.NodeRemoteValue, :schema, []}))
               |> Zoi.optional(),
             local_name: Zoi.string() |> Zoi.optional(),
-            mode: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+            mode: Zoi.union([Zoi.literal("open"), Zoi.literal("closed")]) |> Zoi.optional(),
             namespace_uri: Zoi.string() |> Zoi.optional(),
             node_value: Zoi.string() |> Zoi.optional(),
             shadow_root:

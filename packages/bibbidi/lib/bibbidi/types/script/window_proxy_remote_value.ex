@@ -12,7 +12,7 @@ defmodule Bibbidi.Types.Script.WindowProxyRemoteValue do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("window"),
             value: Zoi.lazy({Bibbidi.Types.Script.WindowProxyProperties, :schema, []}),
             handle: Zoi.lazy({Bibbidi.Types.Script.Handle, :schema, []}) |> Zoi.optional(),
             internal_id:

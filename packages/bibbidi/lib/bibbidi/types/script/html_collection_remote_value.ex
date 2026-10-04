@@ -12,7 +12,7 @@ defmodule Bibbidi.Types.Script.HTMLCollectionRemoteValue do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("htmlcollection"),
             handle: Zoi.lazy({Bibbidi.Types.Script.Handle, :schema, []}) |> Zoi.optional(),
             internal_id:
               Zoi.lazy({Bibbidi.Types.Script.InternalId, :schema, []}) |> Zoi.optional(),

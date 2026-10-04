@@ -10,7 +10,7 @@ defmodule Bibbidi.Types.Input.NoneSourceAction do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("pause"),
             duration: Zoi.lazy({Bibbidi.Types.JsUint, :schema, []}) |> Zoi.optional()
           })
   @type t :: %{type: String.t(), duration: Bibbidi.Types.JsUint.t() | nil}

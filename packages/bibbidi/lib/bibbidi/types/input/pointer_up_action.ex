@@ -9,7 +9,10 @@ defmodule Bibbidi.Types.Input.PointerUpAction do
   - `button` - `t:Bibbidi.Types.JsUint.t/0` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string(), button: Zoi.lazy({Bibbidi.Types.JsUint, :schema, []})})
+  @schema Zoi.map(%{
+            type: Zoi.literal("pointerUp"),
+            button: Zoi.lazy({Bibbidi.Types.JsUint, :schema, []})
+          })
   @type t :: %{type: String.t(), button: Bibbidi.Types.JsUint.t()}
 
   @doc "Returns the Zoi schema for this type."

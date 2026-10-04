@@ -11,7 +11,7 @@ defmodule Bibbidi.Types.Input.WheelSourceActions do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("wheel"),
             id: Zoi.string(),
             actions: Zoi.list(Zoi.lazy({Bibbidi.Types.Input.WheelSourceAction, :schema, []}))
           })

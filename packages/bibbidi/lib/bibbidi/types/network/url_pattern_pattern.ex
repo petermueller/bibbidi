@@ -14,7 +14,7 @@ defmodule Bibbidi.Types.Network.UrlPatternPattern do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("pattern"),
             protocol: Zoi.string() |> Zoi.optional(),
             hostname: Zoi.string() |> Zoi.optional(),
             port: Zoi.string() |> Zoi.optional(),

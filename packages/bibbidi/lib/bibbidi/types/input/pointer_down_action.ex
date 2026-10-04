@@ -7,10 +7,37 @@ defmodule Bibbidi.Types.Input.PointerDownAction do
 
   - `type` - `"pointerDown"` (required)
   - `button` - `t:Bibbidi.Types.JsUint.t/0` (required)
+  - `width` - `term()` (optional)
+  - `height` - `term()` (optional)
+  - `pressure` - `float()` (optional)
+  - `tangential_pressure` - `float()` (optional)
+  - `twist` - `term()` (optional)
+  - `altitude_angle` - `term()` (optional)
+  - `azimuth_angle` - `term()` (optional)
   """
 
-  @schema Zoi.map(%{type: Zoi.string(), button: Zoi.lazy({Bibbidi.Types.JsUint, :schema, []})})
-  @type t :: %{type: String.t(), button: Bibbidi.Types.JsUint.t()}
+  @schema Zoi.map(%{
+            type: Zoi.literal("pointerDown"),
+            button: Zoi.lazy({Bibbidi.Types.JsUint, :schema, []}),
+            width: Zoi.any() |> Zoi.optional(),
+            height: Zoi.any() |> Zoi.optional(),
+            pressure: Zoi.float() |> Zoi.optional(),
+            tangential_pressure: Zoi.float() |> Zoi.optional(),
+            twist: Zoi.any() |> Zoi.optional(),
+            altitude_angle: Zoi.any() |> Zoi.optional(),
+            azimuth_angle: Zoi.any() |> Zoi.optional()
+          })
+  @type t :: %{
+          type: String.t(),
+          button: Bibbidi.Types.JsUint.t(),
+          width: term() | nil,
+          height: term() | nil,
+          pressure: float() | nil,
+          tangential_pressure: float() | nil,
+          twist: term() | nil,
+          altitude_angle: term() | nil,
+          azimuth_angle: term() | nil
+        }
 
   @doc "Returns the Zoi schema for this type."
   def schema, do: @schema

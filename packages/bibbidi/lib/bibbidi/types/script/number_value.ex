@@ -10,7 +10,7 @@ defmodule Bibbidi.Types.Script.NumberValue do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("number"),
             value:
               Zoi.union([Zoi.any(), Zoi.lazy({Bibbidi.Types.Script.SpecialNumber, :schema, []})])
           })

@@ -10,7 +10,7 @@ defmodule Bibbidi.Types.Storage.BrowsingContextPartitionDescriptor do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("context"),
             context: Zoi.lazy({Bibbidi.Types.BrowsingContext, :schema, []})
           })
   @type t :: %{type: String.t(), context: Bibbidi.Types.BrowsingContext.t()}
