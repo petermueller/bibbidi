@@ -14,6 +14,7 @@
 
 ### Breaking
 
+- **Requires Zoi `~> 0.18`** (was `~> 0.17`). Generated type schemas now use `Zoi.literal/1`, whose typespec support landed in 0.18; the package does not compile against 0.17.x.
 - **Event subscribers receive parsed event structs directly** — the legacy `{:bibbidi_event, method, params}` tuple is gone. Default `:wrap` is `Function.identity/1`. See [MIGRATING.md](MIGRATING.md) for upgrade patterns and the drop-in legacy-tuple wrapper.
 
 ### Changed

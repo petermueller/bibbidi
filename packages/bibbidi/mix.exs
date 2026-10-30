@@ -158,7 +158,7 @@ defmodule Bibbidi.MixProject do
     [
       {:mint_web_socket, "~> 1.0"},
       {:telemetry, "~> 1.0"},
-      {:zoi, "~> 0.17"},
+      {:zoi, "~> 0.18"},
       {:igniter, "~> 0.7", only: [:dev, :test]},
       {:nimble_parsec, "~> 1.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},
