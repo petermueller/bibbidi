@@ -22,6 +22,8 @@ defmodule Bibbidi.Browser do
 
   use GenServer
 
+  alias Bibbidi.Launcher.PortSh
+
   @firefox_paths [
     # macOS
     "/Applications/Firefox.app/Contents/MacOS/firefox",
@@ -62,6 +64,9 @@ defmodule Bibbidi.Browser do
 
   @impl true
   def init(opts) do
+    # PROTOTYPE (#8): trap exits so terminate/2 runs when a linked process
+    # (the caller, a Connection, ExUnit's setup_all process) exits.
+    Process.flag(:trap_exit, true)
     headless = Keyword.get(opts, :headless, true)
     browser_path = Keyword.get(opts, :browser_path)
     port_number = Keyword.get(opts, :port, random_port())
@@ -79,8 +84,18 @@ defmodule Bibbidi.Browser do
 
   @impl true
   def handle_continue(:launch, {path, port_number, headless}) do
-    profile_dir = temp_dir()
+    # PROTOTYPE (#8): one temp root holds the profile AND Firefox's app-data
+    # dir. On macOS 27 ~/Library/Application Support/Firefox is TCC-protected
+    # and Firefox >= 155 still opens it during profile startup even with
+    # --profile; from a parent without Full Disk Access that fails with
+    # "Could not find profile folder" (157) or a busy-spin in the error dialog
+    # loop (144, headless). MOZ_APP_DATA redirects it. The wrapper removes
+    # the whole root on the BEAM-death path.
+    temp_root = temp_dir()
+    profile_dir = Path.join(temp_root, "profile")
+    app_data_dir = Path.join(temp_root, "appdata")
     File.mkdir_p!(profile_dir)
+    File.mkdir_p!(app_data_dir)
 
     args =
       if headless,
@@ -96,20 +111,16 @@ defmodule Bibbidi.Browser do
           profile_dir
         ]
 
-    port = Port.open({:spawn_executable, path}, [:binary, :stderr_to_stdout, args: args])
+    {:ok, launched} =
+      PortSh.launch(path, args, cleanup_dir: temp_root, env: [{"MOZ_APP_DATA", app_data_dir}])
 
-    os_pid =
-      case :erlang.port_info(port, :os_pid) do
-        {:os_pid, pid} -> pid
-        :undefined -> nil
-      end
-
-    case wait_for_bidi_url(port, "") do
+    case wait_for_bidi_url(launched, "") do
       {:ok, bidi_url} ->
-        {:noreply, %{port: port, os_pid: os_pid, url: bidi_url, profile_dir: profile_dir}}
+        {:noreply, %{launched: launched, url: bidi_url, profile_dir: temp_root}}
 
       {:error, reason} ->
-        kill_tree(os_pid)
+        PortSh.stop(launched)
+        cleanup_profile(temp_root)
         {:stop, reason, nil}
     end
   end
@@ -120,45 +131,63 @@ defmodule Bibbidi.Browser do
   end
 
   @impl true
-  def handle_info({port, {:data, _data}}, %{port: port} = state) do
-    # Discard browser stdout/stderr after launch
-    {:noreply, state}
+  def handle_info(message, %{launched: launched} = state) do
+    case PortSh.classify(launched, message) do
+      # Discard browser stdout/stderr after launch
+      {:output, _data} -> {:noreply, state}
+      # Browser died on its own (crash, or killed from outside)
+      {:exited, status} -> {:stop, {:browser_exited, status}, %{state | launched: nil}}
+      :ignore -> {:noreply, state}
+      :other -> handle_other(message, state)
+    end
   end
 
-  def handle_info(_message, state) do
-    {:noreply, state}
-  end
+  def handle_info(_message, state), do: {:noreply, state}
+
+  # A linked process (other than our parent, which gen_server handles itself)
+  # exited: take the browser down with it.
+  defp handle_other({:EXIT, _pid, reason}, state), do: {:stop, reason, state}
+  defp handle_other(_message, state), do: {:noreply, state}
 
   @impl true
   def terminate(_reason, nil), do: :ok
 
-  def terminate(_reason, state) do
-    if state.port do
-      try do
-        Port.close(state.port)
-      catch
-        _, _ -> :ok
-      end
-    end
+  def terminate(_reason, %{launched: nil} = state) do
+    cleanup_profile(state.profile_dir)
+    :ok
+  end
 
-    kill_tree(state.os_pid)
+  def terminate(_reason, state) do
+    PortSh.stop(state.launched)
     cleanup_profile(state.profile_dir)
     :ok
   end
 
   ## Private
 
-  defp wait_for_bidi_url(port, buffer) do
+  defp wait_for_bidi_url(launched, buffer) do
     receive do
-      {^port, {:data, data}} ->
-        buffer = buffer <> data
+      message ->
+        case PortSh.classify(launched, message) do
+          {:output, data} ->
+            buffer = buffer <> data
 
-        case Regex.run(~r{WebDriver BiDi listening on (ws://[^\s]+)}, buffer) do
-          [_, url] ->
-            {:ok, url <> "/session"}
+            case Regex.run(~r{WebDriver BiDi listening on (ws://[^\s]+)}, buffer) do
+              [_, url] -> {:ok, url <> "/session"}
+              nil -> wait_for_bidi_url(launched, buffer)
+            end
 
-          nil ->
-            wait_for_bidi_url(port, buffer)
+          {:exited, status} ->
+            {:error, {:browser_exited, status, buffer}}
+
+          :ignore ->
+            wait_for_bidi_url(launched, buffer)
+
+          :other ->
+            # Re-queue anything that is not ours (e.g. an {:EXIT, pid, _} from a
+            # linked process) so the main loop sees it after launch.
+            send(self(), message)
+            wait_for_bidi_url(launched, buffer)
         end
     after
       @launch_timeout ->
@@ -179,25 +208,6 @@ defmodule Bibbidi.Browser do
 
   defp temp_dir do
     Path.join(System.tmp_dir!(), "bibbidi-firefox-#{System.unique_integer([:positive])}")
-  end
-
-  defp kill_tree(nil), do: :ok
-
-  defp kill_tree(pid) do
-    # Collect children before killing parent, since dead processes have no children
-    children =
-      case System.cmd("pgrep", ["-P", to_string(pid)], stderr_to_stdout: true) do
-        {children_str, 0} ->
-          children_str |> String.split("\n", trim: true) |> Enum.map(&String.to_integer/1)
-
-        {_, _} ->
-          []
-      end
-
-    Enum.each(children, &kill_tree/1)
-    System.cmd("kill", ["-KILL", to_string(pid)], stderr_to_stdout: true)
-  catch
-    _, _ -> :ok
   end
 
   defp cleanup_profile(nil), do: :ok
