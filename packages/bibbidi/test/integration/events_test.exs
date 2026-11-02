@@ -13,7 +13,7 @@ defmodule Bibbidi.Integration.EventsTest do
       {:ok, _} =
         Script.evaluate(conn, ~s[console.log("hello from test")], %{context: context}, true)
 
-      assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
+      assert_receive %Bibbidi.Events.Log.EntryAdded{} = params, 5_000
       assert params.type == "console"
       assert is_binary(params.text)
     end
@@ -26,7 +26,7 @@ defmodule Bibbidi.Integration.EventsTest do
       {:ok, _} =
         Script.evaluate(conn, ~s[console.log("before unsub")], %{context: context}, true)
 
-      assert_receive {:bibbidi_event, "log.entryAdded", _}, 5_000
+      assert_receive %Bibbidi.Events.Log.EntryAdded{}, 5_000
 
       # Unsubscribe both server and client side
       {:ok, _} = Session.unsubscribe(conn, ["log.entryAdded"])
@@ -35,7 +35,7 @@ defmodule Bibbidi.Integration.EventsTest do
       {:ok, _} =
         Script.evaluate(conn, ~s[console.log("after unsub")], %{context: context}, true)
 
-      refute_receive {:bibbidi_event, "log.entryAdded", _}, 1_000
+      refute_receive %Bibbidi.Events.Log.EntryAdded{}, 1_000
     end
 
     test "navigation events", %{conn: conn, context: context} do
@@ -47,7 +47,7 @@ defmodule Bibbidi.Integration.EventsTest do
           wait: "complete"
         )
 
-      assert_receive {:bibbidi_event, "browsingContext.load", params}, 5_000
+      assert_receive %Bibbidi.Events.BrowsingContext.Load{} = params, 5_000
       assert params.context == context
     end
 
@@ -59,8 +59,8 @@ defmodule Bibbidi.Integration.EventsTest do
       {:ok, _} =
         BrowsingContext.navigate(conn, context, "#{base_url}/console-log", wait: "complete")
 
-      assert_receive {:bibbidi_event, "browsingContext.load", _}, 5_000
-      assert_receive {:bibbidi_event, "log.entryAdded", _}, 5_000
+      assert_receive %Bibbidi.Events.BrowsingContext.Load{}, 5_000
+      assert_receive %Bibbidi.Events.Log.EntryAdded{}, 5_000
     end
   end
 
@@ -76,7 +76,7 @@ defmodule Bibbidi.Integration.EventsTest do
           await_promise: false
         })
 
-      assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
+      assert_receive %Bibbidi.Events.Log.EntryAdded{} = params, 5_000
       assert params.type == "console"
       assert is_binary(params.text)
     end
@@ -92,7 +92,7 @@ defmodule Bibbidi.Integration.EventsTest do
           await_promise: false
         })
 
-      assert_receive {:bibbidi_event, "log.entryAdded", _}, 5_000
+      assert_receive %Bibbidi.Events.Log.EntryAdded{}, 5_000
 
       {:ok, _} = Connection.execute(conn, %Unsubscribe{events: ["log.entryAdded"]})
       :ok = Connection.unsubscribe(conn, "log.entryAdded")
@@ -104,7 +104,7 @@ defmodule Bibbidi.Integration.EventsTest do
           await_promise: false
         })
 
-      refute_receive {:bibbidi_event, "log.entryAdded", _}, 1_000
+      refute_receive %Bibbidi.Events.Log.EntryAdded{}, 1_000
     end
 
     test "navigation events", %{conn: conn, context: context} do
@@ -118,7 +118,7 @@ defmodule Bibbidi.Integration.EventsTest do
           wait: "complete"
         })
 
-      assert_receive {:bibbidi_event, "browsingContext.load", params}, 5_000
+      assert_receive %Bibbidi.Events.BrowsingContext.Load{} = params, 5_000
       assert params.context == context
     end
   end

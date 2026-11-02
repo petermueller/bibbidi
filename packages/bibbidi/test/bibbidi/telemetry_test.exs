@@ -114,7 +114,7 @@ defmodule Bibbidi.TelemetryTest do
       send(conn, {:mock_transport_receive, [{:text, event_json}]})
 
       # Verify the process message still works
-      assert_receive {:bibbidi_event, "browsingContext.load", _params}
+      assert_receive %Bibbidi.Events.BrowsingContext.Load{}
 
       # Verify telemetry was emitted
       assert_receive {^ref, [:bibbidi, :event, :received], %{system_time: _},

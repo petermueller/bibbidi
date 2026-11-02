@@ -18,7 +18,8 @@ defmodule Bibbidi.Types.Script.SerializationOptions do
               Zoi.union([Zoi.lazy({Bibbidi.Types.JsUint, :schema, []}), Zoi.null()])
               |> Zoi.optional(),
             include_shadow_tree:
-              Zoi.union([Zoi.string(), Zoi.string(), Zoi.string()]) |> Zoi.optional()
+              Zoi.union([Zoi.literal("none"), Zoi.literal("open"), Zoi.literal("all")])
+              |> Zoi.optional()
           })
   @type t :: %{
           max_dom_depth: Bibbidi.Types.JsUint.t() | nil | nil,

@@ -8,7 +8,7 @@ defmodule Bibbidi.Types.Emulation.NetworkConditions do
   - `type` - `"offline"` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string()})
+  @schema Zoi.map(%{type: Zoi.literal("offline")})
   @type t :: %{type: String.t()}
 
   @doc "Returns the Zoi schema for this type."

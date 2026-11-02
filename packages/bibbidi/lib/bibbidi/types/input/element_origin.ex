@@ -10,7 +10,7 @@ defmodule Bibbidi.Types.Input.ElementOrigin do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("element"),
             element: Zoi.lazy({Bibbidi.Types.Script.SharedReference, :schema, []})
           })
   @type t :: %{type: String.t(), element: Bibbidi.Types.Script.SharedReference.t()}

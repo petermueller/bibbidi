@@ -19,7 +19,12 @@ defmodule Bibbidi.Types.Network.Initiator do
             stack_trace:
               Zoi.lazy({Bibbidi.Types.Script.StackTrace, :schema, []}) |> Zoi.optional(),
             type:
-              Zoi.union([Zoi.string(), Zoi.string(), Zoi.string(), Zoi.string()])
+              Zoi.union([
+                Zoi.literal("parser"),
+                Zoi.literal("script"),
+                Zoi.literal("preflight"),
+                Zoi.literal("other")
+              ])
               |> Zoi.optional()
           })
   @type t :: %{

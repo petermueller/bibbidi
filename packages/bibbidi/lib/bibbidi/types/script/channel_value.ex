@@ -10,7 +10,7 @@ defmodule Bibbidi.Types.Script.ChannelValue do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("channel"),
             value: Zoi.lazy({Bibbidi.Types.Script.ChannelProperties, :schema, []})
           })
   @type t :: %{type: String.t(), value: Bibbidi.Types.Script.ChannelProperties.t()}

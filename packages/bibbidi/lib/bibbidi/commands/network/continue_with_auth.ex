@@ -15,12 +15,12 @@ defmodule Bibbidi.Commands.Network.ContinueWithAuth do
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             request: Bibbidi.Types.Network.Request.schema(),
-            action: Zoi.string() |> Zoi.optional(),
+            action: Zoi.literal("provideCredentials") |> Zoi.optional(),
             credentials: Bibbidi.Types.Network.AuthCredentials.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
-                 action: Zoi.string() |> Zoi.optional(),
+                 action: Zoi.literal("provideCredentials") |> Zoi.optional(),
                  credentials: Zoi.any() |> Zoi.optional()
                )
   @result_schema Zoi.map(Zoi.string(), Zoi.any())

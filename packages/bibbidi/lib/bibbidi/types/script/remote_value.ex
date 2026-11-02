@@ -22,7 +22,7 @@ defmodule Bibbidi.Types.Script.RemoteValue do
   - `t:Bibbidi.Types.Script.TypedArrayRemoteValue.t/0`
   - `t:Bibbidi.Types.Script.ArrayBufferRemoteValue.t/0`
   - `t:Bibbidi.Types.Script.NodeListRemoteValue.t/0`
-  - `t:Bibbidi.Types.Script.HtmlcollectionRemoteValue.t/0`
+  - `t:Bibbidi.Types.Script.HTMLCollectionRemoteValue.t/0`
   - `t:Bibbidi.Types.Script.NodeRemoteValue.t/0`
   - `t:Bibbidi.Types.Script.WindowProxyRemoteValue.t/0`
   """
@@ -46,7 +46,7 @@ defmodule Bibbidi.Types.Script.RemoteValue do
             Zoi.lazy({Bibbidi.Types.Script.TypedArrayRemoteValue, :schema, []}),
             Zoi.lazy({Bibbidi.Types.Script.ArrayBufferRemoteValue, :schema, []}),
             Zoi.lazy({Bibbidi.Types.Script.NodeListRemoteValue, :schema, []}),
-            Zoi.lazy({Bibbidi.Types.Script.HtmlcollectionRemoteValue, :schema, []}),
+            Zoi.lazy({Bibbidi.Types.Script.HTMLCollectionRemoteValue, :schema, []}),
             Zoi.lazy({Bibbidi.Types.Script.NodeRemoteValue, :schema, []}),
             Zoi.lazy({Bibbidi.Types.Script.WindowProxyRemoteValue, :schema, []})
           ])
@@ -69,7 +69,7 @@ defmodule Bibbidi.Types.Script.RemoteValue do
           | Bibbidi.Types.Script.TypedArrayRemoteValue.t()
           | Bibbidi.Types.Script.ArrayBufferRemoteValue.t()
           | Bibbidi.Types.Script.NodeListRemoteValue.t()
-          | Bibbidi.Types.Script.HtmlcollectionRemoteValue.t()
+          | Bibbidi.Types.Script.HTMLCollectionRemoteValue.t()
           | Bibbidi.Types.Script.NodeRemoteValue.t()
           | Bibbidi.Types.Script.WindowProxyRemoteValue.t()
 

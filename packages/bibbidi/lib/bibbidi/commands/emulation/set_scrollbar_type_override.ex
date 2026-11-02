@@ -14,7 +14,8 @@ defmodule Bibbidi.Commands.Emulation.SetScrollbarTypeOverride do
 
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
-            scrollbar_type: Zoi.union([Zoi.string(), Zoi.string(), Zoi.null()]),
+            scrollbar_type:
+              Zoi.union([Zoi.literal("classic"), Zoi.literal("overlay"), Zoi.null()]),
             contexts: Zoi.list(Bibbidi.Types.BrowsingContext.schema()) |> Zoi.optional(),
             user_contexts: Zoi.list(Bibbidi.Types.Browser.UserContext.schema()) |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()

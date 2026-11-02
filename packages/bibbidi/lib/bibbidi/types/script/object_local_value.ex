@@ -10,7 +10,7 @@ defmodule Bibbidi.Types.Script.ObjectLocalValue do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("object"),
             value: Zoi.lazy({Bibbidi.Types.Script.MappingLocalValue, :schema, []})
           })
   @type t :: %{type: String.t(), value: Bibbidi.Types.Script.MappingLocalValue.t()}

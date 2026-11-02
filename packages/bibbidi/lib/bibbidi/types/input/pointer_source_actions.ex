@@ -12,7 +12,7 @@ defmodule Bibbidi.Types.Input.PointerSourceActions do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("pointer"),
             id: Zoi.string(),
             parameters:
               Zoi.lazy({Bibbidi.Types.Input.PointerParameters, :schema, []}) |> Zoi.optional(),

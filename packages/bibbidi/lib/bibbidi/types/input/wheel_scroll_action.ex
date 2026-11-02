@@ -15,7 +15,7 @@ defmodule Bibbidi.Types.Input.WheelScrollAction do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("scroll"),
             x: Zoi.lazy({Bibbidi.Types.JsInt, :schema, []}),
             y: Zoi.lazy({Bibbidi.Types.JsInt, :schema, []}),
             delta_x: Zoi.lazy({Bibbidi.Types.JsInt, :schema, []}),

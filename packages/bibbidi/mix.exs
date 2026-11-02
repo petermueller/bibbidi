@@ -1,7 +1,7 @@
 defmodule Bibbidi.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.4.0"
   @source_url "https://github.com/petermueller/bibbidi"
 
   def project do
@@ -32,6 +32,7 @@ defmodule Bibbidi.MixProject do
       extras: [
         "README.md",
         "CHANGELOG.md",
+        "MIGRATING.md",
         "examples/interactive_browser.livemd",
         {"examples/op_workflow/op_workflow.md", title: "Op Workflow Example"}
       ],
@@ -50,6 +51,8 @@ defmodule Bibbidi.MixProject do
           Bibbidi.Session,
           Bibbidi.Encodable,
           Bibbidi.Keys,
+          Bibbidi.RemoteValue,
+          Bibbidi.RemoteValue.Guards,
           Bibbidi.Telemetry,
           Bibbidi.Telemetry.Metadata
         ],
@@ -105,7 +108,8 @@ defmodule Bibbidi.MixProject do
 
   defp package do
     [
-      files: ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* usage-rules.md),
+      files:
+        ~w(lib priv .formatter.exs mix.exs README* LICENSE* CHANGELOG* MIGRATING* usage-rules.md),
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,
@@ -154,7 +158,7 @@ defmodule Bibbidi.MixProject do
     [
       {:mint_web_socket, "~> 1.0"},
       {:telemetry, "~> 1.0"},
-      {:zoi, "~> 0.17"},
+      {:zoi, "~> 0.18"},
       {:igniter, "~> 0.7", only: [:dev, :test]},
       {:nimble_parsec, "~> 1.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},

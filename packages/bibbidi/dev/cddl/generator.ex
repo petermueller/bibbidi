@@ -1,6 +1,7 @@
 defmodule Bibbidi.CDDL.Generator do
   @moduledoc false
 
+  alias Bibbidi.CDDL.Generator.Docs
   alias Bibbidi.CDDL.Parser
   alias Bibbidi.CDDL.Utils
 
@@ -25,20 +26,58 @@ defmodule Bibbidi.CDDL.Generator do
     # Generate type modules first (commands/events reference them)
     igniter = generate_type_modules(igniter, type_refs, all_rules)
 
-    Enum.reduce(@modules, igniter, fn mod, igniter ->
-      rules = Map.get(grouped, mod, [])
+    igniter =
+      Enum.reduce(@modules, igniter, fn mod, igniter ->
+        rules = Map.get(grouped, mod, [])
 
-      igniter
-      |> maybe_generate_events_module(mod, rules, local_rules, all_rules, type_refs)
-      |> maybe_generate_command_modules(mod, remote_rules, all_rules, type_refs)
-      |> maybe_generate_facade_module(mod, remote_rules, all_rules, type_refs)
-    end)
+        igniter
+        |> maybe_generate_events_module(mod, rules, local_rules, all_rules, type_refs)
+        |> maybe_generate_command_modules(mod, remote_rules, all_rules, type_refs)
+        |> maybe_generate_facade_module(mod, remote_rules, all_rules, type_refs)
+      end)
+
+    # Generate top-level dispatchers AFTER per-namespace events exist
+    event_index = collect_event_index(local_rules, all_rules)
+
+    igniter
+    |> generate_top_level_events_module(event_index)
+    |> generate_events_guards_module(event_index)
   end
 
   defp group_by_module(rules) do
     rules
     |> Enum.filter(fn {name, _} -> String.contains?(name, ".") end)
     |> Enum.group_by(fn {name, _} -> name |> String.split(".") |> hd() end)
+  end
+
+  # ── Event index for top-level dispatch / guards ──────────────────
+
+  # Collects per-event metadata across all known namespaces. Used by the
+  # top-level Bibbidi.Events and Bibbidi.Events.Guards generators.
+  defp collect_event_index(local_rules, all_rules) do
+    Enum.flat_map(@modules, fn mod ->
+      events = extract_events(mod, local_rules)
+      camel = to_module_name(mod)
+      namespace_module = "Bibbidi.Events.#{camel}"
+
+      Enum.map(events, fn {method, params_ref} ->
+        fields = resolve_event_fields(params_ref, all_rules)
+        has_struct = fields != []
+        struct_name = event_struct_name(method)
+
+        struct_module =
+          if has_struct, do: "Bibbidi.Events.#{camel}.#{struct_name}", else: nil
+
+        %{
+          method: method,
+          namespace_snake: mod,
+          namespace_camel: camel,
+          namespace_module: namespace_module,
+          has_struct: has_struct,
+          struct_module: struct_module
+        }
+      end)
+    end)
   end
 
   # ── Type ref collection ──────────────────────────────────────────
@@ -171,7 +210,9 @@ defmodule Bibbidi.CDDL.Generator do
   @doc false
   def collect_refs_from_type({:ref, name}), do: [name]
   def collect_refs_from_type({:array, inner, _}), do: collect_refs_from_type(inner)
-  def collect_refs_from_type({:choice, items}), do: Enum.flat_map(items, &collect_refs_from_type/1)
+
+  def collect_refs_from_type({:choice, items}),
+    do: Enum.flat_map(items, &collect_refs_from_type/1)
 
   def collect_refs_from_type({:choice, items, _constraint}),
     do: Enum.flat_map(items, &collect_refs_from_type/1)
@@ -317,19 +358,29 @@ defmodule Bibbidi.CDDL.Generator do
     classify_type({:choice, items}, all_rules)
   end
 
-  defp classify_type({:map, [{:fields, fields}]}, _all_rules) do
+  defp classify_type({:map, [{:fields, fields}]}, all_rules) do
+    # Embedded groups (e.g. `script.RegExpRemoteValue = { script.RegExpLocalValue, ?handle, ... }`)
+    # contribute their fields inline, the same way command params resolve them.
     field_defs =
       fields
       |> Enum.flat_map(fn
         {:required, name, type} -> [{name, :required, type}]
         {:optional, name, type} -> [{name, :optional, type}]
+        {:embed, ref} -> embedded_type_fields(ref, all_rules)
         _ -> []
       end)
+      |> Enum.uniq_by(fn {name, _req, _type} -> name end)
 
     {:struct_like, field_defs}
   end
 
   defp classify_type(_, _all_rules), do: :opaque
+
+  defp embedded_type_fields(ref, all_rules) do
+    ref
+    |> resolve_command_fields(all_rules)
+    |> Enum.map(fn {json_name, _elixir_name, req, type} -> {json_name, req, type} end)
+  end
 
   defp build_primitive_alias_module(module_name, ref_name, definition, type_refs) do
     schema_str = type_to_schema(definition, type_refs)
@@ -518,7 +569,9 @@ defmodule Bibbidi.CDDL.Generator do
     |> Enum.join(" or ")
   end
 
-  def cddl_type_to_doc({:choice, items, _}, type_refs), do: cddl_type_to_doc({:choice, items}, type_refs)
+  def cddl_type_to_doc({:choice, items, _}, type_refs),
+    do: cddl_type_to_doc({:choice, items}, type_refs)
+
   def cddl_type_to_doc({:primitive, :text}, _), do: "`String.t()`"
   def cddl_type_to_doc({:primitive, :text, _}, _), do: "`String.t()`"
   def cddl_type_to_doc({:primitive, :uint}, _), do: "`non_neg_integer()`"
@@ -541,7 +594,10 @@ defmodule Bibbidi.CDDL.Generator do
 
   defp maybe_generate_events_module(igniter, mod, _rules, local_rules, all_rules, type_refs) do
     events = extract_events(mod, local_rules)
-    if events == [], do: igniter, else: generate_events_module(igniter, mod, events, all_rules, type_refs)
+
+    if events == [],
+      do: igniter,
+      else: generate_events_module(igniter, mod, events, all_rules, type_refs)
   end
 
   defp generate_events_module(igniter, mod, events, all_rules, type_refs) do
@@ -558,11 +614,15 @@ defmodule Bibbidi.CDDL.Generator do
       |> Enum.map(fn {method, params_ref} ->
         fun_name = method |> String.split(".") |> List.last() |> to_snake()
 
+        doc_body =
+          splice_docs(
+            "  Event: `#{method}`\n\n  Params type: `#{params_ref || "none"}`",
+            Docs.for_name("Bibbidi.Events.#{camel}.#{fun_name}")
+          )
+
         """
           @doc \"\"\"
-          Event: `#{method}`
-
-          Params type: `#{params_ref || "none"}`
+        #{doc_body}
           \"\"\"
           def #{fun_name}, do: "#{method}"
         """
@@ -652,14 +712,30 @@ defmodule Bibbidi.CDDL.Generator do
       fields = resolve_event_fields(params_ref, all_rules)
 
       if fields != [] do
-        generate_event_struct_module(igniter, snake_mod, mod, method, params_ref, fields, type_refs)
+        generate_event_struct_module(
+          igniter,
+          snake_mod,
+          mod,
+          method,
+          params_ref,
+          fields,
+          type_refs
+        )
       else
         igniter
       end
     end)
   end
 
-  defp generate_event_struct_module(igniter, snake_mod, mod, method, params_ref, fields, type_refs) do
+  defp generate_event_struct_module(
+         igniter,
+         snake_mod,
+         mod,
+         method,
+         params_ref,
+         fields,
+         type_refs
+       ) do
     camel_mod = to_module_name(mod)
     struct_name = event_struct_name(method)
     snake_struct = to_snake(struct_name)
@@ -672,7 +748,9 @@ defmodule Bibbidi.CDDL.Generator do
     fields_str = Enum.join(field_atoms, ", ")
 
     # Determine correlation keys for this struct
-    field_atom_list = Enum.map(unique_fields, fn {_, elixir_key, _, _} -> String.to_atom(elixir_key) end)
+    field_atom_list =
+      Enum.map(unique_fields, fn {_, elixir_key, _, _} -> String.to_atom(elixir_key) end)
+
     correlation = Enum.filter(@correlation_keys, &(&1 in field_atom_list))
 
     derive_line =
@@ -692,20 +770,24 @@ defmodule Bibbidi.CDDL.Generator do
       end)
       |> Enum.join("\n")
 
+    moduledoc_body =
+      splice_docs(
+        "  Event struct for `#{method}`.\n\n  Params type: `#{params_ref}`\n\n  ## Fields\n\n#{doc_fields}",
+        Docs.for_name("Bibbidi.Events.#{camel_mod}.#{struct_name}")
+      )
+
     content = """
     # Generated by mix bibbidi.gen — do not edit manually
     defmodule Bibbidi.Events.#{camel_mod}.#{struct_name} do
       @moduledoc \"\"\"
-      Event struct for `#{method}`.
-
-      Params type: `#{params_ref}`
-
-      ## Fields
-
-    #{doc_fields}
+    #{moduledoc_body}
       \"\"\"
 
     #{derive_line}  defstruct [#{fields_str}]
+
+      @doc "Returns the BiDi method name this event struct represents."
+      @spec method() :: String.t()
+      def method, do: "#{method}"
     end
     """
 
@@ -751,7 +833,10 @@ defmodule Bibbidi.CDDL.Generator do
 
   defp maybe_generate_command_modules(igniter, mod, remote_rules, all_rules, type_refs) do
     commands = extract_commands(mod, remote_rules)
-    if commands == [], do: igniter, else: generate_command_modules(igniter, mod, commands, all_rules, type_refs)
+
+    if commands == [],
+      do: igniter,
+      else: generate_command_modules(igniter, mod, commands, all_rules, type_refs)
   end
 
   defp extract_commands(mod, remote_rules) do
@@ -781,11 +866,27 @@ defmodule Bibbidi.CDDL.Generator do
 
   defp generate_command_modules(igniter, mod, commands, all_rules, type_refs) do
     Enum.reduce(commands, igniter, fn {command_name, method, params_ref}, igniter ->
-      generate_command_module(igniter, mod, command_name, method, params_ref, all_rules, type_refs)
+      generate_command_module(
+        igniter,
+        mod,
+        command_name,
+        method,
+        params_ref,
+        all_rules,
+        type_refs
+      )
     end)
   end
 
-  defp generate_command_module(igniter, mod, command_name, method, params_ref, all_rules, type_refs) do
+  defp generate_command_module(
+         igniter,
+         mod,
+         command_name,
+         method,
+         params_ref,
+         all_rules,
+         type_refs
+       ) do
     snake_mod = to_snake(mod)
     camel_mod = to_module_name(mod)
     command_snake = to_snake(command_name)
@@ -835,7 +936,13 @@ defmodule Bibbidi.CDDL.Generator do
       end
 
     # Build moduledoc with spec link and field descriptions
-    moduledoc = build_command_moduledoc(method, all_fields, type_refs)
+    moduledoc =
+      build_command_moduledoc(
+        method,
+        all_fields,
+        type_refs,
+        "Bibbidi.Commands.#{camel_mod}.#{command_name}"
+      )
 
     content = """
     # Generated by mix bibbidi.gen — do not edit manually
@@ -877,7 +984,12 @@ defmodule Bibbidi.CDDL.Generator do
     Igniter.create_new_file(igniter, path, content, on_exists: :overwrite)
   end
 
-  defp build_command_moduledoc(method, fields, type_refs) do
+  # Joins a registry docs block (from `Docs.for_name/1`, or nil) onto a base
+  # docstring with a single blank-line separator. nil → base unchanged.
+  defp splice_docs(base, nil), do: base
+  defp splice_docs(base, docs), do: String.trim_trailing(base) <> "\n\n" <> docs
+
+  defp build_command_moduledoc(method, fields, type_refs, name) do
     anchor = spec_anchor(method)
 
     field_docs =
@@ -896,7 +1008,8 @@ defmodule Bibbidi.CDDL.Generator do
         "\n  ## Fields\n\n#{lines}\n"
       end
 
-    "  Command struct for `#{method}`.\n\n  [WebDriver BiDi Spec](#{anchor})#{field_docs}"
+    base = "  Command struct for `#{method}`.\n\n  [WebDriver BiDi Spec](#{anchor})#{field_docs}"
+    splice_docs(base, Docs.for_name(name))
   end
 
   @doc """
@@ -940,22 +1053,34 @@ defmodule Bibbidi.CDDL.Generator do
     |> Enum.flat_map(fn
       {:fields, fields} ->
         Enum.flat_map(fields, fn
-          {:required, name, type} -> [{name, to_snake(name), :optional, type}]
-          {:optional, name, type} -> [{name, to_snake(name), :optional, type}]
+          {:required, name, type} ->
+            [{name, to_snake(name), :optional, type}]
+
+          {:optional, name, type} ->
+            [{name, to_snake(name), :optional, type}]
+
           {:embed, ref} ->
             resolve_command_fields(ref, all_rules)
             |> Enum.map(fn {json, elixir, _, type} -> {json, elixir, :optional, type} end)
-          _ -> []
+
+          _ ->
+            []
         end)
 
       {:group, members} ->
         Enum.flat_map(members, fn
-          {:required, name, type} -> [{name, to_snake(name), :optional, type}]
-          {:optional, name, type} -> [{name, to_snake(name), :optional, type}]
+          {:required, name, type} ->
+            [{name, to_snake(name), :optional, type}]
+
+          {:optional, name, type} ->
+            [{name, to_snake(name), :optional, type}]
+
           {:embed, ref} ->
             resolve_command_fields(ref, all_rules)
             |> Enum.map(fn {json, elixir, _, type} -> {json, elixir, :optional, type} end)
-          _ -> []
+
+          _ ->
+            []
         end)
 
       _ ->
@@ -1077,11 +1202,20 @@ defmodule Bibbidi.CDDL.Generator do
         field_schemas =
           fields
           |> Enum.map(fn
-            {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
-            {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
-            {:extensible, _, _} -> nil
-            {:embed, _} -> nil
-            {:group_choice, _} -> nil
+            {:required, key, type} ->
+              "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
+
+            {:optional, key, type} ->
+              "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
+
+            {:extensible, _, _} ->
+              nil
+
+            {:embed, _} ->
+              nil
+
+            {:group_choice, _} ->
+              nil
           end)
           |> Enum.reject(&is_nil/1)
           |> Enum.join(", ")
@@ -1106,8 +1240,11 @@ defmodule Bibbidi.CDDL.Generator do
           field_schemas =
             real_fields
             |> Enum.map(fn
-              {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
-              {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
+              {:required, key, type} ->
+                "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
+
+              {:optional, key, type} ->
+                "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
             end)
             |> Enum.join(", ")
 
@@ -1163,9 +1300,14 @@ defmodule Bibbidi.CDDL.Generator do
         field_schemas =
           fields
           |> Enum.map(fn
-            {:required, key, t} -> "#{to_snake(key)}: #{type_to_schema_lazy(t, type_refs)}"
-            {:optional, key, t} -> "#{to_snake(key)}: #{type_to_schema_lazy(t, type_refs)} |> Zoi.optional()"
-            _ -> nil
+            {:required, key, t} ->
+              "#{to_snake(key)}: #{type_to_schema_lazy(t, type_refs)}"
+
+            {:optional, key, t} ->
+              "#{to_snake(key)}: #{type_to_schema_lazy(t, type_refs)} |> Zoi.optional()"
+
+            _ ->
+              nil
           end)
           |> Enum.reject(&is_nil/1)
           |> Enum.join(", ")
@@ -1210,10 +1352,13 @@ defmodule Bibbidi.CDDL.Generator do
   def type_to_schema({:primitive, :bool, _}, _type_refs), do: "Zoi.boolean()"
   def type_to_schema({:primitive, :any}, _type_refs), do: "Zoi.any()"
   def type_to_schema({:primitive, :null}, _type_refs), do: "Zoi.null()"
-  def type_to_schema({:string, _}, _type_refs), do: "Zoi.string()"
+  def type_to_schema({:string, value}, _type_refs), do: "Zoi.literal(#{inspect(value)})"
   def type_to_schema({:number, n}, _type_refs) when is_integer(n), do: "Zoi.integer()"
   def type_to_schema({:number, n}, _type_refs) when is_float(n), do: "Zoi.float()"
-  def type_to_schema({:range, low, high}, _type_refs), do: "Zoi.integer() |> Zoi.min(#{low}) |> Zoi.max(#{high})"
+
+  def type_to_schema({:range, low, high}, _type_refs),
+    do: "Zoi.integer() |> Zoi.min(#{low}) |> Zoi.max(#{high})"
+
   def type_to_schema({:range_exclusive, _low, _high}, _type_refs), do: "Zoi.integer()"
 
   def type_to_schema({:ref, name}, type_refs) do
@@ -1224,7 +1369,8 @@ defmodule Bibbidi.CDDL.Generator do
     end
   end
 
-  def type_to_schema({:array, inner, _q}, type_refs), do: "Zoi.list(#{type_to_schema(inner, type_refs)})"
+  def type_to_schema({:array, inner, _q}, type_refs),
+    do: "Zoi.list(#{type_to_schema(inner, type_refs)})"
 
   def type_to_schema({:choice, items}, type_refs) do
     schemas = Enum.map(items, &type_to_schema(&1, type_refs))
@@ -1240,11 +1386,20 @@ defmodule Bibbidi.CDDL.Generator do
     field_schemas =
       fields
       |> Enum.map(fn
-        {:required, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
-        {:optional, key, type} -> "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
-        {:extensible, _, _} -> nil
-        {:embed, _} -> nil
-        {:group_choice, _} -> nil
+        {:required, key, type} ->
+          "#{to_snake(key)}: #{type_to_schema(type, type_refs)}"
+
+        {:optional, key, type} ->
+          "#{to_snake(key)}: #{type_to_schema(type, type_refs)} |> Zoi.optional()"
+
+        {:extensible, _, _} ->
+          nil
+
+        {:embed, _} ->
+          nil
+
+        {:group_choice, _} ->
+          nil
       end)
       |> Enum.reject(&is_nil/1)
       |> Enum.join(", ")
@@ -1254,7 +1409,10 @@ defmodule Bibbidi.CDDL.Generator do
 
   def type_to_schema({:map, _}, _type_refs), do: "Zoi.map(Zoi.string(), Zoi.any())"
   def type_to_schema({:group, _}, _type_refs), do: "Zoi.map(Zoi.string(), Zoi.any())"
-  def type_to_schema({:tuple, items}, type_refs), do: "Zoi.tuple({#{Enum.map_join(items, ", ", &type_to_schema(&1, type_refs))}})"
+
+  def type_to_schema({:tuple, items}, type_refs),
+    do: "Zoi.tuple({#{Enum.map_join(items, ", ", &type_to_schema(&1, type_refs))}})"
+
   def type_to_schema({:group_choice, _}, _type_refs), do: "Zoi.any()"
   def type_to_schema(_, _type_refs), do: "Zoi.any()"
 
@@ -1300,8 +1458,12 @@ defmodule Bibbidi.CDDL.Generator do
     type_to_spec({:choice, items}, type_refs)
   end
 
-  def type_to_spec({:array, inner, _quantifier}, type_refs), do: "[#{type_to_spec(inner, type_refs)}]"
-  def type_to_spec({:tuple, items}, type_refs), do: "{#{Enum.map_join(items, ", ", &type_to_spec(&1, type_refs))}}"
+  def type_to_spec({:array, inner, _quantifier}, type_refs),
+    do: "[#{type_to_spec(inner, type_refs)}]"
+
+  def type_to_spec({:tuple, items}, type_refs),
+    do: "{#{Enum.map_join(items, ", ", &type_to_spec(&1, type_refs))}}"
+
   def type_to_spec({:map, _}, _type_refs), do: "map()"
   def type_to_spec({:group, _}, _type_refs), do: "map()"
   def type_to_spec({:group_choice, _}, _type_refs), do: "map()"
@@ -1311,7 +1473,10 @@ defmodule Bibbidi.CDDL.Generator do
 
   defp maybe_generate_facade_module(igniter, mod, remote_rules, all_rules, type_refs) do
     commands = extract_commands(mod, remote_rules)
-    if commands == [], do: igniter, else: generate_facade_module(igniter, mod, commands, all_rules, type_refs)
+
+    if commands == [],
+      do: igniter,
+      else: generate_facade_module(igniter, mod, commands, all_rules, type_refs)
   end
 
   defp generate_facade_module(igniter, mod, commands, all_rules, type_refs) do
@@ -1359,7 +1524,7 @@ defmodule Bibbidi.CDDL.Generator do
   # Elixir reserved words that can't be function names
   @reserved_words ~w(end do fn if else case cond for receive try raise rescue after catch with)
 
-  defp generate_facade_function(_camel_mod, command_name, method, params_ref, all_rules, type_refs) do
+  defp generate_facade_function(camel_mod, command_name, method, params_ref, all_rules, type_refs) do
     raw_name = to_snake(command_name)
 
     fun_name =
@@ -1373,11 +1538,11 @@ defmodule Bibbidi.CDDL.Generator do
 
     fields = resolve_command_fields(params_ref, all_rules)
 
-    required = Enum.filter(fields, fn {_, _, req, _} -> req == :required end)
-    optional = Enum.filter(fields, fn {_, _, req, _} -> req == :optional end)
+    requireds = Enum.filter(fields, fn {_, _, req, _} -> req == :required end)
+    optionals = Enum.filter(fields, fn {_, _, req, _} -> req == :optional end)
 
     # Build the function signature — every function takes opts for :connection_mod
-    required_args = Enum.map_join(required, ", ", fn {_, elixir, _, _} -> elixir end)
+    required_args = Enum.map_join(requireds, ", ", fn {_, elixir, _, _} -> elixir end)
 
     args_str =
       case required_args do
@@ -1387,7 +1552,7 @@ defmodule Bibbidi.CDDL.Generator do
 
     # Build the struct creation body
     struct_body =
-      case {required, optional} do
+      case {requireds, optionals} do
         {[], []} ->
           "%#{command_name}{}"
 
@@ -1415,7 +1580,7 @@ defmodule Bibbidi.CDDL.Generator do
 
     # Build the @spec with real types
     spec_required_args =
-      required
+      requireds
       |> Enum.map(fn {_, _, _, cddl_type} -> type_to_spec(cddl_type, type_refs) end)
 
     spec_args =
@@ -1429,32 +1594,35 @@ defmodule Bibbidi.CDDL.Generator do
 
     result_type = "#{command_name}.result()"
 
-    # Build @doc with opts description
-    doc =
-      if optional != [] do
-        """
-          @doc \"\"\"
-          Executes the `#{method}` command.
+    docs = Docs.for_name("Bibbidi.Commands.#{camel_mod}.#{fun_name}")
 
-          ## Options
+    summary = "  Executes the `#{method}` command."
 
-          \#{Zoi.describe(#{command_name}.opts_schema())}
-          \"\"\"
-        """
+    body =
+      if optionals != [] do
+        summary <> "\n\n  ## Options\n\n  \#{Zoi.describe(#{command_name}.opts_schema())}"
       else
-        "  @doc \"Executes the `#{method}` command.\"\n"
+        summary
+      end
+
+    # Compact one-liner when there's nothing but the summary; heredoc otherwise.
+    doc =
+      if optionals == [] and is_nil(docs) do
+        ~s(  @doc "Executes the `#{method}` command."\n)
+      else
+        "  @doc \"\"\"\n#{splice_docs(body, docs)}\n  \"\"\"\n"
       end
 
     # Build parse line for opts
     parse_line =
-      if optional != [] do
+      if optionals != [] do
         "    opts = Zoi.parse!(#{command_name}.opts_schema(), opts)\n"
       else
         ""
       end
 
     pop_line =
-      if optional != [] do
+      if optionals != [] do
         "    {connection_mod, opts} = Keyword.pop(opts, :connection_mod, Connection)"
       else
         "    {connection_mod, _opts} = Keyword.pop(opts, :connection_mod, Connection)"
@@ -1467,6 +1635,170 @@ defmodule Bibbidi.CDDL.Generator do
     #{parse_line}    connection_mod.execute(conn, #{struct_body}, [])
       end
     """
+  end
+
+  # ── Top-level Bibbidi.Events module ──────────────────────────────
+
+  defp generate_top_level_events_module(igniter, event_index) do
+    # Distinct namespaces that have at least one event (any kind, struct or not)
+    namespaces =
+      event_index
+      |> Enum.map(& &1.namespace_snake)
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    parse_clauses =
+      namespaces
+      |> Enum.map(fn ns ->
+        camel = to_module_name(ns)
+        ~s|      ["#{ns}", _] -> dispatch(method, params, &Bibbidi.Events.#{camel}.parse/2)|
+      end)
+      |> Enum.join("\n")
+
+    event_modules_list =
+      event_index
+      |> Enum.filter(& &1.has_struct)
+      |> Enum.map(& &1.struct_module)
+      |> Enum.sort()
+      |> Enum.map(&"      #{&1}")
+      |> Enum.join(",\n")
+
+    content = """
+    # Generated by mix bibbidi.gen — do not edit manually
+    defmodule Bibbidi.Events do
+      @moduledoc \"\"\"
+      Top-level event parsing and method introspection.
+
+      Subscribers to `Bibbidi.Connection` receive parsed event structs.
+      Use `import Bibbidi.Events.Guards` to pattern-match by category
+      (`is_bibbidi_event/1`, `is_bibbidi_log_event/1`, etc.).
+
+      Events whose method is unknown to the generator (vendor extensions,
+      future spec versions, codegen drift) are returned as
+      `t:Bibbidi.Events.Unknown.t/0` so consumers can still observe them.
+      \"\"\"
+
+      alias Bibbidi.Events.Unknown
+
+      @doc \"\"\"
+      Parses a raw BiDi event into a typed struct.
+
+      Always returns a struct. Falls back to `%Bibbidi.Events.Unknown{}`
+      for events not covered by generated typed structs.
+      \"\"\"
+      @spec parse(String.t(), map()) :: struct()
+      def parse(method, params) do
+        case String.split(method, ".", parts: 2) do
+    #{parse_clauses}
+          _ -> %Unknown{method: method, params: params}
+        end
+      end
+
+      defp dispatch(method, params, fun) do
+        case fun.(method, params) do
+          %_{} = struct -> struct
+          _ -> %Unknown{method: method, params: params}
+        end
+      end
+
+      @doc \"\"\"
+      Returns the BiDi method name for a typed event struct.
+
+      Generic dispatch: every generated event struct module exposes its own
+      `method/0` (returning the BiDi method string). `Bibbidi.Events.Unknown`
+      carries the method as a struct field and is handled by an explicit clause.
+      \"\"\"
+      @spec method_for(struct()) :: String.t()
+      def method_for(%Unknown{method: m}), do: m
+      def method_for(%mod{}), do: mod.method()
+
+      @doc \"Returns the list of all generated event struct modules.\"
+      @spec event_modules() :: [module()]
+      def event_modules do
+        [
+    #{event_modules_list}
+        ]
+      end
+    end
+    """
+
+    Igniter.create_new_file(igniter, "lib/bibbidi/events.ex", content, on_exists: :overwrite)
+  end
+
+  # ── Bibbidi.Events.Guards module ─────────────────────────────────
+
+  defp generate_events_guards_module(igniter, event_index) do
+    # Group entries by namespace, keep only those with structs
+    by_namespace =
+      event_index
+      |> Enum.filter(& &1.has_struct)
+      |> Enum.group_by(& &1.namespace_snake)
+
+    # Per-namespace guard definitions
+    namespace_guards =
+      by_namespace
+      |> Enum.sort_by(fn {ns, _} -> ns end)
+      |> Enum.map(fn {ns, entries} ->
+        guard_name = "is_bibbidi_#{to_snake(ns)}_event"
+
+        clauses =
+          entries
+          |> Enum.sort_by(& &1.struct_module)
+          |> Enum.map(&"is_struct(msg, #{&1.struct_module})")
+          |> Enum.join("\n        or ")
+
+        """
+          @doc \"True when `msg` is a generated event struct under the `#{ns}` namespace.\"
+          defguard #{guard_name}(msg)
+                   when #{clauses}
+        """
+      end)
+      |> Enum.join("\n")
+
+    namespace_guard_names =
+      by_namespace
+      |> Map.keys()
+      |> Enum.sort()
+      |> Enum.map(&"is_bibbidi_#{to_snake(&1)}_event(msg)")
+
+    union_clauses =
+      (namespace_guard_names ++ ["is_struct(msg, Bibbidi.Events.Unknown)"])
+      |> Enum.join("\n        or ")
+
+    content = """
+    # Generated by mix bibbidi.gen — do not edit manually
+    defmodule Bibbidi.Events.Guards do
+      @moduledoc \"\"\"
+      Guards for matching BiDi event structs in `handle_info` and `with` clauses.
+
+      `import Bibbidi.Events.Guards` to use these:
+
+          def handle_info(msg, state) when is_bibbidi_event(msg), do: ...
+          def handle_info(msg, state) when is_bibbidi_log_event(msg), do: ...
+          def handle_info(%Bibbidi.Events.Log.EntryAdded{} = ev, state), do: ...
+
+      `is_bibbidi_event/1` matches any generated event struct AND
+      `Bibbidi.Events.Unknown` (the catch-all for events outside the codegen).
+      Namespace-specific guards (`is_bibbidi_log_event/1`, etc.) do NOT match
+      `Unknown` — use them when you want only events confidently known to belong
+      to that BiDi module.
+      \"\"\"
+
+    #{namespace_guards}
+      @doc \"\"\"
+      True when `msg` is any generated event struct or `%Bibbidi.Events.Unknown{}`.
+
+      Use this as the broad screening guard in handlers that might receive
+      non-event messages (timers, monitor refs, custom IPC, etc.).
+      \"\"\"
+      defguard is_bibbidi_event(msg)
+               when #{union_clauses}
+    end
+    """
+
+    Igniter.create_new_file(igniter, "lib/bibbidi/events/guards.ex", content,
+      on_exists: :overwrite
+    )
   end
 
   defdelegate to_snake(str), to: Utils

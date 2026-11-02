@@ -8,7 +8,7 @@ defmodule Bibbidi.Types.Script.UndefinedValue do
   - `type` - `"undefined"` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string()})
+  @schema Zoi.map(%{type: Zoi.literal("undefined")})
   @type t :: %{type: String.t()}
 
   @doc "Returns the Zoi schema for this type."

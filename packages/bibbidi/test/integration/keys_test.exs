@@ -60,7 +60,7 @@ defmodule Bibbidi.Integration.KeysTest do
     navigate_to_keydown_page(conn, context)
     send_key(conn, context, Keys.key(:enter))
 
-    assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
+    assert_receive %Bibbidi.Events.Log.EntryAdded{} = params, 5_000
     assert params.text =~ "KEY:Enter"
   end
 
@@ -75,7 +75,7 @@ defmodule Bibbidi.Integration.KeysTest do
         ] do
       send_key(conn, context, Keys.key(atom))
 
-      assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
+      assert_receive %Bibbidi.Events.Log.EntryAdded{} = params, 5_000
       assert params.text =~ "KEY:#{expected_dom_key}"
     end
   end
@@ -84,7 +84,7 @@ defmodule Bibbidi.Integration.KeysTest do
     navigate_to_keydown_page(conn, context)
     send_key(conn, context, Keys.key(:tab))
 
-    assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
+    assert_receive %Bibbidi.Events.Log.EntryAdded{} = params, 5_000
     assert params.text =~ "KEY:Tab"
   end
 
@@ -92,7 +92,7 @@ defmodule Bibbidi.Integration.KeysTest do
     navigate_to_keydown_page(conn, context)
     send_key(conn, context, Keys.key("a"))
 
-    assert_receive {:bibbidi_event, "log.entryAdded", params}, 5_000
+    assert_receive %Bibbidi.Events.Log.EntryAdded{} = params, 5_000
     assert params.text =~ "KEY:a"
   end
 end

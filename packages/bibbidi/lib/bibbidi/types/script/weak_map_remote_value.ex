@@ -11,7 +11,7 @@ defmodule Bibbidi.Types.Script.WeakMapRemoteValue do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("weakmap"),
             handle: Zoi.lazy({Bibbidi.Types.Script.Handle, :schema, []}) |> Zoi.optional(),
             internal_id:
               Zoi.lazy({Bibbidi.Types.Script.InternalId, :schema, []}) |> Zoi.optional()

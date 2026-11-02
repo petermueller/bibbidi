@@ -127,7 +127,12 @@ defmodule Bibbidi.CommandMetaTelemetryTest do
     send(conn, {:mock_transport_receive, [{:text, event_json}]})
 
     assert_receive {^ref, [:bibbidi, :event, :received], _, metadata}
-    assert metadata.params == %{"foo" => "bar"}
+
+    assert metadata.params == %Bibbidi.Events.Unknown{
+             method: "vendor.custom",
+             params: %{"foo" => "bar"}
+           }
+
     refute Map.has_key?(metadata, :context)
   end
 end

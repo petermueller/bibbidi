@@ -18,4 +18,8 @@ defmodule Bibbidi.Events.Script.RealmCreated do
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}
   defstruct [:realm, :origin, :type, :context, :user_context, :sandbox, :owners]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "script.realmCreated"
 end

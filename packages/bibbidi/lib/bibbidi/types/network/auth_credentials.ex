@@ -10,7 +10,11 @@ defmodule Bibbidi.Types.Network.AuthCredentials do
   - `password` - `String.t()` (required)
   """
 
-  @schema Zoi.map(%{type: Zoi.string(), username: Zoi.string(), password: Zoi.string()})
+  @schema Zoi.map(%{
+            type: Zoi.literal("password"),
+            username: Zoi.string(),
+            password: Zoi.string()
+          })
   @type t :: %{type: String.t(), username: String.t(), password: String.t()}
 
   @doc "Returns the Zoi schema for this type."

@@ -29,4 +29,8 @@ bibbidi-*.tar
 /tmp/
 
 # A place to stick plans/prompts that won't get committed
-/plans/
+# (tracked for now while the 0.4 plans are live)
+# /plans/
+
+# Local escape hatch for the .claude/ Stop verification hook (per-checkout, not shared)
+.claude/.skip-verify

@@ -15,4 +15,8 @@ defmodule Bibbidi.Events.Input.FileDialogOpened do
 
   @derive {Bibbidi.Telemetry.Metadata, keys: [:context]}
   defstruct [:context, :user_context, :element, :multiple]
+
+  @doc "Returns the BiDi method name this event struct represents."
+  @spec method() :: String.t()
+  def method, do: "input.fileDialogOpened"
 end

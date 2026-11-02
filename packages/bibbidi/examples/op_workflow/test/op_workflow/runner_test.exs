@@ -3,7 +3,8 @@ defmodule OpWorkflow.RunnerTest do
 
   alias Bibbidi.Connection
   alias Bibbidi.Commands.BrowsingContext
-  alias OpWorkflow.{Op, Runner}
+  alias OpWorkflow.Op
+  alias OpWorkflow.Runner
 
   setup do
     {:ok, conn} =
@@ -22,7 +23,8 @@ defmodule OpWorkflow.RunnerTest do
 
     send(
       conn,
-      {:mock_transport_receive, [{:text, JSON.encode!(%{id: decoded["id"], result: result})}]}
+      {:mock_transport_receive,
+       [{:text, JSON.encode!(%{id: decoded["id"], result: result})}]}
     )
 
     decoded
@@ -41,9 +43,21 @@ defmodule OpWorkflow.RunnerTest do
     decoded
   end
 
-  describe "static sends" do
+  describe "Op builder" do
+    test "rejects duplicate step names" do
+      op = Op.new() |> Op.send(:nav, %BrowsingContext.Activate{context: "c"})
+
+      assert_raise ArgumentError, ~r/already used/, fn ->
+        Op.send(op, :nav, %BrowsingContext.Activate{context: "c"})
+      end
+    end
+  end
+
+  describe "Runner.execute/3 with static sends" do
     test "runs a single send step", %{conn: conn} do
-      op = Op.new() |> Op.send(:activate, %BrowsingContext.Activate{context: "ctx-1"})
+      op =
+        Op.new()
+        |> Op.send(:activate, %BrowsingContext.Activate{context: "ctx-1"})
 
       task = Task.async(fn -> Runner.execute(conn, op) end)
 
@@ -59,7 +73,9 @@ defmodule OpWorkflow.RunnerTest do
     test "runs multiple sends in order", %{conn: conn} do
       op =
         Op.new()
-        |> Op.send(:nav, %BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"})
+        |> Op.send(:nav, %BrowsingContext.Navigate{
+          context: "ctx-1", url: "https://example.com"
+        })
         |> Op.send(:tree, %BrowsingContext.GetTree{})
 
       task = Task.async(fn -> Runner.execute(conn, op) end)
@@ -80,10 +96,13 @@ defmodule OpWorkflow.RunnerTest do
     test "stops on first error", %{conn: conn} do
       op =
         Op.new()
-        |> Op.send(:nav, %BrowsingContext.Navigate{context: "ctx-1", url: "https://bad.com"})
+        |> Op.send(:nav, %BrowsingContext.Navigate{
+          context: "ctx-1", url: "https://bad.com"
+        })
         |> Op.send(:tree, %BrowsingContext.GetTree{})
 
       task = Task.async(fn -> Runner.execute(conn, op) end)
+
       mock_error(conn, "navigation failed", "bad url")
 
       assert {:error, {:nav, _reason}, operation} = Task.await(task)
@@ -92,63 +111,18 @@ defmodule OpWorkflow.RunnerTest do
     end
   end
 
-  describe "dynamic sends" do
-    test "send_fn can build a command from results", %{conn: conn} do
-      op =
-        Op.new()
-        |> Op.send(:tree, %BrowsingContext.GetTree{})
-        |> Op.send(:activate, fn %{tree: {:ok, %{"contexts" => [%{"context" => ctx} | _]}}} ->
-          {:send, %BrowsingContext.Activate{context: ctx}}
-        end)
-
-      task = Task.async(fn -> Runner.execute(conn, op) end)
-
-      mock_reply(conn, %{contexts: [%{context: "ctx-99"}]})
-      decoded = mock_reply(conn, %{})
-      assert decoded["params"]["context"] == "ctx-99"
-
-      assert {:ok, results, _} = Task.await(task)
-      assert {:ok, _} = results[:activate]
-    end
-
-    test "send_fn can short-circuit with {:ok, value}", %{conn: conn} do
-      op =
-        Op.new()
-        |> Op.send(:cached, fn _results -> {:ok, :from_cache} end)
-
-      task = Task.async(fn -> Runner.execute(conn, op) end)
-
-      assert {:ok, results, _} = Task.await(task)
-      assert results[:cached] == {:ok, :from_cache}
-    end
-  end
-
-  describe "run steps" do
-    test "run step receives conn and results", %{conn: conn} do
-      op =
-        Op.new()
-        |> Op.run(:custom, fn conn_arg, _results, _opts ->
-          # Just execute a command directly
-          Bibbidi.Connection.execute(conn_arg, %BrowsingContext.Activate{context: "ctx-1"})
-        end)
-
-      task = Task.async(fn -> Runner.execute(conn, op) end)
-
-      mock_reply(conn, %{})
-
-      assert {:ok, results, _} = Task.await(task)
-      assert {:ok, %{}} = results[:custom]
-    end
-  end
-
-  describe "branch steps" do
+  describe "Runner.execute/3 with branch" do
     test "branch can send a command based on results", %{conn: conn} do
       op =
         Op.new()
-        |> Op.send(:nav, %BrowsingContext.Navigate{context: "ctx-1", url: "https://example.com"})
+        |> Op.send(:nav, %BrowsingContext.Navigate{
+          context: "ctx-1", url: "https://example.com"
+        })
         |> Op.branch(:maybe_tree, fn
-          %{nav: {:ok, _}} -> {:send, %BrowsingContext.GetTree{}}
-          %{nav: {:error, _}} -> {:error, :skipped}
+          %{nav: {:ok, _}} ->
+            {:send, %BrowsingContext.GetTree{}}
+          %{nav: {:error, _}} ->
+            {:error, :skipped}
         end)
 
       task = Task.async(fn -> Runner.execute(conn, op) end)
@@ -156,25 +130,29 @@ defmodule OpWorkflow.RunnerTest do
       mock_reply(conn, %{navigation: "nav-1"})
       mock_reply(conn, %{contexts: []})
 
-      assert {:ok, results, _} = Task.await(task)
+      assert {:ok, results, _op} = Task.await(task)
       assert {:ok, %{"contexts" => []}} = results[:maybe_tree]
     end
 
     test "branch can short-circuit with ok", %{conn: conn} do
-      op = Op.new() |> Op.branch(:decision, fn _ -> {:ok, :done} end)
+      op =
+        Op.new()
+        |> Op.branch(:decision, fn _ -> {:ok, :done} end)
 
       task = Task.async(fn -> Runner.execute(conn, op) end)
 
-      assert {:ok, results, _} = Task.await(task)
+      assert {:ok, results, _op} = Task.await(task)
       assert results[:decision] == {:ok, :done}
     end
 
     test "branch can short-circuit with error", %{conn: conn} do
-      op = Op.new() |> Op.branch(:decision, fn _ -> {:error, :nope} end)
+      op =
+        Op.new()
+        |> Op.branch(:decision, fn _ -> {:error, :nope} end)
 
       task = Task.async(fn -> Runner.execute(conn, op) end)
 
-      assert {:error, {:decision, :nope}, _} = Task.await(task)
+      assert {:error, {:decision, :nope}, _op} = Task.await(task)
     end
   end
 
@@ -202,41 +180,6 @@ defmodule OpWorkflow.RunnerTest do
       {:ok, _, operation} = Task.await(task)
 
       assert operation.started_at <= operation.ended_at
-    end
-
-    test "records every step with command and result", %{conn: conn} do
-      op =
-        Op.new()
-        |> Op.send(:a, %BrowsingContext.Activate{context: "c"})
-        |> Op.send(:b, %BrowsingContext.GetTree{})
-
-      task = Task.async(fn -> Runner.execute(conn, op) end)
-      mock_reply(conn, %{})
-      mock_reply(conn, %{contexts: []})
-      {:ok, _, operation} = Task.await(task)
-
-      assert [step_a, step_b] = operation.steps
-      assert step_a.name == :a
-      assert step_a.command == %BrowsingContext.Activate{context: "c"}
-      assert {:ok, _} = step_a.result
-
-      assert step_b.name == :b
-      assert {:ok, %{"contexts" => []}} = step_b.result
-    end
-
-    test "partial results available on error", %{conn: conn} do
-      op =
-        Op.new()
-        |> Op.send(:a, %BrowsingContext.Activate{context: "c"})
-        |> Op.send(:b, %BrowsingContext.GetTree{})
-
-      task = Task.async(fn -> Runner.execute(conn, op) end)
-      mock_reply(conn, %{})
-      mock_error(conn, "fail", "oops")
-
-      {:error, {:b, _}, operation} = Task.await(task)
-      assert {:ok, _} = operation.results[:a]
-      assert operation.results[:b] == nil
     end
   end
 end

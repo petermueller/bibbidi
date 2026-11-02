@@ -49,7 +49,9 @@ defmodule OpWorkflow.OpTest do
         |> Op.send(:b, %BrowsingContext.Activate{context: "c"})
         |> Op.send(:c, %BrowsingContext.Activate{context: "c"})
 
-      names = Enum.map(op.steps, &elem(&1, 0))
+      # Steps are stored prepended for O(1) build; the Runner reverses
+      # them at execute time so they run in insertion order.
+      names = op.steps |> Enum.reverse() |> Enum.map(&elem(&1, 0))
       assert names == [:a, :b, :c]
     end
   end

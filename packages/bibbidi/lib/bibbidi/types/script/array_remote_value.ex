@@ -12,7 +12,7 @@ defmodule Bibbidi.Types.Script.ArrayRemoteValue do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("array"),
             handle: Zoi.lazy({Bibbidi.Types.Script.Handle, :schema, []}) |> Zoi.optional(),
             internal_id:
               Zoi.lazy({Bibbidi.Types.Script.InternalId, :schema, []}) |> Zoi.optional(),

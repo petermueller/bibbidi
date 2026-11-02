@@ -11,7 +11,7 @@ defmodule Bibbidi.Types.Input.NoneSourceActions do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("none"),
             id: Zoi.string(),
             actions: Zoi.list(Zoi.lazy({Bibbidi.Types.Input.NoneSourceAction, :schema, []}))
           })

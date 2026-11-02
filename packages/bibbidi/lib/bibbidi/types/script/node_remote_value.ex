@@ -13,7 +13,7 @@ defmodule Bibbidi.Types.Script.NodeRemoteValue do
   """
 
   @schema Zoi.map(%{
-            type: Zoi.string(),
+            type: Zoi.literal("node"),
             shared_id: Zoi.lazy({Bibbidi.Types.Script.SharedId, :schema, []}) |> Zoi.optional(),
             handle: Zoi.lazy({Bibbidi.Types.Script.Handle, :schema, []}) |> Zoi.optional(),
             internal_id:

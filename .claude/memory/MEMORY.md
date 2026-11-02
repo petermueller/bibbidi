@@ -1,0 +1,1 @@
+- [Writing style — abbreviations](feedback_writing_style.md) — don't use "cf."; use "see" instead. `e.g.`/`i.e.` are fine.

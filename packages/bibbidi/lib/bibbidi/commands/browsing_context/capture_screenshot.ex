@@ -16,13 +16,15 @@ defmodule Bibbidi.Commands.BrowsingContext.CaptureScreenshot do
   @derive Bibbidi.Telemetry.Metadata
   @schema Zoi.struct(__MODULE__, %{
             context: Bibbidi.Types.BrowsingContext.schema(),
-            origin: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+            origin:
+              Zoi.union([Zoi.literal("viewport"), Zoi.literal("document")]) |> Zoi.optional(),
             format: Bibbidi.Types.BrowsingContext.ImageFormat.schema() |> Zoi.optional(),
             clip: Bibbidi.Types.BrowsingContext.ClipRectangle.schema() |> Zoi.optional(),
             meta: Zoi.any() |> Zoi.optional()
           })
   @opts_schema Zoi.keyword(
-                 origin: Zoi.union([Zoi.string(), Zoi.string()]) |> Zoi.optional(),
+                 origin:
+                   Zoi.union([Zoi.literal("viewport"), Zoi.literal("document")]) |> Zoi.optional(),
                  format: Zoi.any() |> Zoi.optional(),
                  clip: Zoi.any() |> Zoi.optional()
                )
